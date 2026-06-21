@@ -13,12 +13,6 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-async function fetchCsrfToken(tag: string): Promise<string | null> {
-  const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
-  const data = await res.json()
-  return data.success ? data.data.csrfToken : null
-}
-
 const AUTO_DECRYPT_KEY = 'wahabox:autoDecrypt'
 
 type Message = {
@@ -126,12 +120,7 @@ export default function MessagesPage() {
       )
 
       if (!msg.isRead) {
-        const csrfToken = await fetchCsrfToken('message-action')
-        await fetch(`/api/messages/${msg.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ csrfToken }),
-        }).catch(() => {})
+        await fetch(`/api/messages/${msg.id}`, { method: 'PATCH' }).catch(() => {})
       }
     } catch {
       toast.error('Failed to decrypt message')
@@ -166,24 +155,14 @@ export default function MessagesPage() {
       )
 
       if (!msg.isRead) {
-        const csrfToken = await fetchCsrfToken('message-action')
-        await fetch(`/api/messages/${msg.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ csrfToken }),
-        }).catch(() => {})
+        await fetch(`/api/messages/${msg.id}`, { method: 'PATCH' }).catch(() => {})
       }
     } catch {
     }
   }
 
   async function deleteMessage(msgId: string) {
-    const csrfToken = await fetchCsrfToken('message-action')
-    const res = await fetch(`/api/messages/${msgId}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ csrfToken }),
-    })
+    const res = await fetch(`/api/messages/${msgId}`, { method: 'DELETE' })
     const data = await res.json()
     if (data.success) {
       setMessages((prev) => prev.filter((m) => m.id !== msgId))
