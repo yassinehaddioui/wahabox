@@ -35,7 +35,7 @@ export async function GET(
     })
 
     return success(
-      messages.map((m) => ({
+      messages.map((m: { id: string; ciphertext: Uint8Array; isRead: boolean; createdAt: Date }) => ({
         id: m.id,
         ciphertext: b64(m.ciphertext),
         isRead: m.isRead,

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { LexicalMarkdownEditor } from '@/components/ui/lexical-editor'
+import { TextEditor } from '@/components/ui/text-editor'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 type BoxInfo = {
@@ -203,7 +203,7 @@ export default function DropPage() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-              <LexicalMarkdownEditor
+              <TextEditor
                 id="message"
                 value={message}
                 onChange={setMessage}

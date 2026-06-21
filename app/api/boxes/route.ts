@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     })
 
     return success(
-      boxes.map(({ messages: unreadMessages, ...box }) => ({
+      boxes.map(({ messages: unreadMessages, ...box }: { messages: { id: string }[] } & Record<string, unknown>) => ({
         ...box,
         hasUnread: unreadMessages.length > 0,
       }))
