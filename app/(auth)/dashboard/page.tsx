@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +23,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { Mail, Pencil, Copy, RefreshCw } from 'lucide-react'
+import { Mail, Pencil, Copy, RefreshCw, WandSparkles } from 'lucide-react'
 
 async function fetchCsrfToken(tag: string): Promise<string | null> {
   const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
@@ -55,6 +57,7 @@ export default function DashboardPage() {
   const [rotateBox, setRotateBox] = useState<PoBox | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [now, setNow] = useState(Date.now())
+  const [autoDecryptMap, setAutoDecryptMap] = useState<Record<string, boolean>>({})
 
   const fetchBoxes = useCallback(async () => {
     try {
@@ -72,6 +75,41 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => { fetchBoxes() }, [fetchBoxes])
+
+  const AUTO_DECRYPT_KEY = 'wahabox:autoDecrypt'
+
+  const toggleAutoDecrypt = useCallback((boxId: string) => {
+    setAutoDecryptMap((prev) => {
+      const next = !prev[boxId]
+      try {
+        const stored = localStorage.getItem(AUTO_DECRYPT_KEY)
+        const ids: string[] = stored ? JSON.parse(stored) : []
+        const updated = next
+          ? [...new Set([...ids, boxId])]
+          : ids.filter((i: string) => i !== boxId)
+        localStorage.setItem(AUTO_DECRYPT_KEY, JSON.stringify(updated))
+      } catch {}
+      return { ...prev, [boxId]: next }
+    })
+  }, [])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(AUTO_DECRYPT_KEY)
+      const ids: string[] = stored ? JSON.parse(stored) : []
+      const map: Record<string, boolean> = {}
+      for (const box of boxes) {
+        map[box.id] = ids.includes(box.id)
+      }
+      setAutoDecryptMap((prev) => {
+        const merged = { ...prev }
+        for (const box of boxes) {
+          if (!(box.id in merged)) merged[box.id] = map[box.id]
+        }
+        return merged
+      })
+    } catch {}
+  }, [boxes])
 
   useEffect(() => {
     const interval = setInterval(fetchBoxes, 30_000)
@@ -236,13 +274,15 @@ export default function DashboardPage() {
                       {box.hasUnread && (
                         <span className="flex h-2 w-2 rounded-full bg-primary" />
                       )}
-                      {box.label}
+                      <Link href={`/dashboard/${box.id}`} className="hover:underline">
+                        {box.label}
+                      </Link>
                     </span>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <span className="font-mono text-xs text-muted-foreground">
+                    <a href={`/drop/${box.slug}`} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-muted-foreground hover:underline">
                       /drop/{box.slug}
-                    </span>
+                    </a>
                   </TableCell>
                   <TableCell className="text-center text-sm">
                     <span className={box.hasUnread ? 'font-medium text-foreground' : 'text-muted-foreground'}>
@@ -257,29 +297,50 @@ export default function DashboardPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => copyDropLink(box.slug)}
-                        aria-label="Copy drop link"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant={box.hasUnread ? 'default' : 'ghost'}
-                        size="icon-sm"
-                        onClick={() => router.push(`/dashboard/${box.id}`)}
-                        aria-label="View messages"
-                      >
-                        <Mail className="h-3.5 w-3.5" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger render={<Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => copyDropLink(box.slug)}
+                          aria-label="Copy drop link"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>} />
+                        <TooltipContent>Copy drop link</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger render={<Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => toggleAutoDecrypt(box.id)}
+                          aria-label="Toggle auto-decrypt"
+                          className={autoDecryptMap[box.id] ? 'text-primary' : ''}
+                        >
+                          <WandSparkles className="h-3.5 w-3.5" />
+                        </Button>} />
+                        <TooltipContent>Auto-decrypt</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger render={<Button
+                          variant={box.hasUnread ? 'default' : 'ghost'}
+                          size="icon-sm"
+                          onClick={() => router.push(`/dashboard/${box.id}`)}
+                          aria-label="View messages"
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                        </Button>} />
+                        <TooltipContent>View messages</TooltipContent>
+                      </Tooltip>
                       <Dialog open={rotateBox?.id === box.id} onOpenChange={(open: boolean) => {
                         if (open) setRotateBox(box)
                         else setRotateBox(null)
                       }}>
-                        <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Rotate drop link" />}>
-                          <RefreshCw className="h-3.5 w-3.5" />
-                        </DialogTrigger>
+                        <Tooltip>
+                          <TooltipTrigger render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Rotate drop link" />}>
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          </DialogTrigger>} />
+                          <TooltipContent>Rotate drop link</TooltipContent>
+                        </Tooltip>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Rotate Drop Link</DialogTitle>
@@ -308,10 +369,13 @@ export default function DashboardPage() {
                           setEditBox(null)
                         }
                       }}>
-                        <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Edit box" />}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </DialogTrigger>
-                      <DialogContent>
+                        <Tooltip>
+                          <TooltipTrigger render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Edit box" />}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </DialogTrigger>} />
+                          <TooltipContent>Edit box</TooltipContent>
+                        </Tooltip>
+                        <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Edit Box</DialogTitle>
                           <DialogDescription>

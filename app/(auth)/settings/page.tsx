@@ -254,6 +254,7 @@ export default function SettingsPage() {
           await fetchMfaStatus()
         } else if (action === 'enable' || action === 'disable') {
           await fetchMfaStatus()
+          if (method === 'passkey') await fetchPasskeys()
         }
       } else {
         toast.error(data.error)
@@ -461,7 +462,7 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   {status.isVerified ? (
-                    <Badge variant="secondary">
+                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                       <CheckCircle className="mr-1 h-3 w-3" />
                       Verified
                     </Badge>
@@ -636,7 +637,7 @@ export default function SettingsPage() {
                   </div>
                   {mfaStatus?.mfaTotp ? (
                     <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="secondary" className="text-xs">Enabled</Badge>
+                      <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Enabled</Badge>
                       <Button
                         variant="outline"
                         size="sm"
@@ -856,7 +857,7 @@ function MfaSection({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Badge variant="secondary" className="text-xs">Enabled</Badge>
+          <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Enabled</Badge>
           <Button
             variant="outline"
             size="sm"

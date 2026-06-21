@@ -209,6 +209,9 @@ export default function MessagesPage() {
           <Label htmlFor="auto-decrypt" className="text-xs text-muted-foreground cursor-pointer">
             Auto-decrypt
           </Label>
+          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs">
+            {autoDecrypt ? 'ON' : 'OFF'}
+          </Badge>
         </div>
       </div>
 
