@@ -1,13 +1,29 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import { LexicalMarkdownEditor } from '@/components/ui/lexical-editor'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-type BoxInfo = { label: string; publicKey: string }
+type BoxInfo = {
+  label: string
+  greeting: string | null
+  publicKey: string
+}
+
+const TURNSTILE_SITE_KEY = '1x00000000000000000000AA'
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: Record<string, unknown>) => string
+      reset: (widgetId: string) => void
+      remove: (widgetId: string) => void
+    }
+    onTurnstileLoad?: () => void
+  }
+}
 
 async function solvePow(challenge: string, difficulty: number): Promise<string> {
   const enc = new TextEncoder()
@@ -34,7 +50,10 @@ export default function DropPage() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const honeypotRef = useRef<HTMLInputElement>(null)
+  const turnstileRef = useRef<HTMLDivElement>(null)
+  const turnstileWidgetId = useRef<string | null>(null)
 
   useEffect(() => {
     fetch(`/api/drop/${slug}`)
@@ -46,6 +65,56 @@ export default function DropPage() {
       .catch(() => setError('Failed to load drop box.'))
       .finally(() => setLoading(false))
   }, [slug])
+
+  const renderTurnstile = useCallback(() => {
+    if (!turnstileRef.current || !window.turnstile) return
+    if (turnstileWidgetId.current) {
+      window.turnstile.reset(turnstileWidgetId.current)
+      return
+    }
+    turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+      sitekey: TURNSTILE_SITE_KEY,
+      callback: (token: string) => setTurnstileToken(token),
+      'expired-callback': () => setTurnstileToken(null),
+      'error-callback': () => setTurnstileToken(null),
+    })
+  }, [])
+
+  useEffect(() => {
+    if (loading) return
+
+    const existingScript = document.querySelector('script[src*="turnstile"]')
+    if (existingScript) {
+      if (window.turnstile) {
+        renderTurnstile()
+      } else {
+        const orig = window.onTurnstileLoad
+        window.onTurnstileLoad = () => {
+          orig?.()
+          renderTurnstile()
+        }
+      }
+      return
+    }
+
+    window.onTurnstileLoad = () => {
+      renderTurnstile()
+    }
+
+    const script = document.createElement('script')
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad'
+    script.async = true
+    script.defer = true
+    document.head.appendChild(script)
+
+    return () => {
+      if (turnstileWidgetId.current) {
+        window.turnstile?.remove(turnstileWidgetId.current)
+        turnstileWidgetId.current = null
+      }
+      delete window.onTurnstileLoad
+    }
+  }, [loading, renderTurnstile])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -61,9 +130,18 @@ export default function DropPage() {
       const publicKey = crypto.fromBase64(box!.publicKey)
       const ciphertext = crypto.sealMessage(message, publicKey)
 
+      const csrfRes = await fetch(`/api/csrf?tag=${encodeURIComponent(slug)}`)
+      const csrfData = await csrfRes.json()
+      const csrfToken = csrfData.success ? csrfData.data.csrfToken : null
+
       const payload: Record<string, unknown> = {
         ciphertext: crypto.toBase64(ciphertext),
+        csrfToken,
         honeypot: '',
+      }
+
+      if (turnstileToken) {
+        payload.turnstileToken = turnstileToken
       }
 
       const res = await fetch(`/api/drop/${slug}`, {
@@ -87,7 +165,7 @@ export default function DropPage() {
 
   if (error && !box) {
     return (
-      <Card className="w-full max-w-md bg-canvas-soft">
+      <Card className="w-full max-w-2xl bg-canvas-soft">
         <CardHeader className="text-center">
           <CardTitle>Not Found</CardTitle>
           <CardDescription>{error}</CardDescription>
@@ -98,39 +176,41 @@ export default function DropPage() {
 
   if (sent) {
     return (
-      <Card className="w-full max-w-md bg-canvas-soft">
+      <Card className="w-full max-w-2xl bg-canvas-soft">
         <CardHeader className="text-center">
           <CardTitle>Message Sent!</CardTitle>
           <CardDescription>
             Your message has been delivered securely.
           </CardDescription>
         </CardHeader>
+        <CardContent className="text-center">
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Send another message
+          </Button>
+        </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-2xl">
       <CardHeader>
         <CardTitle>{box!.label}</CardTitle>
         <CardDescription>
-          Send an encrypted message to this PO Box. Your message is encrypted in your
-          browser before being sent.
+          {box!.greeting || "Send an encrypted message to this PO Box. Your message is encrypted in your browser before being sent."}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="message">Your Message</Label>
-            <Textarea
+            <LexicalMarkdownEditor
               id="message"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="min-h-32"
+              onChange={setMessage}
               maxLength={5000}
-              required
             />
           </div>
+          <div ref={turnstileRef} className="flex justify-center" />
           <input
             ref={honeypotRef}
             type="text"

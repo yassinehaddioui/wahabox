@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { success, error } from '@/lib/response'
 import { parseBody, signupSchema } from '@/lib/validation'
-import { ConflictError, RateLimitError } from '@/lib/errors'
+import { BadRequestError, ConflictError, RateLimitError } from '@/lib/errors'
+import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 import { checkIpRate, checkGlobalRate } from '@/lib/rate-limit'
 
@@ -25,6 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await parseBody(request, signupSchema)
+
+    const csrfValid = await verifyAndConsumeCsrfToken('signup', body.csrfToken ?? null)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const existing = await prisma.user.findUnique({
       where: { username: body.username },

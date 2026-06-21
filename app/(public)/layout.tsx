@@ -17,7 +17,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </Button>
         </nav>
       </header>
-      <main className="flex flex-1 items-center justify-center px-6 py-12">
+      <main className="flex flex-1 items-start justify-center px-6 pt-16 pb-12">
         {children}
       </main>
     </div>

@@ -37,6 +37,7 @@ model PoBox {
   ownerId     String    @map("owner_id") @db.Uuid
   slug        String    @unique
   label       String
+  greeting    String?
   isActive    Boolean   @default(true) @map("is_active")
   expiresAt   DateTime? @map("expires_at")
   maxMessages Int?      @map("max_messages")

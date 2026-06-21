@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <div className="mx-auto max-w-2xl text-center">
+    <div className="mx-auto w-full max-w-4xl text-center">
       <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
         Encrypted Virtual PO Box
       </h1>

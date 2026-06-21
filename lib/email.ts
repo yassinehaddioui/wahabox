@@ -25,6 +25,11 @@ export async function sendVerificationEmail(
   token: string,
 ): Promise<void> {
   const link = `${ENV.APP_URL}/verify-email?token=${token}`
+
+  if (process.env.APP_MODE === 'development') {
+    console.log('[email] Verification link:', link)
+  }
+
   const client = getSes()
 
   await client.send(new SendEmailCommand({

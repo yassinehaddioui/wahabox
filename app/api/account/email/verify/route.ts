@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
-    const redis = getRedis()
+    const redis = await getRedis()
     const userId = await redis.get(`verify:${tokenHash}`)
 
     if (!userId) {

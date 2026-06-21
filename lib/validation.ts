@@ -9,6 +9,7 @@ export const usernameSchema = z
 
 export const signupSchema = z.object({
   username: usernameSchema,
+  csrfToken: z.string().optional(),
   authVerifier: z.string().min(1),
   authSalt: z.string().min(1),
   publicKey: z.string().min(1),
@@ -22,15 +23,18 @@ export const signupSchema = z.object({
 
 export const loginSchema = z.object({
   username: usernameSchema,
+  csrfToken: z.string().optional(),
   authVerifier: z.string().min(1),
 })
 
 export const recoveryStartSchema = z.object({
   username: usernameSchema,
+  csrfToken: z.string().optional(),
 })
 
 export const recoveryCompleteSchema = z.object({
   username: usernameSchema,
+  csrfToken: z.string().optional(),
   newAuthVerifier: z.string().min(1),
   newAuthSalt: z.string().min(1),
   newEncPrivPw: z.string().min(1),
@@ -40,10 +44,12 @@ export const recoveryCompleteSchema = z.object({
 
 export const createBoxSchema = z.object({
   label: z.string().min(1).max(128),
+  greeting: z.string().max(500).nullable().optional(),
 })
 
 export const updateBoxSchema = z.object({
   label: z.string().min(1).max(128).optional(),
+  greeting: z.string().max(500).nullable().optional(),
   isActive: z.boolean().optional(),
   expiresAt: z.string().datetime().nullable().optional(),
   maxMessages: z.number().int().positive().nullable().optional(),
@@ -53,6 +59,8 @@ export const updateBoxSchema = z.object({
 
 export const submitMessageSchema = z.object({
   ciphertext: z.string().min(1),
+  csrfToken: z.string().optional(),
+  turnstileToken: z.string().optional(),
   challenge: z.string().optional(),
   nonce: z.string().optional(),
   difficulty: z.number().int().positive().optional(),

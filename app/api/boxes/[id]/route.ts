@@ -24,6 +24,7 @@ export async function PATCH(
 
     const data: Record<string, unknown> = {}
     if (body.label !== undefined) data.label = body.label
+    if (body.greeting !== undefined) data.greeting = body.greeting
     if (body.isActive !== undefined) data.isActive = body.isActive
     if (body.expiresAt !== undefined) {
       data.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null
@@ -40,6 +41,7 @@ export async function PATCH(
       select: {
         id: true,
         label: true,
+        greeting: true,
         isActive: true,
         slug: true,
         expiresAt: true,

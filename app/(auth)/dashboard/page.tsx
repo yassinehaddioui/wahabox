@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -20,10 +21,12 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
+import { Mail, Pencil, Copy, RefreshCw } from 'lucide-react'
 
 type PoBox = {
   id: string
   label: string
+  greeting: string | null
   slug: string
   isActive: boolean
   expiresAt: string | null
@@ -31,6 +34,7 @@ type PoBox = {
   notify: boolean
   createdAt: string
   _count: { messages: number }
+  hasUnread: boolean
 }
 
 export default function DashboardPage() {
@@ -40,12 +44,19 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [editBox, setEditBox] = useState<PoBox | null>(null)
   const [editLabel, setEditLabel] = useState('')
+  const [editGreeting, setEditGreeting] = useState('')
+  const [rotateBox, setRotateBox] = useState<PoBox | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [now, setNow] = useState(Date.now())
 
   const fetchBoxes = useCallback(async () => {
     try {
       const res = await fetch('/api/boxes')
       const data = await res.json()
-      if (data.success) setBoxes(data.data)
+      if (data.success) {
+        setBoxes(data.data)
+        setLastUpdated(new Date())
+      }
     } catch {
       toast.error('Failed to load boxes')
     } finally {
@@ -54,6 +65,16 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => { fetchBoxes() }, [fetchBoxes])
+
+  useEffect(() => {
+    const interval = setInterval(fetchBoxes, 30_000)
+    return () => clearInterval(interval)
+  }, [fetchBoxes])
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   async function createBox(e: React.FormEvent) {
     e.preventDefault()
@@ -89,17 +110,40 @@ export default function DashboardPage() {
     }
   }
 
-  async function updateLabel() {
+  async function updateBox() {
     if (!editBox || !editLabel.trim()) return
+    const body: Record<string, unknown> = { label: editLabel }
+    if (editGreeting !== (editBox.greeting ?? '')) {
+      body.greeting = editGreeting || null
+    }
     const res = await fetch(`/api/boxes/${editBox.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ label: editLabel }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     if (data.success) {
-      toast.success('Box renamed')
+      toast.success('Box updated')
       setEditBox(null)
+      await fetchBoxes()
+    } else {
+      toast.error(data.error)
+    }
+  }
+
+  async function rotateSlug() {
+    if (!rotateBox) return
+    const res = await fetch(`/api/boxes/${rotateBox.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rotateSlug: true }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      const newLink = `${window.location.origin}/drop/${data.data.slug}`
+      navigator.clipboard.writeText(newLink)
+      toast.success('Link rotated & copied to clipboard')
+      setRotateBox(null)
       await fetchBoxes()
     } else {
       toast.error(data.error)
@@ -112,12 +156,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">My PO Boxes</h1>
         <p className="text-sm text-muted-foreground">
           Create and manage your encrypted drop boxes.
         </p>
+        {lastUpdated && (
+          <p className="mt-1 inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Updated {Math.floor((now - lastUpdated.getTime()) / 1000)}s ago
+          </p>
+        )}
       </div>
 
       <Card>
@@ -165,20 +215,22 @@ export default function DashboardPage() {
               {boxes.map((box) => (
                 <TableRow key={box.id}>
                   <TableCell className="font-medium">
-                    {box.label}
+                    <span className="inline-flex items-center gap-2">
+                      {box.hasUnread && (
+                        <span className="flex h-2 w-2 rounded-full bg-primary" />
+                      )}
+                      {box.label}
+                    </span>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                      <Button
-                        variant="link"
-                        size="xs"
-                        onClick={() => copyDropLink(box.slug)}
-                        className="text-xs font-mono text-muted-foreground hover:text-foreground"
-                      >
-                        /drop/{box.slug}
-                      </Button>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      /drop/{box.slug}
+                    </span>
                   </TableCell>
-                  <TableCell className="text-center text-sm text-muted-foreground">
-                    {box._count.messages}
+                  <TableCell className="text-center text-sm">
+                    <span className={box.hasUnread ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                      {box._count.messages}
+                    </span>
                   </TableCell>
                   <TableCell className="text-center">
                     <Switch
@@ -187,41 +239,97 @@ export default function DashboardPage() {
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center justify-end gap-0.5">
                       <Button
                         variant="ghost"
-                        size="sm"
-                        onClick={() => router.push(`/dashboard/${box.id}`)}
+                        size="icon-sm"
+                        onClick={() => copyDropLink(box.slug)}
+                        aria-label="Copy drop link"
                       >
-                        Messages
+                        <Copy className="h-3.5 w-3.5" />
                       </Button>
-                      <Dialog open={editBox?.id === box.id} onOpenChange={(open: boolean) => {
-                        if (!open) setEditBox(null)
+                      <Button
+                        variant={box.hasUnread ? 'default' : 'ghost'}
+                        size="icon-sm"
+                        onClick={() => router.push(`/dashboard/${box.id}`)}
+                        aria-label="View messages"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                      </Button>
+                      <Dialog open={rotateBox?.id === box.id} onOpenChange={(open: boolean) => {
+                        if (open) setRotateBox(box)
+                        else setRotateBox(null)
                       }}>
-                        <DialogTrigger render={<Button variant="ghost" size="sm" />}>
-                          Rename
+                        <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Rotate drop link" />}>
+                          <RefreshCw className="h-3.5 w-3.5" />
                         </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Rename Box</DialogTitle>
+                          <DialogTitle>Rotate Drop Link</DialogTitle>
                           <DialogDescription>
-                            Change the label for this PO box.
+                            This will generate a new sharing link for <strong>{box.label}</strong>.
+                            The old link will stop working immediately.
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-label">Label</Label>
-                          <Input
-                            id="edit-label"
-                            value={editLabel}
-                            onChange={(e) => setEditLabel(e.target.value)}
-                            maxLength={128}
-                          />
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setRotateBox(null)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={rotateSlug}>
+                            Rotate & Copy Link
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                      <Dialog open={editBox?.id === box.id} onOpenChange={(open: boolean) => {
+                        if (open) {
+                          setEditBox(box)
+                          setEditLabel(box.label)
+                          setEditGreeting(box.greeting ?? '')
+                        } else {
+                          setEditBox(null)
+                        }
+                      }}>
+                        <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Edit box" />}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Box</DialogTitle>
+                          <DialogDescription>
+                            Customize the label and greeting message for this PO box.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-label">Label</Label>
+                            <Input
+                              id="edit-label"
+                              value={editLabel}
+                              onChange={(e) => setEditLabel(e.target.value)}
+                              maxLength={128}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-greeting">Greeting (optional)</Label>
+                            <Textarea
+                              id="edit-greeting"
+                              value={editGreeting}
+                              onChange={(e) => setEditGreeting(e.target.value)}
+                              placeholder="Send an encrypted message to this PO Box. Your message is encrypted in your browser before being sent."
+                              className="min-h-20"
+                              maxLength={500}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              This message is shown to people who open your drop link. Leave blank to use the default.
+                            </p>
+                          </div>
                         </div>
                         <DialogFooter>
                           <Button variant="outline" onClick={() => setEditBox(null)}>
                             Cancel
                           </Button>
-                          <Button onClick={updateLabel}>Save</Button>
+                          <Button onClick={updateBox}>Save</Button>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>

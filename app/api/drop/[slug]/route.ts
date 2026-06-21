@@ -5,6 +5,8 @@ import { BadRequestError, NotFoundError, RateLimitError } from '@/lib/errors'
 import { notifyNewMessage } from '@/lib/notifications'
 import { checkDropRateLimit } from '@/lib/rate-limit'
 import { verifyPow, consumeChallenge } from '@/lib/pow'
+import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
+import { verifyTurnstile } from '@/lib/turnstile'
 import prisma from '@/lib/prisma'
 
 const MAX_CIPHERTEXT_SIZE = 10 * 1024
@@ -22,6 +24,7 @@ export async function GET(
       where: { slug },
       select: {
         label: true,
+        greeting: true,
         isActive: true,
         expiresAt: true,
         maxMessages: true,
@@ -41,6 +44,7 @@ export async function GET(
 
     return success({
       label: box.label,
+      greeting: box.greeting,
       publicKey: Buffer.from(box.owner.publicKey).toString('base64'),
     })
   } catch (err) {
@@ -64,6 +68,16 @@ export async function POST(
     }
 
     const body = await parseBody(request, submitMessageSchema)
+
+    const csrfValid = await verifyAndConsumeCsrfToken(slug, body.csrfToken ?? null)
+    if (!csrfValid) {
+      throw new BadRequestError('Invalid or expired CSRF token')
+    }
+
+    const turnstileVerified = await verifyTurnstile(body.turnstileToken ?? null, ip)
+    if (!turnstileVerified) {
+      throw new BadRequestError('CAPTCHA verification failed')
+    }
 
     if (body.challenge && body.nonce && body.difficulty) {
       const valid = verifyPow(body.challenge, body.nonce, body.difficulty)

@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         label: true,
+        greeting: true,
         slug: true,
         isActive: true,
         expiresAt: true,
@@ -27,10 +28,20 @@ export async function GET(request: NextRequest) {
         notify: true,
         createdAt: true,
         _count: { select: { messages: true } },
+        messages: {
+          where: { isRead: false },
+          select: { id: true },
+          take: 1,
+        },
       },
     })
 
-    return success(boxes)
+    return success(
+      boxes.map(({ messages: unreadMessages, ...box }) => ({
+        ...box,
+        hasUnread: unreadMessages.length > 0,
+      }))
+    )
   } catch (err) {
     return error(err)
   }
@@ -48,8 +59,9 @@ export async function POST(request: NextRequest) {
         ownerId: user.id,
         slug,
         label: body.label,
+        greeting: body.greeting ?? null,
       },
-      select: { id: true, slug: true, label: true },
+      select: { id: true, slug: true, label: true, greeting: true },
     })
 
     return success(box, 201)

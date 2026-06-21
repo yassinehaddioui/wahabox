@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { parseBody, recoveryStartSchema } from '@/lib/validation'
-import { NotFoundError, RateLimitError } from '@/lib/errors'
+import { BadRequestError, NotFoundError, RateLimitError } from '@/lib/errors'
+import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 import { checkAuthRateLimit, recordAuthFailure, clearFailures } from '@/lib/rate-limit'
 
@@ -21,6 +22,9 @@ function dummyTimingPath(username: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await parseBody(request, recoveryStartSchema)
+
+    const csrfValid = await verifyAndConsumeCsrfToken('recovery-start', body.csrfToken ?? null)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       ?? request.headers.get('x-real-ip')

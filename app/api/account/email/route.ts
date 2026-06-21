@@ -3,10 +3,46 @@ import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
 import { BadRequestError } from '@/lib/errors'
-import { encryptEmail } from '@/lib/email-crypto'
+import { encryptEmail, decryptEmail } from '@/lib/email-crypto'
 import { sendVerificationEmail } from '@/lib/email'
 import { getRedis } from '@/lib/redis'
 import prisma from '@/lib/prisma'
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@')
+  const maskedLocal = local.length <= 2
+    ? local[0] + '***'
+    : local[0] + '***' + local[local.length - 1]
+  return `${maskedLocal}@${domain}`
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getAuthUser(request)
+
+    const record = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { emailEncrypted: true, emailNonce: true, emailVerified: true },
+    })
+
+    if (!record?.emailEncrypted || !record?.emailNonce) {
+      return success({ hasEmail: false, isVerified: false })
+    }
+
+    const email = decryptEmail(
+      new Uint8Array(record.emailEncrypted),
+      new Uint8Array(record.emailNonce),
+    )
+
+    return success({
+      hasEmail: true,
+      isVerified: record.emailVerified,
+      maskedEmail: maskEmail(email),
+    })
+  } catch (err) {
+    return error(err)
+  }
+}
 
 export async function PUT(request: NextRequest) {
   try {
@@ -32,7 +68,7 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    const redis = getRedis()
+    const redis = await getRedis()
     await redis.set(
       `verify:${tokenHash}`,
       user.id,
@@ -42,8 +78,54 @@ export async function PUT(request: NextRequest) {
 
     try {
       await sendVerificationEmail(email, user.username, token)
-    } catch {
+    } catch (err) {
+      if (process.env.APP_MODE === 'development') {
+        console.error('[email] Failed to send verification email:', err)
+      }
       return success({ message: 'Email saved. Unable to send verification email.' })
+    }
+
+    return success({ message: 'Verification email sent.' })
+  } catch (err) {
+    return error(err)
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getAuthUser(request)
+
+    const record = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { emailEncrypted: true, emailNonce: true, emailVerified: true, username: true },
+    })
+
+    if (!record?.emailEncrypted || !record?.emailNonce) {
+      throw new BadRequestError('No email address is set')
+    }
+
+    if (record.emailVerified) {
+      return success({ message: 'Email is already verified' })
+    }
+
+    const email = decryptEmail(
+      new Uint8Array(record.emailEncrypted),
+      new Uint8Array(record.emailNonce),
+    )
+
+    const token = crypto.randomBytes(32).toString('hex')
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+
+    const redis = await getRedis()
+    await redis.set(`verify:${tokenHash}`, user.id, 'EX', 3600)
+
+    try {
+      await sendVerificationEmail(email, record.username, token)
+    } catch (err) {
+      if (process.env.APP_MODE === 'development') {
+        console.error('[email] Failed to send verification email:', err)
+      }
+      return success({ message: 'Unable to send verification email. Please try again.' })
     }
 
     return success({ message: 'Verification email sent.' })

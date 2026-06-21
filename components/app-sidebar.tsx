@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Settings } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +21,7 @@ import { useSession } from '@/lib/session-provider'
 
 const navItems = [
   { href: '/dashboard', label: 'PO Boxes' },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export function AppSidebar() {
@@ -47,6 +49,7 @@ export function AppSidebar() {
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton render={<Link href={item.href} />} isActive={pathname === item.href}>
+                  {item.icon && <item.icon className="mr-2 h-4 w-4" />}
                   {item.label}
                 </SidebarMenuButton>
               </SidebarMenuItem>

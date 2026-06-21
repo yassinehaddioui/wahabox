@@ -18,7 +18,7 @@ function deriveEmailKey(): Uint8Array {
 
 export function encryptEmail(email: string): { encrypted: Uint8Array; nonce: Uint8Array; keyVersion: number } {
   const key = deriveEmailKey()
-  const nonce = new Uint8Array(crypto.randomBytes(24))
+  const nonce = new Uint8Array(crypto.randomBytes(12))
   const cipher = crypto.createCipheriv('chacha20-poly1305', Buffer.from(key), Buffer.from(nonce), { authTagLength: 16 })
   const encrypted = new Uint8Array(Buffer.concat([cipher.update(email, 'utf-8'), cipher.final(), cipher.getAuthTag()]))
   return { encrypted, nonce, keyVersion: KEY_VERSION }

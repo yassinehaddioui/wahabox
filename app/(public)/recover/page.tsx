@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useCsrfToken } from '@/lib/use-csrf'
 
 export default function RecoverPage() {
   const router = useRouter()
+  const csrfToken = useCsrfToken('recovery-start')
   const [username, setUsername] = useState('')
   const [recoveryCode, setRecoveryCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -28,7 +30,7 @@ export default function RecoverPage() {
       const startRes = await fetch('/api/auth/recovery-start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username, csrfToken }),
       })
       const startData = await startRes.json()
       if (!startData.success) throw new Error('Invalid username or recovery code')
@@ -52,11 +54,16 @@ export default function RecoverPage() {
       const encPrivPw = crypto.wrapPrivateKey(privateKey, kekPw)
       const authVerifier = crypto.computeAuthVerifier(authKey, authSalt)
 
+      const completeCsrfRes = await fetch('/api/csrf?tag=recovery-complete')
+      const completeCsrfData = await completeCsrfRes.json()
+      const completeCsrfToken = completeCsrfData.success ? completeCsrfData.data.csrfToken : null
+
       const completeRes = await fetch('/api/auth/recovery-complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username,
+          csrfToken: completeCsrfToken,
           newAuthVerifier: crypto.toBase64(authVerifier),
           newAuthSalt: crypto.toBase64(authSalt),
           newEncPrivPw: crypto.toBase64(encPrivPw.ciphertext),

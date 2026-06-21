@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useCsrfToken } from '@/lib/use-csrf'
 
 export default function SignupPage() {
   const router = useRouter()
+  const csrfToken = useCsrfToken('signup')
   const [step, setStep] = useState<'form' | 'recovery' | 'confirm' | 'done'>('form')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -79,6 +81,7 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: sessionStorage.getItem('signup:username'),
+          csrfToken,
           authVerifier: sessionStorage.getItem('signup:authVerifier'),
           authSalt: sessionStorage.getItem('signup:authSalt'),
           publicKey: sessionStorage.getItem('signup:publicKey'),
