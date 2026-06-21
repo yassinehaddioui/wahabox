@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                   String     @id @default(uuid()) @db.Uuid
+  username             String     @unique
+  authVerifier         Bytes
+  authSalt             Bytes
+  publicKey            Bytes
+  encPrivPw            Bytes
+  pwKdfSalt            Bytes
+  pwNonce              Bytes
+  encPrivRec           Bytes
+  recKdfSalt           Bytes
+  recNonce             Bytes
+  keyVersion           Int        @default(1)
+  emailEncrypted       Bytes?
+  emailNonce           Bytes?
+  emailKeyVersion      Int?
+  emailVerified        Boolean    @default(false)
+  notificationsEnabled Boolean    @default(true)
+  recoveryCodeCreatedAt DateTime?
+  createdAt            DateTime   @default(now())
+
+  poBoxes PoBox[]
+
+  @@map("users")
+}
+
+model PoBox {
+  id          String    @id @default(uuid()) @db.Uuid
+  ownerId     String    @map("owner_id") @db.Uuid
+  slug        String    @unique
+  label       String
+  isActive    Boolean   @default(true) @map("is_active")
+  expiresAt   DateTime? @map("expires_at")
+  maxMessages Int?      @map("max_messages")
+  notify      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("po_boxes")
+}
+
+model Message {
+  id        String   @id @default(uuid()) @db.Uuid
+  poBoxId   String   @map("po_box_id") @db.Uuid
+  ciphertext Bytes
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  poBox PoBox @relation(fields: [poBoxId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
