@@ -12,6 +12,14 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 const AUTO_DECRYPT_KEY = 'wahabox:autoDecrypt'
 
@@ -30,6 +38,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [decrypted, setDecrypted] = useState<Set<string>>(new Set())
   const [autoDecrypt, setAutoDecrypt] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -170,6 +179,7 @@ export default function MessagesPage() {
     } else {
       toast.error('Failed to delete message')
     }
+    setDeleteTarget(null)
   }
 
   const unreadCount = messages.filter((m) => !m.isRead).length
@@ -247,7 +257,7 @@ export default function MessagesPage() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    onClick={() => deleteMessage(msg.id)}
+                    onClick={() => setDeleteTarget(msg.id)}
                     className="text-destructive hover:text-destructive"
                     aria-label="Delete message"
                   >
@@ -264,6 +274,28 @@ export default function MessagesPage() {
           </Card>
         ))
       )}
+
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Delete message</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this message? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteTarget && deleteMessage(deleteTarget)}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

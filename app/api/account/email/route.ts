@@ -63,7 +63,7 @@ export async function PUT(request: NextRequest) {
       throw new RateLimitError('Too many requests. Try again later.')
     }
 
-    const { email, csrfToken } = await request.json() as { email?: string; csrfToken?: string }
+    const { email, csrfToken } = await request.json().catch(() => ({})) as { email?: string; csrfToken?: string }
     const csrfValid = await verifyAndConsumeCsrfToken('email-set', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
@@ -195,7 +195,7 @@ export async function DELETE(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
-    const { notificationsEnabled, csrfToken } = await request.json() as { notificationsEnabled?: boolean; csrfToken?: string }
+    const { notificationsEnabled, csrfToken } = await request.json().catch(() => ({})) as { notificationsEnabled?: boolean; csrfToken?: string }
 
     const csrfValid = await verifyAndConsumeCsrfToken('email-notifications', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')

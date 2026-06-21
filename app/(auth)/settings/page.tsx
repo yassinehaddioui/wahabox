@@ -126,10 +126,11 @@ export default function SettingsPage() {
 
     setSaving(true)
     try {
+      const csrfToken = await fetchCsrfToken('email-set')
       const res = await fetch('/api/account/email', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, csrfToken }),
       })
       const data = await res.json()
       if (data.success) {
@@ -149,7 +150,12 @@ export default function SettingsPage() {
   async function handleResend() {
     setResending(true)
     try {
-      const res = await fetch('/api/account/email', { method: 'POST' })
+      const csrfToken = await fetchCsrfToken('email-resend')
+      const res = await fetch('/api/account/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csrfToken }),
+      })
       const data = await res.json()
       if (data.success) {
         toast.success(data.data.message)
@@ -166,7 +172,12 @@ export default function SettingsPage() {
   async function handleRemove() {
     setRemoving(true)
     try {
-      const res = await fetch('/api/account/email', { method: 'DELETE' })
+      const csrfToken = await fetchCsrfToken('email-delete')
+      const res = await fetch('/api/account/email', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csrfToken }),
+      })
       const data = await res.json()
       if (data.success) {
         toast.success('Email removed')
@@ -184,10 +195,11 @@ export default function SettingsPage() {
   async function handleToggleNotifications(enabled: boolean) {
     setToggling(true)
     try {
+      const csrfToken = await fetchCsrfToken('email-notifications')
       const res = await fetch('/api/account/email', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationsEnabled: enabled }),
+        body: JSON.stringify({ notificationsEnabled: enabled, csrfToken }),
       })
       const data = await res.json()
       if (data.success) {
