@@ -33,8 +33,10 @@ export async function POST(request: NextRequest) {
       return success({ pwKdfSalt: dummySalt(), authSalt: dummySalt() })
     }
 
+    const normalized = username.toLowerCase()
+
     const user = await prisma.user.findUnique({
-      where: { username },
+      where: { username: normalized },
       select: { pwKdfSalt: true, authSalt: true },
     })
 

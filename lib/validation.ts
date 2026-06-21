@@ -6,6 +6,7 @@ export const usernameSchema = z
   .min(3)
   .max(32)
   .regex(/^[a-zA-Z0-9_]+$/, 'Username must be alphanumeric')
+  .transform((u) => u.toLowerCase())
 
 export const signupSchema = z.object({
   username: usernameSchema,
