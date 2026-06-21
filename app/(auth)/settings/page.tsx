@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { useCsrfToken } from '@/lib/use-csrf'
 import { CheckCircle, XCircle, Loader2, Shield, Smartphone, Key, Copy, Trash2, KeyRound } from 'lucide-react'
 
 type EmailStatus = {
@@ -49,6 +48,12 @@ type TotpSetup = {
   secret: string
 }
 
+async function fetchCsrfToken(tag: string): Promise<string | null> {
+  const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
+  const data = await res.json()
+  return data.success ? data.data.csrfToken : null
+}
+
 export default function SettingsPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -71,7 +76,6 @@ export default function SettingsPage() {
   const [passkeyDeviceName, setPasskeyDeviceName] = useState('')
   const [registeringPasskey, setRegisteringPasskey] = useState(false)
 
-  const passwordCsrfToken = useCsrfToken('password-change')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -355,6 +359,8 @@ export default function SettingsPage() {
       const newEncPrivPw = crypto.wrapPrivateKey(privateKey, newKekPw)
       const newAuthVerifier = crypto.computeAuthVerifier(newAuthKey, newAuthSalt)
 
+      const csrfToken = await fetchCsrfToken('password-change')
+
       const res = await fetch('/api/account/password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -365,7 +371,7 @@ export default function SettingsPage() {
           newEncPrivPw: crypto.toBase64(newEncPrivPw.ciphertext),
           newPwKdfSalt: crypto.toBase64(newPwKdfSalt),
           newPwNonce: crypto.toBase64(newEncPrivPw.nonce),
-          csrfToken: passwordCsrfToken,
+          csrfToken,
         }),
       })
       const data = await res.json()

@@ -6,11 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useCsrfToken } from '@/lib/use-csrf'
+
+async function fetchCsrfToken(tag: string): Promise<string | null> {
+  const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
+  const data = await res.json()
+  return data.success ? data.data.csrfToken : null
+}
 
 export default function RecoverPage() {
   const router = useRouter()
-  const csrfToken = useCsrfToken('recovery-start')
   const [username, setUsername] = useState('')
   const [recoveryCode, setRecoveryCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -26,6 +30,8 @@ export default function RecoverPage() {
     try {
       const { crypto } = await import('@/lib/crypto')
       await crypto.ready
+
+      const csrfToken = await fetchCsrfToken('recovery-start')
 
       const startRes = await fetch('/api/auth/recovery-start', {
         method: 'POST',

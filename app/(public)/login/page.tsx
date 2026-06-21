@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,8 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TurnstileWidget } from '@/components/turnstile-widget'
-import { useCsrfToken } from '@/lib/use-csrf'
 import { CheckCircle, Loader2 } from 'lucide-react'
+
+async function fetchCsrfToken(tag: string): Promise<string | null> {
+  const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
+  const data = await res.json()
+  return data.success ? data.data.csrfToken : null
+}
 
 type Step = 'login' | 'mfa' | 'recovery'
 
@@ -25,14 +30,13 @@ type MfaState = {
 
 export default function LoginPage() {
   const router = useRouter()
-  const csrfToken = useCsrfToken('login')
   const [checking, setChecking] = useState(true)
   const [step, setStep] = useState<Step>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [masterKey, setMasterKey] = useState<Uint8Array | null>(null)
+  const masterKeyRef = useRef<Uint8Array | null>(null)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [needsTurnstile, setNeedsTurnstile] = useState(false)
 
@@ -74,15 +78,13 @@ export default function LoginPage() {
     return null
   }
 
-  async function finishLogin(loginData: { encPrivPw: string; pwNonce: string; publicKey: string }) {
-    if (!masterKey) return
-
+  async function finishLogin(mk: Uint8Array, loginData: { encPrivPw: string; pwNonce: string; publicKey: string }) {
     const { crypto } = await import('@/lib/crypto')
     await crypto.ready
 
     const encPrivPw = crypto.fromBase64(loginData.encPrivPw)
     const pwNonce = crypto.fromBase64(loginData.pwNonce)
-    const { kekPw } = crypto.splitMasterKey(masterKey)
+    const { kekPw } = crypto.splitMasterKey(mk)
     const privateKey = crypto.unwrapPrivateKey(encPrivPw, pwNonce, kekPw)
 
     sessionStorage.setItem('session:privateKey', crypto.toBase64(privateKey))
@@ -112,10 +114,12 @@ export default function LoginPage() {
       const authSalt = crypto.fromBase64(saltData.data.authSalt)
 
       const mk = crypto.deriveMasterKey(password, pwKdfSalt)
-      setMasterKey(mk)
+      masterKeyRef.current = mk
 
       const { authKey } = crypto.splitMasterKey(mk)
       const authVerifier = crypto.computeAuthVerifier(authKey, authSalt)
+
+      const csrfToken = await fetchCsrfToken('login')
 
       const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
@@ -147,7 +151,7 @@ export default function LoginPage() {
         throw new Error(loginData.error ?? 'Invalid credentials')
       }
 
-      await finishLogin(loginData.data)
+      await finishLogin(mk, loginData.data)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed'
       setError(message)
@@ -208,7 +212,7 @@ export default function LoginPage() {
 
       if (data.success) {
         if (data.data.mfaComplete) {
-          await finishLogin(data.data)
+          await finishLogin(masterKeyRef.current!, data.data)
           return
         }
         setMfa((prev) => ({
@@ -254,7 +258,7 @@ export default function LoginPage() {
 
       if (data.success) {
         if (data.data.mfaComplete) {
-          await finishLogin(data.data)
+          await finishLogin(masterKeyRef.current!, data.data)
           return
         }
         setMfa((prev) => ({
@@ -312,7 +316,7 @@ export default function LoginPage() {
 
           if (verifyData.success) {
             if (verifyData.data.mfaComplete) {
-              await finishLogin(verifyData.data)
+              await finishLogin(masterKeyRef.current!, verifyData.data)
               return
             }
             setMfa((prev) => ({
@@ -355,7 +359,7 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (data.success) {
-        await finishLogin(data.data)
+        await finishLogin(masterKeyRef.current!, data.data)
       } else {
         setError(data.error ?? 'Invalid recovery code')
       }
