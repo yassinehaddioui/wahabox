@@ -2,11 +2,13 @@ import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
-import { BadRequestError } from '@/lib/errors'
+import { BadRequestError, RateLimitError } from '@/lib/errors'
+import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { encryptEmail, decryptEmail } from '@/lib/email-crypto'
 import { sendVerificationEmail } from '@/lib/email'
 import { getRedis } from '@/lib/redis'
 import prisma from '@/lib/prisma'
+import { checkIpRate, checkUserRate, checkGlobalRate } from '@/lib/rate-limit'
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split('@')
@@ -45,10 +47,26 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const EMAIL_WINDOW = { windowMs: 300_000, max: 3 }
+
 export async function PUT(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
-    const { email } = await request.json() as { email?: string }
+
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      ?? request.headers.get('x-real-ip')
+      ?? 'unknown'
+
+    if (await checkIpRate(`email:${ip}`, EMAIL_WINDOW) ||
+        await checkUserRate(user.username, EMAIL_WINDOW) ||
+        await checkGlobalRate()) {
+      throw new RateLimitError('Too many requests. Try again later.')
+    }
+
+    const { email, csrfToken } = await request.json() as { email?: string; csrfToken?: string }
+    const sessionId = request.cookies.get('session')?.value
+    const csrfValid = await verifyAndConsumeCsrfToken('email-set', csrfToken ?? null, sessionId)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       throw new BadRequestError('Invalid email address')
@@ -97,6 +115,21 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
 
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      ?? request.headers.get('x-real-ip')
+      ?? 'unknown'
+
+    if (await checkIpRate(`email:${ip}`, EMAIL_WINDOW) ||
+        await checkUserRate(user.username, EMAIL_WINDOW) ||
+        await checkGlobalRate()) {
+      throw new RateLimitError('Too many requests. Try again later.')
+    }
+
+    const { csrfToken } = await request.json().catch(() => ({})) as { csrfToken?: string }
+    const sessionId = request.cookies.get('session')?.value
+    const csrfValid = await verifyAndConsumeCsrfToken('email-resend', csrfToken ?? null, sessionId)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
+
     const record = await prisma.user.findUnique({
       where: { id: user.id },
       select: { emailEncrypted: true, emailNonce: true, emailVerified: true, username: true },
@@ -141,6 +174,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
 
+    const { csrfToken } = await request.json().catch(() => ({})) as { csrfToken?: string }
+    const sessionId = request.cookies.get('session')?.value
+    const csrfValid = await verifyAndConsumeCsrfToken('email-delete', csrfToken ?? null, sessionId)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -160,7 +198,11 @@ export async function DELETE(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
-    const { notificationsEnabled } = await request.json() as { notificationsEnabled?: boolean }
+    const { notificationsEnabled, csrfToken } = await request.json() as { notificationsEnabled?: boolean; csrfToken?: string }
+
+    const sessionId = request.cookies.get('session')?.value
+    const csrfValid = await verifyAndConsumeCsrfToken('email-notifications', csrfToken ?? null, sessionId)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     if (typeof notificationsEnabled !== 'boolean') {
       throw new BadRequestError('notificationsEnabled must be a boolean')

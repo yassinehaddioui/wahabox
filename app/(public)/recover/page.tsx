@@ -39,18 +39,34 @@ export default function RecoverPage() {
         body: JSON.stringify({ username, csrfToken }),
       })
       const startData = await startRes.json()
-      if (!startData.success) throw new Error('Invalid username or recovery code')
+      if (!startData.success) throw new Error(startData.error || 'Invalid username or recovery code')
 
-      const recKdfSalt = crypto.fromBase64(startData.data.recKdfSalt)
-      const kekRec = crypto.deriveRecoveryKey(recoveryCode, recKdfSalt)
+      const { encPrivRec, recKdfSalt, recNonce, publicKey, sealedChallenge, recoveryToken } = startData.data
+
+      const recKdfSaltBytes = crypto.fromBase64(recKdfSalt)
+      const kekRec = crypto.deriveRecoveryKey(recoveryCode, recKdfSaltBytes)
 
       let privateKey: Uint8Array
       try {
-        const encPrivRec = crypto.fromBase64(startData.data.encPrivRec)
-        const recNonce = crypto.fromBase64(startData.data.recNonce)
-        privateKey = crypto.unwrapPrivateKey(encPrivRec, recNonce, kekRec)
+        const encPrivRecBytes = crypto.fromBase64(encPrivRec)
+        const recNonceBytes = crypto.fromBase64(recNonce)
+        privateKey = crypto.unwrapPrivateKey(encPrivRecBytes, recNonceBytes, kekRec)
       } catch {
         throw new Error('Invalid recovery code')
+      }
+
+      const publicKeyBytes = crypto.fromBase64(publicKey)
+      const sealedBytes = crypto.fromBase64(sealedChallenge)
+      let decryptedChallenge: string
+      try {
+        const decrypted = crypto.openSealed(
+          sealedBytes,
+          publicKeyBytes,
+          privateKey,
+        )
+        decryptedChallenge = crypto.toBase64(decrypted)
+      } catch {
+        throw new Error('Recovery code does not match this account')
       }
 
       const pwKdfSalt = crypto.randomBytes(16)
@@ -70,6 +86,8 @@ export default function RecoverPage() {
         body: JSON.stringify({
           username,
           csrfToken: completeCsrfToken,
+          recoveryToken,
+          decryptedChallenge,
           newAuthVerifier: crypto.toBase64(authVerifier),
           newAuthSalt: crypto.toBase64(authSalt),
           newEncPrivPw: crypto.toBase64(encPrivPw.ciphertext),

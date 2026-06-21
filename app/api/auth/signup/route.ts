@@ -36,27 +36,28 @@ export async function POST(request: NextRequest) {
       throw new BadRequestError('CAPTCHA verification failed')
     }
 
-    const existing = await prisma.user.findUnique({
-      where: { username: body.username },
-    })
-    if (existing) {
-      throw new ConflictError('Username already taken')
+    try {
+      await prisma.user.create({
+        data: {
+          username: body.username,
+          authVerifier: b64(body.authVerifier),
+          authSalt: b64(body.authSalt),
+          publicKey: b64(body.publicKey),
+          encPrivPw: b64(body.encPrivPw),
+          pwKdfSalt: b64(body.pwKdfSalt),
+          pwNonce: b64(body.pwNonce),
+          encPrivRec: b64(body.encPrivRec),
+          recKdfSalt: b64(body.recKdfSalt),
+          recNonce: b64(body.recNonce),
+        },
+      })
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code
+      if (code === 'P2002') {
+        throw new ConflictError('Registration failed')
+      }
+      throw err
     }
-
-    await prisma.user.create({
-      data: {
-        username: body.username,
-        authVerifier: b64(body.authVerifier),
-        authSalt: b64(body.authSalt),
-        publicKey: b64(body.publicKey),
-        encPrivPw: b64(body.encPrivPw),
-        pwKdfSalt: b64(body.pwKdfSalt),
-        pwNonce: b64(body.pwNonce),
-        encPrivRec: b64(body.encPrivRec),
-        recKdfSalt: b64(body.recKdfSalt),
-        recNonce: b64(body.recNonce),
-      },
-    })
 
     return success({ username: body.username }, 201)
   } catch (err) {

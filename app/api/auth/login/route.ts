@@ -8,7 +8,6 @@ import prisma from '@/lib/prisma'
 import { createSession, setSessionCookie } from '@/lib/session'
 import { checkAuthRateLimit, getFailureCount, recordAuthFailure, clearFailures } from '@/lib/rate-limit'
 import { getRedis } from '@/lib/redis'
-import { decryptEmail } from '@/lib/email-crypto'
 import { verifyTurnstile } from '@/lib/turnstile'
 
 const HASH_BYTES = 32
@@ -128,7 +127,7 @@ export async function POST(request: NextRequest) {
       throw new MfaRequiredError('MFA required', mfaToken, methods)
     }
 
-    const token = createSession(user.id, user.username)
+    const token = await createSession(user.id, user.username)
     await setSessionCookie(token)
 
     return success({

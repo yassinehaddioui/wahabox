@@ -23,6 +23,11 @@ export function validateEnv(): void {
       throw new Error(`Missing required environment variable: ${key}`)
     }
   }
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'dev-session-secret-change-in-production') {
+      throw new Error('SESSION_SECRET must be set to a unique value in production')
+    }
+  }
 }
 
 export default ENV

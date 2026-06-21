@@ -89,8 +89,8 @@ export async function POST(
       throw new BadRequestError('CAPTCHA verification failed')
     }
 
-    if (body.challenge && body.nonce && body.difficulty) {
-      const valid = verifyPow(body.challenge, body.nonce, body.difficulty)
+    if (body.challenge && body.nonce) {
+      const valid = verifyPow(body.challenge, body.nonce)
       const consumed = await consumeChallenge(body.challenge)
       if (!valid || !consumed) {
         throw new BadRequestError('Invalid proof of work')

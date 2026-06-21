@@ -3,10 +3,11 @@ import ENV from './env'
 
 let clientPromise: Promise<Redis> | null = null
 let enabled = true
+let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 
 export async function getRedis(): Promise<Redis> {
   if (!enabled) {
-    throw new Error('Redis is disabled (connection failed)')
+    throw new Error('Redis is disabled')
   }
   if (!clientPromise) {
     const redis = new Redis(ENV.REDIS_URL, {
@@ -20,6 +21,12 @@ export async function getRedis(): Promise<Redis> {
     redis.on('error', () => {
       enabled = false
       clientPromise = null
+      if (!reconnectTimeout) {
+        reconnectTimeout = setTimeout(() => {
+          reconnectTimeout = null
+          enabled = true
+        }, 30_000)
+      }
     })
     clientPromise = redis.connect().then(() => redis)
   }
@@ -36,6 +43,10 @@ export async function withRedis<T>(fn: (redis: Redis) => Promise<T>, fallback: T
 }
 
 export async function closeRedis(): Promise<void> {
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout)
+    reconnectTimeout = null
+  }
   if (clientPromise) {
     const redis = await clientPromise
     await redis.quit()

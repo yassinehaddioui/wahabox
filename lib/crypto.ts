@@ -91,7 +91,7 @@ export const crypto = {
   },
 
   /**
-   * Generate a user-facing recovery code: 16 random bytes → grouped Base32URL.
+   * Generate a user-facing recovery code: 16 random bytes → grouped Base64URL.
    */
   generateRecoveryCode(): string {
     const bytes = sodium.randombytes_buf(16)
@@ -117,6 +117,17 @@ export const crypto = {
   ): string {
     const ptBytes = sodium.crypto_box_seal_open(ciphertext, publicKey, privateKey)
     return new TextDecoder().decode(ptBytes)
+  },
+
+  /**
+   * Decrypt a ciphertext sealed for the given keypair, returning raw bytes.
+   */
+  openSealed(
+    ciphertext: Uint8Array,
+    publicKey: Uint8Array,
+    privateKey: Uint8Array,
+  ): Uint8Array {
+    return sodium.crypto_box_seal_open(ciphertext, publicKey, privateKey)
   },
 
   /**

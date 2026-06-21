@@ -22,9 +22,9 @@ export async function storeChallenge(challenge: string): Promise<void> {
   }, undefined)
 }
 
-export function verifyPow(challenge: string, nonce: string, difficulty: number): boolean {
+export function verifyPow(challenge: string, nonce: string): boolean {
   const hash = crypto.createHash('sha256').update(challenge + nonce).digest()
-  const bitsNeeded = Math.ceil(difficulty / 4)
+  const difficulty = DEFAULT_DIFFICULTY
   const fullBytes = Math.floor(difficulty / 8)
   const remainder = difficulty % 8
 

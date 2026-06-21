@@ -75,11 +75,16 @@ export function generateRecoveryCodes(): {
   const plain: string[] = []
   const hashed: string[] = []
 
+  const charsetLength = RECOVERY_CODE_CHARSET.length
+  const maxValid = 256 - (256 % charsetLength)
+
   for (let i = 0; i < RECOVERY_CODES_COUNT; i++) {
     let code = ''
-    const bytes = crypto.randomBytes(RECOVERY_CODE_LENGTH)
+    const bytes = crypto.randomBytes(RECOVERY_CODE_LENGTH * 2)
+    let byteIdx = 0
     for (let j = 0; j < RECOVERY_CODE_LENGTH; j++) {
-      code += RECOVERY_CODE_CHARSET[bytes[j] % RECOVERY_CODE_CHARSET.length]
+      while (byteIdx < bytes.length && bytes[byteIdx] >= maxValid) byteIdx++
+      code += RECOVERY_CODE_CHARSET[bytes[byteIdx++] % charsetLength]
     }
     const grouped = code.match(new RegExp(`.{1,${RECOVERY_CODE_GROUP}}`, 'g'))!.join('-')
     plain.push(grouped)
@@ -98,9 +103,12 @@ export function verifyRecoveryCode(code: string, hashedCodes: string[]): boolean
 
 export function generateMfaCode(): string {
   const digits: string[] = []
-  const bytes = crypto.randomBytes(6)
+  const maxValid = 256 - (256 % 10)
+  const bytes = crypto.randomBytes(12)
+  let byteIdx = 0
   for (let i = 0; i < 6; i++) {
-    digits.push(String(bytes[i] % 10))
+    while (byteIdx < bytes.length && bytes[byteIdx] >= maxValid) byteIdx++
+    digits.push(String(bytes[byteIdx++] % 10))
   }
   return digits.join('')
 }

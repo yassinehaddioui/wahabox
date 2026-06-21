@@ -19,6 +19,7 @@ model User {
   recKdfSalt           Bytes
   recNonce             Bytes
   keyVersion           Int        @default(1)
+  tokenVersion         Int        @default(0)
   emailEncrypted       Bytes?
   emailNonce           Bytes?
   emailKeyVersion      Int?
@@ -67,6 +68,7 @@ model Message {
 
   poBox PoBox @relation(fields: [poBoxId], references: [id], onDelete: Cascade)
 
+  @@index([poBoxId, createdAt])
   @@map("messages")
 }
 

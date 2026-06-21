@@ -1,10 +1,12 @@
 import { NextRequest } from 'next/server'
+import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { parseBody, recoveryCompleteSchema } from '@/lib/validation'
 import { BadRequestError, NotFoundError, RateLimitError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
+import { getRedis } from '@/lib/redis'
 import prisma from '@/lib/prisma'
-import { checkIpRate, checkUserRate, checkGlobalRate } from '@/lib/rate-limit'
+import { checkIpRate, checkUserRate, checkGlobalRate, clearFailures } from '@/lib/rate-limit'
 
 function b64(s: string) {
   return Buffer.from(s, 'base64')
@@ -37,7 +39,24 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      throw new NotFoundError('User not found')
+      throw new NotFoundError('Not found')
+    }
+
+    const redis = await getRedis()
+    const challengeKey = `recovery:challenge:${body.recoveryToken}`
+    const storedChallenge = await redis.getdel(challengeKey)
+
+    if (!storedChallenge) {
+      throw new BadRequestError('Invalid or expired recovery token')
+    }
+
+    if (
+      !crypto.timingSafeEqual(
+        Buffer.from(body.decryptedChallenge, 'base64'),
+        Buffer.from(storedChallenge, 'base64'),
+      )
+    ) {
+      throw new BadRequestError('Recovery challenge verification failed')
     }
 
     await prisma.user.update({
@@ -48,8 +67,11 @@ export async function POST(request: NextRequest) {
         encPrivPw: b64(body.newEncPrivPw),
         pwKdfSalt: b64(body.newPwKdfSalt),
         pwNonce: b64(body.newPwNonce),
+        tokenVersion: { increment: 1 },
       },
     })
+
+    await clearFailures(body.username)
 
     return success({ message: 'Password updated' })
   } catch (err) {

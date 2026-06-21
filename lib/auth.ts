@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { UnauthorizedError } from './errors'
-import { getSession } from './session'
+import { validateSession } from './session'
 
 export type AuthUser = {
   id: string
@@ -13,7 +13,7 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser> {
     throw new UnauthorizedError('No session token')
   }
 
-  const session = getSession(sessionToken)
+  const session = await validateSession(sessionToken)
   if (!session) {
     throw new UnauthorizedError('Invalid or expired session')
   }

@@ -10,8 +10,8 @@ export const usernameSchema = z
 
 export const signupSchema = z.object({
   username: usernameSchema,
-  csrfToken: z.string().optional(),
-  turnstileToken: z.string().optional(),
+  csrfToken: z.string().nullish(),
+  turnstileToken: z.string().nullish(),
   authVerifier: z.string().min(1),
   authSalt: z.string().min(1),
   publicKey: z.string().min(1),
@@ -25,19 +25,21 @@ export const signupSchema = z.object({
 
 export const loginSchema = z.object({
   username: usernameSchema,
-  csrfToken: z.string().optional(),
-  turnstileToken: z.string().optional(),
+  csrfToken: z.string().nullish(),
+  turnstileToken: z.string().nullish(),
   authVerifier: z.string().min(1),
 })
 
 export const recoveryStartSchema = z.object({
   username: usernameSchema,
-  csrfToken: z.string().optional(),
+  csrfToken: z.string().nullish(),
 })
 
 export const recoveryCompleteSchema = z.object({
   username: usernameSchema,
-  csrfToken: z.string().optional(),
+  csrfToken: z.string().nullish(),
+  recoveryToken: z.string().min(1),
+  decryptedChallenge: z.string().min(1),
   newAuthVerifier: z.string().min(1),
   newAuthSalt: z.string().min(1),
   newEncPrivPw: z.string().min(1),
@@ -48,7 +50,7 @@ export const recoveryCompleteSchema = z.object({
 export const createBoxSchema = z.object({
   label: z.string().min(1).max(128),
   greeting: z.string().max(500).nullable().optional(),
-  csrfToken: z.string().optional(),
+  csrfToken: z.string().nullish(),
 })
 
 export const updateBoxSchema = z.object({
@@ -59,17 +61,16 @@ export const updateBoxSchema = z.object({
   maxMessages: z.number().int().positive().nullable().optional(),
   notify: z.boolean().optional(),
   rotateSlug: z.boolean().optional(),
-  csrfToken: z.string().optional(),
+  csrfToken: z.string().nullish(),
 })
 
 export const submitMessageSchema = z.object({
-  ciphertext: z.string().min(1),
-  csrfToken: z.string().optional(),
-  turnstileToken: z.string().optional(),
-  challenge: z.string().optional(),
-  nonce: z.string().optional(),
-  difficulty: z.number().int().positive().optional(),
-  honeypot: z.string().max(0, 'Bot detected').optional(),
+  ciphertext: z.string().min(1).max(200_000),
+  csrfToken: z.string().nullish(),
+  turnstileToken: z.string().nullish(),
+  challenge: z.string().nullish(),
+  nonce: z.string().nullish(),
+  honeypot: z.string().max(0, 'Bot detected').nullish(),
 })
 
 export const mfaSendEmailSchema = z.object({
@@ -79,7 +80,7 @@ export const mfaSendEmailSchema = z.object({
 export const mfaVerifySchema = z.object({
   mfaToken: z.string().min(1),
   method: z.enum(['email', 'totp', 'passkey']),
-  code: z.string().optional(),
+  code: z.string().nullish(),
   assertion: z.any().optional(),
 })
 
@@ -91,8 +92,8 @@ export const mfaRecoverSchema = z.object({
 export const mfaManageSchema = z.object({
   method: z.enum(['email', 'totp', 'passkey']),
   action: z.enum(['enable', 'disable', 'setup', 'confirm']),
-  code: z.string().optional(),
-  password: z.string().optional(),
+  code: z.string().nullish(),
+  password: z.string().nullish(),
   attestation: z.any().optional(),
 })
 
@@ -107,8 +108,6 @@ export async function parseBody<T extends z.ZodType>(
     throw new BadRequestError('Invalid JSON body')
   }
 
-  body = stripNulls(body)
-
   const result = schema.safeParse(body)
   if (!result.success) {
     throw new BadRequestError(result.error.issues[0]?.message ?? 'Validation failed')
@@ -117,15 +116,3 @@ export async function parseBody<T extends z.ZodType>(
   return result.data
 }
 
-function stripNulls(value: unknown): unknown {
-  if (value === null || value === undefined) return value
-  if (Array.isArray(value)) return value.map(stripNulls)
-  if (typeof value === 'object') {
-    const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (v !== null) out[k] = stripNulls(v)
-    }
-    return out
-  }
-  return value
-}

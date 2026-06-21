@@ -32,9 +32,9 @@ export function error(err: unknown): NextResponse<ErrorResponse> {
     )
   }
 
-  const message = err instanceof Error ? err.message : 'Internal server error'
+  console.error('[internal]', err)
   return NextResponse.json(
-    { success: false as const, error: message },
+    { success: false as const, error: 'Internal server error' },
     { status: 500 },
   )
 }

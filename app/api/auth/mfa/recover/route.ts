@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     await redis.del(`mfa:${body.mfaToken}`)
 
-    const token = createSession(user.id, user.username)
+    const token = await createSession(user.id, user.username)
     await setSessionCookie(token)
 
     return success({

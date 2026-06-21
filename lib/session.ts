@@ -1,9 +1,11 @@
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
+import prisma from '@/lib/prisma'
 
 type SessionData = {
   userId: string
   username: string
+  tokenVersion: number
   createdAt: number
 }
 
@@ -16,8 +18,13 @@ function sign(data: string): string {
   return crypto.createHmac('sha256', secret).update(data).digest('base64')
 }
 
-export function createSession(userId: string, username: string): string {
-  const payload: SessionData = { userId, username, createdAt: Date.now() }
+export async function createSession(userId: string, username: string): Promise<string> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { tokenVersion: true },
+  })
+  const tokenVersion = user?.tokenVersion ?? 0
+  const payload: SessionData = { userId, username, tokenVersion, createdAt: Date.now() }
   const json = JSON.stringify(payload)
   const encoded = Buffer.from(json).toString('base64')
   const signature = sign(encoded)
@@ -32,7 +39,16 @@ export function getSession(token: string): SessionData | undefined {
     const encoded = token.slice(0, dot)
     const signature = token.slice(dot + 1)
 
-    if (sign(encoded) !== signature) return undefined
+    const expected = sign(encoded)
+    if (signature.length !== expected.length) return undefined
+
+    try {
+      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+        return undefined
+      }
+    } catch {
+      return undefined
+    }
 
     const json = Buffer.from(encoded, 'base64').toString('utf-8')
     const session = JSON.parse(json) as SessionData
@@ -51,8 +67,22 @@ export function getSession(token: string): SessionData | undefined {
   }
 }
 
-export function destroySession(_token: string): void {
-  // stateless — cookie is cleared via clearSessionCookie
+export async function validateSession(token: string): Promise<SessionData | undefined> {
+  const session = await getSession(token)
+  if (!session) return undefined
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { tokenVersion: true },
+  })
+  if (!user || user.tokenVersion !== session.tokenVersion) {
+    return undefined
+  }
+
+  return session
+}
+
+export async function destroySession(): Promise<void> {
 }
 
 export async function setSessionCookie(token: string): Promise<void> {
@@ -71,6 +101,3 @@ export async function clearSessionCookie(): Promise<void> {
   cookieStore.delete(SESSION_COOKIE)
 }
 
-export function validateToken(token: string): SessionData | undefined {
-  return getSession(token)
-}

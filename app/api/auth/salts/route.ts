@@ -9,8 +9,17 @@ function b64(u: Uint8Array): string {
   return Buffer.from(u).toString('base64')
 }
 
-function dummySalt(): string {
-  return crypto.randomBytes(16).toString('base64')
+function dummySalt(username: string): string {
+  const secret = process.env.SERVER_MASTER_SECRET
+  if (!secret) {
+    return crypto.randomBytes(16).toString('base64')
+  }
+  return crypto
+    .createHmac('sha256', Buffer.from(secret, 'base64'))
+    .update(`salt:${username}`)
+    .digest()
+    .subarray(0, 16)
+    .toString('base64')
 }
 
 const WINDOW = { windowMs: 5_000, max: 3 }
@@ -30,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const { username } = await request.json() as { username?: string }
     if (!username || typeof username !== 'string') {
-      return success({ pwKdfSalt: dummySalt(), authSalt: dummySalt() })
+      return success({ pwKdfSalt: dummySalt(username ?? ''), authSalt: dummySalt(username ?? '') })
     }
 
     const normalized = username.toLowerCase()
@@ -41,7 +50,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return success({ pwKdfSalt: dummySalt(), authSalt: dummySalt() })
+      return success({ pwKdfSalt: dummySalt(normalized), authSalt: dummySalt(normalized) })
     }
 
     return success({

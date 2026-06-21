@@ -6,11 +6,17 @@ function isEnabled(): boolean {
   if (turnstileEnabled !== null) return turnstileEnabled
   const hasKeys = !!process.env.TURNSTILE_SITE_KEY && !!process.env.TURNSTILE_SECRET_KEY
   turnstileEnabled = hasKeys
+  if (!hasKeys && process.env.NODE_ENV === 'production') {
+    console.error('[turnstile] Turnstile keys are not configured in production')
+  }
   return turnstileEnabled
 }
 
 export async function verifyTurnstile(token: string | null, ip: string): Promise<boolean> {
-  if (!isEnabled()) return true
+  if (!isEnabled()) {
+    if (process.env.NODE_ENV !== 'production') return true
+    return false
+  }
 
   if (!token) return false
 
