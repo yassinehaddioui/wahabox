@@ -300,12 +300,15 @@ export default function DashboardPage() {
                       {box.hasUnread && (
                         <span className="flex h-2 w-2 rounded-full bg-primary" />
                       )}
+                      {box.hasPassword && (
+                        <Tooltip>
+                          <TooltipTrigger render={<Lock className="h-3 w-3 text-amber-500 shrink-0" />} />
+                          <TooltipContent>Password protected</TooltipContent>
+                        </Tooltip>
+                      )}
                       <Link href={`/dashboard/${box.id}`} className="hover:underline">
                         {box.label}
                       </Link>
-                      {box.hasPassword && (
-                        <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
-                      )}
                     </span>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
