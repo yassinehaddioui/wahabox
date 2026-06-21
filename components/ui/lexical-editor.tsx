@@ -119,6 +119,7 @@ export function LexicalMarkdownEditor({
   const [isOL, setIsOL] = useState(false)
   const [isUL, setIsUL] = useState(false)
   const [isQuote, setIsQuote] = useState(false)
+  const [charCount, setCharCount] = useState(0)
 
   const initialConfig = {
     namespace: 'markdown-editor',
@@ -142,6 +143,7 @@ export function LexicalMarkdownEditor({
     (editorState: EditorState) => {
       editorState.read(() => {
         const markdown = $convertToMarkdownString(TRANSFORMERS)
+        setCharCount(markdown.length)
         if (maxLength && markdown.length > maxLength) return
         onChange(markdown)
       })
@@ -349,6 +351,14 @@ export function LexicalMarkdownEditor({
           <LinkPlugin />
           <ListPlugin />
         </div>
+        {maxLength && (
+          <p className={cn(
+            'mt-1 text-right text-xs',
+            charCount > maxLength ? 'text-destructive font-medium' : 'text-muted-foreground',
+          )}>
+            {charCount.toLocaleString()}&thinsp;/&thinsp;{maxLength.toLocaleString()}
+          </p>
+        )}
       </LexicalComposer>
     </div>
   )

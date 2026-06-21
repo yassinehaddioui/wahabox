@@ -203,12 +203,12 @@ export default function DropPage() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <LexicalMarkdownEditor
-              id="message"
-              value={message}
-              onChange={setMessage}
-              maxLength={5000}
-            />
+              <LexicalMarkdownEditor
+                id="message"
+                value={message}
+                onChange={setMessage}
+                maxLength={50000}
+              />
           </div>
           <div ref={turnstileRef} className="flex justify-center" />
           <input

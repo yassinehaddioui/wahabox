@@ -9,7 +9,7 @@ import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { verifyTurnstile } from '@/lib/turnstile'
 import prisma from '@/lib/prisma'
 
-const MAX_CIPHERTEXT_SIZE = 10 * 1024
+const MAX_CIPHERTEXT_SIZE = 100 * 1024
 const HOURLY_QUOTA = 20
 const DAILY_QUOTA = 100
 const IP_HOURLY_QUOTA = 30
