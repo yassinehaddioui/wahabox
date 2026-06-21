@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -49,6 +50,7 @@ type TotpSetup = {
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<EmailStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -370,9 +372,9 @@ export default function SettingsPage() {
 
       if (data.success) {
         toast.success(data.data.message)
-        setCurrentPassword('')
-        setNewPassword('')
-        setConfirmPassword('')
+        sessionStorage.removeItem('session:privateKey')
+        sessionStorage.removeItem('session:publicKey')
+        router.push('/login')
       } else {
         toast.error(data.error)
       }

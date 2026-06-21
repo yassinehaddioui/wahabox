@@ -4,7 +4,7 @@ import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
 import { BadRequestError, UnauthorizedError, RateLimitError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
-import { createSession, setSessionCookie } from '@/lib/session'
+import { clearSessionCookie } from '@/lib/session'
 import prisma from '@/lib/prisma'
 import { checkIpRate, checkGlobalRate } from '@/lib/rate-limit'
 
@@ -102,8 +102,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const token = createSession(user.id, user.username)
-    await setSessionCookie(token)
+    await clearSessionCookie()
 
     return success({ message: 'Password updated' })
   } catch (err) {
