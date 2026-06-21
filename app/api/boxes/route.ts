@@ -3,6 +3,8 @@ import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { parseBody, createBoxSchema } from '@/lib/validation'
 import { getAuthUser } from '@/lib/auth'
+import { BadRequestError } from '@/lib/errors'
+import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 
 function generateSlug(): string {
@@ -51,6 +53,9 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
     const body = await parseBody(request, createBoxSchema)
+
+    const csrfValid = await verifyAndConsumeCsrfToken('create-box', body.csrfToken ?? null)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const slug = generateSlug()
 

@@ -1,16 +1,22 @@
 import { NextRequest } from 'next/server'
 import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
+import { BadRequestError } from '@/lib/errors'
+import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 
 export async function PUT(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
-    const { encPrivRec, recKdfSalt, recNonce } = await request.json() as {
+    const { encPrivRec, recKdfSalt, recNonce, csrfToken } = await request.json() as {
       encPrivRec: string
       recKdfSalt: string
       recNonce: string
+      csrfToken?: string
     }
+
+    const csrfValid = await verifyAndConsumeCsrfToken('regen-recovery', csrfToken ?? null)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     await prisma.user.update({
       where: { id: user.id },

@@ -3,6 +3,7 @@ import { success, error } from '@/lib/response'
 import { parseBody, signupSchema } from '@/lib/validation'
 import { BadRequestError, ConflictError, RateLimitError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
+import { verifyTurnstile } from '@/lib/turnstile'
 import prisma from '@/lib/prisma'
 import { checkIpRate, checkGlobalRate } from '@/lib/rate-limit'
 
@@ -29,6 +30,11 @@ export async function POST(request: NextRequest) {
 
     const csrfValid = await verifyAndConsumeCsrfToken('signup', body.csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
+
+    const turnstileVerified = await verifyTurnstile(body.turnstileToken ?? null, ip)
+    if (!turnstileVerified) {
+      throw new BadRequestError('CAPTCHA verification failed')
+    }
 
     const existing = await prisma.user.findUnique({
       where: { username: body.username },

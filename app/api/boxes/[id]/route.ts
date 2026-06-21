@@ -3,7 +3,8 @@ import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { parseBody, updateBoxSchema } from '@/lib/validation'
 import { getAuthUser } from '@/lib/auth'
-import { NotFoundError } from '@/lib/errors'
+import { BadRequestError, NotFoundError } from '@/lib/errors'
+import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 
 export async function PATCH(
@@ -14,6 +15,9 @@ export async function PATCH(
     const user = await getAuthUser(request)
     const { id } = await params
     const body = await parseBody(request, updateBoxSchema)
+
+    const csrfValid = await verifyAndConsumeCsrfToken('edit-box', body.csrfToken ?? null)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const box = await prisma.poBox.findFirst({
       where: { id, ownerId: user.id },

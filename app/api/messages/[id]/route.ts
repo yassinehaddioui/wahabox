@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
-import { NotFoundError } from '@/lib/errors'
+import { BadRequestError, NotFoundError } from '@/lib/errors'
+import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 
 export async function PATCH(
@@ -11,6 +12,10 @@ export async function PATCH(
   try {
     const user = await getAuthUser(request)
     const { id } = await params
+
+    const { csrfToken } = await request.json().catch(() => ({})) as { csrfToken?: string }
+    const csrfValid = await verifyAndConsumeCsrfToken('message-action', csrfToken ?? null)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const message = await prisma.message.findFirst({
       where: { id, poBox: { ownerId: user.id } },
@@ -37,6 +42,10 @@ export async function DELETE(
   try {
     const user = await getAuthUser(request)
     const { id } = await params
+
+    const { csrfToken } = await request.json().catch(() => ({})) as { csrfToken?: string }
+    const csrfValid = await verifyAndConsumeCsrfToken('message-action', csrfToken ?? null)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const message = await prisma.message.findFirst({
       where: { id, poBox: { ownerId: user.id } },

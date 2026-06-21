@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { TurnstileWidget } from '@/components/turnstile-widget'
 import { useCsrfToken } from '@/lib/use-csrf'
 
 export default function SignupPage() {
@@ -18,6 +19,7 @@ export default function SignupPage() {
   const [confirmCode, setConfirmCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -91,6 +93,7 @@ export default function SignupPage() {
           encPrivRec: sessionStorage.getItem('signup:encPrivRec'),
           recNonce: sessionStorage.getItem('signup:recNonce'),
           recKdfSalt: sessionStorage.getItem('signup:recKdfSalt'),
+          turnstileToken: turnstileToken,
         }),
       })
 
@@ -203,6 +206,11 @@ export default function SignupPage() {
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
+          <TurnstileWidget
+            onVerify={(token) => setTurnstileToken(token)}
+            onExpire={() => setTurnstileToken(null)}
+            onError={() => setTurnstileToken(null)}
+          />
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? 'Generating keys...' : 'Create Account'}
           </Button>

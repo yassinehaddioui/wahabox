@@ -3,7 +3,7 @@ import { success, error } from '@/lib/response'
 import { parseBody, submitMessageSchema } from '@/lib/validation'
 import { BadRequestError, NotFoundError, RateLimitError } from '@/lib/errors'
 import { notifyNewMessage } from '@/lib/notifications'
-import { checkDropRateLimit } from '@/lib/rate-limit'
+import { checkDropRateLimit, getDropIpCounts, recordDropIp } from '@/lib/rate-limit'
 import { verifyPow, consumeChallenge } from '@/lib/pow'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { verifyTurnstile } from '@/lib/turnstile'
@@ -12,6 +12,8 @@ import prisma from '@/lib/prisma'
 const MAX_CIPHERTEXT_SIZE = 10 * 1024
 const HOURLY_QUOTA = 20
 const DAILY_QUOTA = 100
+const IP_HOURLY_QUOTA = 30
+const IP_DAILY_QUOTA = 200
 
 export async function GET(
   _request: NextRequest,
@@ -65,6 +67,14 @@ export async function POST(
 
     if (await checkDropRateLimit(slug, ip)) {
       throw new RateLimitError('Too many submissions. Try again later.')
+    }
+
+    const ipCounts = await getDropIpCounts(ip)
+    if (ipCounts.hourly >= IP_HOURLY_QUOTA) {
+      throw new RateLimitError('Too many submissions from this IP. Try again later.')
+    }
+    if (ipCounts.daily >= IP_DAILY_QUOTA) {
+      throw new RateLimitError('Too many submissions from this IP. Try again tomorrow.')
     }
 
     const body = await parseBody(request, submitMessageSchema)
@@ -146,6 +156,7 @@ export async function POST(
       },
     })
 
+    recordDropIp(ip).catch(() => {})
     notifyNewMessage(box.id).catch(() => {})
 
     return success({ message: 'Message sent' }, 201)

@@ -31,7 +31,13 @@ export async function POST(request: NextRequest) {
       ?? 'unknown'
 
     const limits = await checkAuthRateLimit(body.username, ip)
-    if (limits.isLocked || limits.ip || limits.user || limits.global) {
+    if (limits.isLocked) {
+      const seconds = Math.ceil(limits.lockoutRemainingMs / 1000)
+      const minutes = Math.ceil(seconds / 60)
+      const wait = minutes > 1 ? `${minutes} minutes` : `${seconds} seconds`
+      throw new RateLimitError(`Account is locked. Try again in ${wait}.`)
+    }
+    if (limits.ip || limits.user || limits.global) {
       throw new RateLimitError('Too many attempts. Try again later.')
     }
 

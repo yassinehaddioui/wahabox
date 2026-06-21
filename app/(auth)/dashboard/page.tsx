@@ -23,6 +23,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { Mail, Pencil, Copy, RefreshCw } from 'lucide-react'
 
+async function fetchCsrfToken(tag: string): Promise<string | null> {
+  const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
+  const data = await res.json()
+  return data.success ? data.data.csrfToken : null
+}
+
 type PoBox = {
   id: string
   label: string
@@ -80,10 +86,11 @@ export default function DashboardPage() {
   async function createBox(e: React.FormEvent) {
     e.preventDefault()
     try {
+      const csrfToken = await fetchCsrfToken('create-box')
       const res = await fetch('/api/boxes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: newLabel }),
+        body: JSON.stringify({ label: newLabel, csrfToken }),
       })
       const data = await res.json()
       if (data.success) {
@@ -99,10 +106,11 @@ export default function DashboardPage() {
   }
 
   async function toggleActive(box: PoBox) {
+    const csrfToken = await fetchCsrfToken('edit-box')
     const res = await fetch(`/api/boxes/${box.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive: !box.isActive }),
+      body: JSON.stringify({ isActive: !box.isActive, csrfToken }),
     })
     const data = await res.json()
     if (data.success) {
@@ -120,6 +128,8 @@ export default function DashboardPage() {
     if (editNotify !== editBox.notify) {
       body.notify = editNotify
     }
+    const csrfToken = await fetchCsrfToken('edit-box')
+    body.csrfToken = csrfToken
     const res = await fetch(`/api/boxes/${editBox.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -137,10 +147,11 @@ export default function DashboardPage() {
 
   async function rotateSlug() {
     if (!rotateBox) return
+    const csrfToken = await fetchCsrfToken('edit-box')
     const res = await fetch(`/api/boxes/${rotateBox.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rotateSlug: true }),
+      body: JSON.stringify({ rotateSlug: true, csrfToken }),
     })
     const data = await res.json()
     if (data.success) {

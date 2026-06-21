@@ -6,9 +6,10 @@ import { UnauthorizedError, BadRequestError, RateLimitError, MfaRequiredError } 
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 import { createSession, setSessionCookie } from '@/lib/session'
-import { checkAuthRateLimit, recordAuthFailure, clearFailures } from '@/lib/rate-limit'
+import { checkAuthRateLimit, getFailureCount, recordAuthFailure, clearFailures } from '@/lib/rate-limit'
 import { getRedis } from '@/lib/redis'
 import { decryptEmail } from '@/lib/email-crypto'
+import { verifyTurnstile } from '@/lib/turnstile'
 
 const HASH_BYTES = 32
 
@@ -47,8 +48,22 @@ export async function POST(request: NextRequest) {
       ?? 'unknown'
 
     const limits = await checkAuthRateLimit(body.username, ip)
-    if (limits.isLocked || limits.ip || limits.user || limits.global) {
+    if (limits.isLocked) {
+      const seconds = Math.ceil(limits.lockoutRemainingMs / 1000)
+      const minutes = Math.ceil(seconds / 60)
+      const wait = minutes > 1 ? `${minutes} minutes` : `${seconds} seconds`
+      throw new RateLimitError(`Account is locked. Try again in ${wait}.`)
+    }
+    if (limits.ip || limits.user || limits.global) {
       throw new RateLimitError('Too many attempts. Try again later.')
+    }
+
+    const failCount = await getFailureCount(body.username)
+    if (failCount >= 2) {
+      const turnstileVerified = await verifyTurnstile(body.turnstileToken ?? null, ip)
+      if (!turnstileVerified) {
+        throw new BadRequestError('CAPTCHA verification required. Please complete the challenge.')
+      }
     }
 
     const user = await prisma.user.findUnique({

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { TurnstileWidget } from '@/components/turnstile-widget'
 import { useCsrfToken } from '@/lib/use-csrf'
 import { CheckCircle, Loader2 } from 'lucide-react'
 
@@ -32,6 +33,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [masterKey, setMasterKey] = useState<Uint8Array | null>(null)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [needsTurnstile, setNeedsTurnstile] = useState(false)
 
   const [mfa, setMfa] = useState<MfaState>({
     mfaToken: '',
@@ -120,6 +123,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           username,
           csrfToken,
+          turnstileToken: turnstileToken,
           authVerifier: crypto.toBase64(authVerifier),
         }),
       })
@@ -145,7 +149,12 @@ export default function LoginPage() {
 
       await finishLogin(loginData.data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      const message = err instanceof Error ? err.message : 'Login failed'
+      setError(message)
+      if (message.includes('CAPTCHA')) {
+        setNeedsTurnstile(true)
+        setTurnstileToken(null)
+      }
     } finally {
       setLoading(false)
     }
@@ -489,7 +498,14 @@ export default function LoginPage() {
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={loading} className="w-full">
+          {needsTurnstile && (
+            <TurnstileWidget
+              onVerify={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+            />
+          )}
+          <Button type="submit" disabled={loading || (needsTurnstile && !turnstileToken)} className="w-full">
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
