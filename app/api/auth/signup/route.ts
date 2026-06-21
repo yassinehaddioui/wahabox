@@ -4,6 +4,10 @@ import { parseBody, signupSchema } from '@/lib/validation'
 import { ConflictError } from '@/lib/errors'
 import prisma from '@/lib/prisma'
 
+function b64(s: string) {
+  return Buffer.from(s, 'base64')
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await parseBody(request, signupSchema)
@@ -15,21 +19,20 @@ export async function POST(request: NextRequest) {
       throw new ConflictError('Username already taken')
     }
 
-    // TODO: Insert user with crypto fields (Phase 3)
-    // const user = await prisma.user.create({
-    //   data: {
-    //     username: body.username,
-    //     authVerifier: Buffer.from(body.authVerifier, 'base64'),
-    //     authSalt: Buffer.from(body.authSalt, 'base64'),
-    //     publicKey: Buffer.from(body.publicKey, 'base64'),
-    //     encPrivPw: Buffer.from(body.encPrivPw, 'base64'),
-    //     pwKdfSalt: Buffer.from(body.pwKdfSalt, 'base64'),
-    //     pwNonce: Buffer.from(body.pwNonce, 'base64'),
-    //     encPrivRec: Buffer.from(body.encPrivRec, 'base64'),
-    //     recKdfSalt: Buffer.from(body.recKdfSalt, 'base64'),
-    //     recNonce: Buffer.from(body.recNonce, 'base64'),
-    //   },
-    // })
+    await prisma.user.create({
+      data: {
+        username: body.username,
+        authVerifier: b64(body.authVerifier),
+        authSalt: b64(body.authSalt),
+        publicKey: b64(body.publicKey),
+        encPrivPw: b64(body.encPrivPw),
+        pwKdfSalt: b64(body.pwKdfSalt),
+        pwNonce: b64(body.pwNonce),
+        encPrivRec: b64(body.encPrivRec),
+        recKdfSalt: b64(body.recKdfSalt),
+        recNonce: b64(body.recNonce),
+      },
+    })
 
     return success({ username: body.username }, 201)
   } catch (err) {

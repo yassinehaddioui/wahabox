@@ -1,6 +1,7 @@
 FROM node:26-alpine
 RUN npm install -g corepack && corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
+ENV npm_config_store_dir=/tmp/pnpm-store
 
 COPY package.json pnpm-workspace.yaml ./
 RUN pnpm install
@@ -11,4 +12,4 @@ RUN DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy pnpm prisma generate
 EXPOSE 3000
 ENV NEXT_TELEMETRY_DISABLED=1
 
-CMD ["pnpm", "dev"]
+CMD ["sh", "-c", "pnpm prisma generate && pnpm prisma migrate deploy && pnpm dev"]

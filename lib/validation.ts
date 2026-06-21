@@ -48,6 +48,7 @@ export const updateBoxSchema = z.object({
   expiresAt: z.string().datetime().nullable().optional(),
   maxMessages: z.number().int().positive().nullable().optional(),
   notify: z.boolean().optional(),
+  rotateSlug: z.boolean().optional(),
 })
 
 export const submitMessageSchema = z.object({

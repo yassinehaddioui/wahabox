@@ -1,23 +1,22 @@
 import { NextRequest } from 'next/server'
 import { UnauthorizedError } from './errors'
+import { getSession } from './session'
 
 export type AuthUser = {
   id: string
   username: string
 }
 
-/**
- * Extracts the authenticated user from the request.
- * TODO: Implement real session/cookie validation (Phase 4).
- */
 export async function getAuthUser(request: NextRequest): Promise<AuthUser> {
   const sessionToken = request.cookies.get('session')?.value
-
   if (!sessionToken) {
     throw new UnauthorizedError('No session token')
   }
 
-  // TODO: Validate session token against database/redis
-  // This is a placeholder — replace with real session lookup in Phase 4
-  throw new UnauthorizedError('Invalid session')
+  const session = getSession(sessionToken)
+  if (!session) {
+    throw new UnauthorizedError('Invalid or expired session')
+  }
+
+  return { id: session.userId, username: session.username }
 }

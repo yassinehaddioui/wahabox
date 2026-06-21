@@ -1,19 +1,36 @@
 import { NextRequest } from 'next/server'
+import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { parseBody, createBoxSchema } from '@/lib/validation'
 import { getAuthUser } from '@/lib/auth'
+import prisma from '@/lib/prisma'
+
+function generateSlug(): string {
+  return crypto.randomBytes(16)
+    .toString('base64url')
+}
 
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
 
-    // TODO: Return list of user's PO boxes (Phase 6)
-    // const boxes = await prisma.poBox.findMany({
-    //   where: { ownerId: user.id },
-    //   orderBy: { createdAt: 'desc' },
-    // })
+    const boxes = await prisma.poBox.findMany({
+      where: { ownerId: user.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        label: true,
+        slug: true,
+        isActive: true,
+        expiresAt: true,
+        maxMessages: true,
+        notify: true,
+        createdAt: true,
+        _count: { select: { messages: true } },
+      },
+    })
 
-    return success([])
+    return success(boxes)
   } catch (err) {
     return error(err)
   }
@@ -24,17 +41,18 @@ export async function POST(request: NextRequest) {
     const user = await getAuthUser(request)
     const body = await parseBody(request, createBoxSchema)
 
-    // TODO: Create PO box with random slug (Phase 6)
-    // const slug = base64url(crypto.getRandomValues(new Uint8Array(16)))
-    // const box = await prisma.poBox.create({
-    //   data: {
-    //     ownerId: user.id,
-    //     slug,
-    //     label: body.label,
-    //   },
-    // })
+    const slug = generateSlug()
 
-    return success({ id: 'placeholder', slug: 'placeholder', label: body.label }, 201)
+    const box = await prisma.poBox.create({
+      data: {
+        ownerId: user.id,
+        slug,
+        label: body.label,
+      },
+      select: { id: true, slug: true, label: true },
+    })
+
+    return success(box, 201)
   } catch (err) {
     return error(err)
   }

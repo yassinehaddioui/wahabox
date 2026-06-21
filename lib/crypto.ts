@@ -7,7 +7,7 @@
  *   await crypto.ready
  */
 
-import sodium, { ready } from 'libsodium-wrappers'
+import sodium, { ready } from 'libsodium-wrappers-sumo'
 
 export type KeyPair = { publicKey: Uint8Array; privateKey: Uint8Array }
 export type WrappedKey = { ciphertext: Uint8Array; nonce: Uint8Array }
@@ -83,11 +83,11 @@ export const crypto = {
    * Decrypt a private key. Throws on wrong key or tampered data.
    */
   unwrapPrivateKey(ciphertext: Uint8Array, nonce: Uint8Array, kek: Uint8Array): Uint8Array {
-    const pk = sodium.crypto_secretbox_open_easy(ciphertext, nonce, kek)
-    if (pk === undefined) {
+    try {
+      return sodium.crypto_secretbox_open_easy(ciphertext, nonce, kek)
+    } catch {
       throw new Error('Decryption failed: wrong key or tampered ciphertext')
     }
-    return pk
   },
 
   /**
@@ -124,5 +124,20 @@ export const crypto = {
    */
   computeAuthVerifier(authKey: Uint8Array, salt: Uint8Array): Uint8Array {
     return sodium.crypto_generichash(HASH_BYTES, authKey, salt)
+  },
+
+  /** Generate random bytes of the given length (CSPRNG). */
+  randomBytes(length: number): Uint8Array {
+    return sodium.randombytes_buf(length)
+  },
+
+  /** Encode bytes as base64 for transport. */
+  toBase64(bytes: Uint8Array): string {
+    return sodium.to_base64(bytes, sodium.base64_variants.ORIGINAL)
+  },
+
+  /** Decode base64 from transport. */
+  fromBase64(s: string): Uint8Array {
+    return sodium.from_base64(s, sodium.base64_variants.ORIGINAL)
   },
 }
