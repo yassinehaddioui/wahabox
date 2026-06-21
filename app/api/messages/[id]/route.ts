@@ -14,8 +14,7 @@ export async function PATCH(
     const { id } = await params
 
     const { csrfToken } = await request.json() as { csrfToken?: string }
-    const sessionId = request.cookies.get('session')?.value
-    const csrfValid = await verifyAndConsumeCsrfToken('message-read', csrfToken ?? null, sessionId)
+    const csrfValid = await verifyAndConsumeCsrfToken('message-read', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const message = await prisma.message.findFirst({
@@ -45,8 +44,7 @@ export async function DELETE(
     const { id } = await params
 
     const { csrfToken } = await request.json() as { csrfToken?: string }
-    const sessionId = request.cookies.get('session')?.value
-    const csrfValid = await verifyAndConsumeCsrfToken('message-delete', csrfToken ?? null, sessionId)
+    const csrfValid = await verifyAndConsumeCsrfToken('message-delete', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const message = await prisma.message.findFirst({

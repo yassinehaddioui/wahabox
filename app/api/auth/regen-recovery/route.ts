@@ -15,8 +15,7 @@ export async function PUT(request: NextRequest) {
       csrfToken?: string
     }
 
-    const sessionId = request.cookies.get('session')?.value
-    const csrfValid = await verifyAndConsumeCsrfToken('regen-recovery', csrfToken ?? null, sessionId)
+    const csrfValid = await verifyAndConsumeCsrfToken('regen-recovery', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     await prisma.user.update({

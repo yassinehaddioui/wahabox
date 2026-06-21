@@ -68,8 +68,7 @@ export async function POST(request: NextRequest) {
       csrfToken?: string
     }
 
-    const sessionId = request.cookies.get('session')?.value
-    const csrfValid = await verifyAndConsumeCsrfToken('password-change', body.csrfToken ?? null, sessionId)
+    const csrfValid = await verifyAndConsumeCsrfToken('password-change', body.csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const { currentAuthVerifier, newAuthVerifier, newAuthSalt, newEncPrivPw, newPwKdfSalt, newPwNonce } = body

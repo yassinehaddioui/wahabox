@@ -64,8 +64,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { email, csrfToken } = await request.json() as { email?: string; csrfToken?: string }
-    const sessionId = request.cookies.get('session')?.value
-    const csrfValid = await verifyAndConsumeCsrfToken('email-set', csrfToken ?? null, sessionId)
+    const csrfValid = await verifyAndConsumeCsrfToken('email-set', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
@@ -126,8 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { csrfToken } = await request.json().catch(() => ({})) as { csrfToken?: string }
-    const sessionId = request.cookies.get('session')?.value
-    const csrfValid = await verifyAndConsumeCsrfToken('email-resend', csrfToken ?? null, sessionId)
+    const csrfValid = await verifyAndConsumeCsrfToken('email-resend', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const record = await prisma.user.findUnique({
@@ -175,8 +173,7 @@ export async function DELETE(request: NextRequest) {
     const user = await getAuthUser(request)
 
     const { csrfToken } = await request.json().catch(() => ({})) as { csrfToken?: string }
-    const sessionId = request.cookies.get('session')?.value
-    const csrfValid = await verifyAndConsumeCsrfToken('email-delete', csrfToken ?? null, sessionId)
+    const csrfValid = await verifyAndConsumeCsrfToken('email-delete', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     await prisma.user.update({
@@ -200,8 +197,7 @@ export async function PATCH(request: NextRequest) {
     const user = await getAuthUser(request)
     const { notificationsEnabled, csrfToken } = await request.json() as { notificationsEnabled?: boolean; csrfToken?: string }
 
-    const sessionId = request.cookies.get('session')?.value
-    const csrfValid = await verifyAndConsumeCsrfToken('email-notifications', csrfToken ?? null, sessionId)
+    const csrfValid = await verifyAndConsumeCsrfToken('email-notifications', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     if (typeof notificationsEnabled !== 'boolean') {

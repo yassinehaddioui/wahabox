@@ -16,9 +16,7 @@ export async function GET(request: NextRequest) {
       return success({ csrfToken: null })
     }
 
-    const sessionId = request.cookies.get('session')?.value
-
-    const token = generateCsrfToken(tag, sessionId)
+    const token = generateCsrfToken(tag)
     await storeCsrfToken(token).catch(() => {})
 
     return success({ csrfToken: token })
