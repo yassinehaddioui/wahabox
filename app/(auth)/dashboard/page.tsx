@@ -162,7 +162,7 @@ export default function DashboardPage() {
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">My PO Boxes</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Boxes</h1>
         <p className="text-sm text-muted-foreground">
           Create and manage your encrypted drop boxes.
         </p>
