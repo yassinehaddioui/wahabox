@@ -109,7 +109,7 @@ export default function SignupPage() {
 
   if (step === 'recovery' || step === 'confirm') {
     return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-canvas-soft">
         <CardHeader>
           <CardTitle>Save Your Recovery Code</CardTitle>
           <CardDescription>
@@ -157,7 +157,7 @@ export default function SignupPage() {
 
   if (step === 'done') {
     return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-canvas-soft">
         <CardHeader className="text-center">
           <CardTitle>Account Created!</CardTitle>
           <CardDescription>Redirecting to login...</CardDescription>

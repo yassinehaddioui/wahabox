@@ -67,7 +67,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md bg-canvas-soft">
       <CardHeader>
         <CardTitle>Sign In</CardTitle>
         <CardDescription>Enter your credentials to access your PO boxes.</CardDescription>
@@ -99,12 +99,12 @@ export default function LoginPage() {
           </Button>
         </form>
         <div className="flex justify-between text-sm">
-          <Link href="/signup" className="text-muted-foreground hover:text-foreground transition-colors">
+          <Button variant="link" size="sm" render={<Link href="/signup" className="text-muted-foreground" />}>
             Create an account
-          </Link>
-          <Link href="/recover" className="text-muted-foreground hover:text-foreground transition-colors">
+          </Button>
+          <Button variant="link" size="sm" render={<Link href="/recover" className="text-muted-foreground" />}>
             Recover account
-          </Link>
+          </Button>
         </div>
       </CardContent>
     </Card>

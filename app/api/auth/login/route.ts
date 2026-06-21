@@ -2,9 +2,10 @@ import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { parseBody, loginSchema } from '@/lib/validation'
-import { UnauthorizedError } from '@/lib/errors'
+import { UnauthorizedError, RateLimitError } from '@/lib/errors'
 import prisma from '@/lib/prisma'
 import { createSession, setSessionCookie } from '@/lib/session'
+import { checkAuthRateLimit, recordAuthFailure, clearFailures } from '@/lib/rate-limit'
 
 const HASH_BYTES = 32
 
@@ -35,6 +36,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await parseBody(request, loginSchema)
 
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      ?? request.headers.get('x-real-ip')
+      ?? 'unknown'
+
+    const limits = await checkAuthRateLimit(body.username, ip)
+    if (limits.isLocked || limits.ip || limits.user || limits.global) {
+      throw new RateLimitError('Too many attempts. Try again later.')
+    }
+
     const user = await prisma.user.findUnique({
       where: { username: body.username },
       select: {
@@ -50,13 +60,17 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       dummyTimingPath(body.username)
+      await recordAuthFailure(body.username, ip)
       throw new UnauthorizedError('Invalid credentials')
     }
 
     const clientVerifier = Buffer.from(body.authVerifier, 'base64')
     if (!constantTimeEqual(clientVerifier, user.authVerifier)) {
+      await recordAuthFailure(body.username, ip)
       throw new UnauthorizedError('Invalid credentials')
     }
+
+    await clearFailures(body.username)
 
     const token = createSession(user.id, user.username)
     await setSessionCookie(token)

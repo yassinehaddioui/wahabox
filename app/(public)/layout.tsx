@@ -1,22 +1,20 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="flex items-center justify-between px-6 py-4">
-        <Link href="/" className="text-lg font-bold tracking-tight">
+      <header className="flex h-16 items-center justify-between border-b border-hairline px-6">
+        <Link href="/" className="text-base font-semibold tracking-tight">
           Wahabox
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link href="/login" className="text-muted-foreground hover:text-foreground transition-colors">
+        <nav className="flex items-center gap-3 text-sm">
+          <Button variant="ghost" size="sm" render={<Link href="/login" className="text-muted-foreground" />}>
             Sign In
-          </Link>
-          <Link
-            href="/signup"
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
+          </Button>
+          <Button size="sm" className="font-medium" render={<Link href="/signup" />}>
             Get Started
-          </Link>
+          </Button>
         </nav>
       </header>
       <main className="flex flex-1 items-center justify-center px-6 py-12">

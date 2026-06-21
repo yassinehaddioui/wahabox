@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
@@ -112,8 +113,8 @@ export default function MessagesPage() {
           <Skeleton className="h-24 w-full" />
         </div>
       ) : messages.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+        <Card className="bg-canvas-soft">
+          <CardContent className="py-16 text-center text-sm text-muted-foreground">
             No messages yet.
           </CardContent>
         </Card>
@@ -125,9 +126,9 @@ export default function MessagesPage() {
                 <span>
                   {new Date(msg.createdAt).toLocaleString()}
                   {!msg.isRead && (
-                    <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                      New
-                    </span>
+                      <Badge variant="secondary" className="ml-2">
+                        New
+                      </Badge>
                   )}
                 </span>
                 <div className="flex gap-1">

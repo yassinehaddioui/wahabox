@@ -53,6 +53,10 @@ export const updateBoxSchema = z.object({
 
 export const submitMessageSchema = z.object({
   ciphertext: z.string().min(1),
+  challenge: z.string().optional(),
+  nonce: z.string().optional(),
+  difficulty: z.number().int().positive().optional(),
+  honeypot: z.string().max(0, 'Bot detected').optional(),
 })
 
 export async function parseBody<T extends z.ZodType>(

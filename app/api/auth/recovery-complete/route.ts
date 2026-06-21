@@ -1,15 +1,29 @@
 import { NextRequest } from 'next/server'
 import { success, error } from '@/lib/response'
 import { parseBody, recoveryCompleteSchema } from '@/lib/validation'
-import { NotFoundError } from '@/lib/errors'
+import { NotFoundError, RateLimitError } from '@/lib/errors'
 import prisma from '@/lib/prisma'
+import { checkIpRate, checkGlobalRate } from '@/lib/rate-limit'
 
 function b64(s: string) {
   return Buffer.from(s, 'base64')
 }
 
+const WINDOW = { windowMs: 60_000, max: 5 }
+
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      ?? request.headers.get('x-real-ip')
+      ?? 'unknown'
+
+    if (await checkIpRate(`recovery-complete:${ip}`, WINDOW)) {
+      throw new RateLimitError('Too many requests')
+    }
+    if (await checkGlobalRate()) {
+      throw new RateLimitError('Too many requests')
+    }
+
     const body = await parseBody(request, recoveryCompleteSchema)
 
     const user = await prisma.user.findUnique({

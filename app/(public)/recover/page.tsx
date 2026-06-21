@@ -78,7 +78,7 @@ export default function RecoverPage() {
 
   if (done) {
     return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-canvas-soft">
         <CardHeader className="text-center">
           <CardTitle>Password Updated!</CardTitle>
           <CardDescription>You can now sign in with your new password.</CardDescription>

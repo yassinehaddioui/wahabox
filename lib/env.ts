@@ -11,6 +11,9 @@ const ENV = {
   get SESSION_SECRET() {
     return process.env.SESSION_SECRET ?? 'dev-session-secret-change-in-production'
   },
+  get APP_URL() {
+    return process.env.APP_URL ?? 'http://localhost:3000'
+  },
 }
 
 export function validateEnv(): void {

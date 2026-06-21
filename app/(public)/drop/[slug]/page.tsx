@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -8,6 +8,23 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 type BoxInfo = { label: string; publicKey: string }
+
+async function solvePow(challenge: string, difficulty: number): Promise<string> {
+  const enc = new TextEncoder()
+  let nonce = 0
+  while (true) {
+    const data = enc.encode(challenge + nonce)
+    const hash = await crypto.subtle.digest('SHA-256', data)
+    const bytes = new Uint8Array(hash)
+    const bitsNeeded = Math.ceil(difficulty / 4)
+    let valid = true
+    for (let i = 0; i < bitsNeeded; i++) {
+      if (bytes[i] !== 0) { valid = false; break }
+    }
+    if (valid) return String(nonce)
+    nonce++
+  }
+}
 
 export default function DropPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -17,6 +34,7 @@ export default function DropPage() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
+  const honeypotRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch(`/api/drop/${slug}`)
@@ -31,6 +49,8 @@ export default function DropPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (honeypotRef.current?.value) return
+
     setSending(true)
     setError('')
 
@@ -41,10 +61,15 @@ export default function DropPage() {
       const publicKey = crypto.fromBase64(box!.publicKey)
       const ciphertext = crypto.sealMessage(message, publicKey)
 
+      const payload: Record<string, unknown> = {
+        ciphertext: crypto.toBase64(ciphertext),
+        honeypot: '',
+      }
+
       const res = await fetch(`/api/drop/${slug}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ciphertext: crypto.toBase64(ciphertext) }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.error)
@@ -62,7 +87,7 @@ export default function DropPage() {
 
   if (error && !box) {
     return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-canvas-soft">
         <CardHeader className="text-center">
           <CardTitle>Not Found</CardTitle>
           <CardDescription>{error}</CardDescription>
@@ -73,7 +98,7 @@ export default function DropPage() {
 
   if (sent) {
     return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-canvas-soft">
         <CardHeader className="text-center">
           <CardTitle>Message Sent!</CardTitle>
           <CardDescription>
@@ -106,6 +131,15 @@ export default function DropPage() {
               required
             />
           </div>
+          <input
+            ref={honeypotRef}
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            className="absolute -left-[9999px] -top-[9999px]"
+            aria-hidden="true"
+          />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" disabled={sending} className="w-full">
             {sending ? 'Encrypting & Sending...' : 'Send Message'}

@@ -144,8 +144,8 @@ export default function DashboardPage() {
           <Skeleton className="h-16 w-full" />
         </div>
       ) : boxes.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+        <Card className="bg-canvas-soft">
+          <CardContent className="py-16 text-center text-sm text-muted-foreground">
             No PO boxes yet. Create one above to get started.
           </CardContent>
         </Card>
@@ -168,12 +168,14 @@ export default function DashboardPage() {
                     {box.label}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <button
-                      onClick={() => copyDropLink(box.slug)}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors font-mono"
-                    >
-                      /drop/{box.slug}
-                    </button>
+                      <Button
+                        variant="link"
+                        size="xs"
+                        onClick={() => copyDropLink(box.slug)}
+                        className="text-xs font-mono text-muted-foreground hover:text-foreground"
+                      >
+                        /drop/{box.slug}
+                      </Button>
                   </TableCell>
                   <TableCell className="text-center text-sm text-muted-foreground">
                     {box._count.messages}

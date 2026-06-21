@@ -4,6 +4,8 @@ import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
 import { BadRequestError } from '@/lib/errors'
 import { encryptEmail } from '@/lib/email-crypto'
+import { sendVerificationEmail } from '@/lib/email'
+import { getRedis } from '@/lib/redis'
 import prisma from '@/lib/prisma'
 
 export async function PUT(request: NextRequest) {
@@ -18,7 +20,7 @@ export async function PUT(request: NextRequest) {
     const { encrypted, nonce, keyVersion } = encryptEmail(email)
 
     const token = crypto.randomBytes(32).toString('hex')
-    const tokenHash = crypto.createHash('sha256').update(token).digest()
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
 
     await prisma.user.update({
       where: { id: user.id },
@@ -30,9 +32,21 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    // TODO: Send verification email with link containing token
+    const redis = getRedis()
+    await redis.set(
+      `verify:${tokenHash}`,
+      user.id,
+      'EX',
+      3600,
+    )
 
-    return success({ message: 'Email saved. Verification required.' })
+    try {
+      await sendVerificationEmail(email, user.username, token)
+    } catch {
+      return success({ message: 'Email saved. Unable to send verification email.' })
+    }
+
+    return success({ message: 'Verification email sent.' })
   } catch (err) {
     return error(err)
   }

@@ -1,10 +1,7 @@
 import { decryptEmail } from './email-crypto'
+import { sendNewMessageNotification, checkNotificationRateLimit } from './email'
 import prisma from './prisma'
 
-/**
- * Notify a PO Box owner about a new message.
- * Called after a message is stored.
- */
 export async function notifyNewMessage(poBoxId: string): Promise<void> {
   const box = await prisma.poBox.findUnique({
     where: { id: poBoxId },
@@ -13,6 +10,7 @@ export async function notifyNewMessage(poBoxId: string): Promise<void> {
       notify: true,
       owner: {
         select: {
+          id: true,
           emailEncrypted: true,
           emailNonce: true,
           emailVerified: true,
@@ -25,19 +23,17 @@ export async function notifyNewMessage(poBoxId: string): Promise<void> {
   if (!box || !box.notify || !box.owner.notificationsEnabled) return
   if (!box.owner.emailVerified || !box.owner.emailEncrypted || !box.owner.emailNonce) return
 
+  const rateLimited = await checkNotificationRateLimit(box.owner.id)
+  if (rateLimited) return
+
   try {
     const email = decryptEmail(
       new Uint8Array(box.owner.emailEncrypted),
       new Uint8Array(box.owner.emailNonce),
     )
 
-    // TODO: Send actual email notification
-    // Body: "You have a new message in your PO Box '{label}'."
-    // Rate-limit per account (max 1 notification per X minutes)
-
-    console.log(`[notification] Would notify ${email} about new message in "${box.label}"`)
+    await sendNewMessageNotification(email, box.label)
   } catch {
-    // Email decryption failure — log opaque error without the address
-    console.error('[notification] Failed to decrypt email for notification')
+    console.error('[notification] Failed to send')
   }
 }
