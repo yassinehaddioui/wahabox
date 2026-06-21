@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { success, error } from '@/lib/response'
 import { generateCsrfToken, storeCsrfToken } from '@/lib/csrf'
 
-const ALLOWED_TAGS = ['signup', 'login', 'recovery-start', 'recovery-complete']
+const ALLOWED_TAGS = ['signup', 'login', 'recovery-start', 'recovery-complete', 'password-change']
 
 export async function GET(request: NextRequest) {
   try {

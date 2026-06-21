@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { ApiError } from './errors'
+import { MfaRequiredError } from './errors'
 
 type SuccessResponse<T = unknown> = {
   success: true
@@ -17,6 +18,13 @@ export function success<T>(data: T, status = 200): NextResponse<SuccessResponse<
 }
 
 export function error(err: unknown): NextResponse<ErrorResponse> {
+  if (err instanceof MfaRequiredError) {
+    return NextResponse.json(
+      { success: false as const, error: err.message, code: err.code, mfaToken: err.mfaToken, methods: err.methods },
+      { status: err.statusCode },
+    )
+  }
+
   if (err instanceof ApiError) {
     return NextResponse.json(
       { success: false as const, error: err.message, code: err.code },

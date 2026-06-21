@@ -2,11 +2,13 @@ import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { parseBody, loginSchema } from '@/lib/validation'
-import { UnauthorizedError, BadRequestError, RateLimitError } from '@/lib/errors'
+import { UnauthorizedError, BadRequestError, RateLimitError, MfaRequiredError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 import { createSession, setSessionCookie } from '@/lib/session'
 import { checkAuthRateLimit, recordAuthFailure, clearFailures } from '@/lib/rate-limit'
+import { getRedis } from '@/lib/redis'
+import { decryptEmail } from '@/lib/email-crypto'
 
 const HASH_BYTES = 32
 
@@ -59,6 +61,12 @@ export async function POST(request: NextRequest) {
         encPrivPw: true,
         pwNonce: true,
         publicKey: true,
+        mfaEmail: true,
+        mfaTotp: true,
+        mfaPasskey: true,
+        emailEncrypted: true,
+        emailNonce: true,
+        emailVerified: true,
       },
     })
 
@@ -75,6 +83,35 @@ export async function POST(request: NextRequest) {
     }
 
     await clearFailures(body.username)
+
+    const methods: string[] = []
+    if (user.mfaEmail && user.emailVerified && user.emailEncrypted && user.emailNonce) {
+      methods.push('email')
+    }
+    if (user.mfaTotp) {
+      methods.push('totp')
+    }
+    if (user.mfaPasskey) {
+      methods.push('passkey')
+    }
+
+    if (methods.length > 0) {
+      const mfaToken = crypto.randomBytes(32).toString('hex')
+      const redis = await getRedis()
+      await redis.set(`mfa:${mfaToken}`, JSON.stringify({
+        userId: user.id,
+        methods,
+        verified: [] as string[],
+        emailCodeHash: null,
+        emailSentAt: null,
+        emailAttempts: 0,
+        totpAttempts: 0,
+        verificationAttempts: 0,
+        createdAt: Date.now(),
+      }), 'EX', 300)
+
+      throw new MfaRequiredError('MFA required', mfaToken, methods)
+    }
 
     const token = createSession(user.id, user.username)
     await setSessionCookie(token)

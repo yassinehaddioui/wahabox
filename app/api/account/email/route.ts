@@ -83,7 +83,8 @@ export async function PUT(request: NextRequest) {
       if (process.env.APP_MODE === 'development') {
         console.error('[email] Failed to send verification email:', err)
       }
-      return success({ message: 'Email saved. Unable to send verification email.' })
+      await redis.del(`verify:${tokenHash}`)
+      throw new Error('Failed to send verification email')
     }
 
     return success({ message: 'Verification email sent.' })
@@ -126,7 +127,8 @@ export async function POST(request: NextRequest) {
       if (process.env.APP_MODE === 'development') {
         console.error('[email] Failed to send verification email:', err)
       }
-      return success({ message: 'Unable to send verification email. Please try again.' })
+      await redis.del(`verify:${tokenHash}`)
+      throw new Error('Failed to send verification email')
     }
 
     return success({ message: 'Verification email sent.' })

@@ -43,3 +43,15 @@ export class RateLimitError extends ApiError {
     this.name = 'RateLimitError'
   }
 }
+
+export class MfaRequiredError extends ApiError {
+  public mfaToken: string
+  public methods: string[]
+
+  constructor(msg = 'MFA required', mfaToken: string, methods: string[]) {
+    super(msg, 401, 'MFA_REQUIRED')
+    this.name = 'MfaRequiredError'
+    this.mfaToken = mfaToken
+    this.methods = methods
+  }
+}

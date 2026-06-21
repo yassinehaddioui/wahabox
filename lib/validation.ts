@@ -67,6 +67,30 @@ export const submitMessageSchema = z.object({
   honeypot: z.string().max(0, 'Bot detected').optional(),
 })
 
+export const mfaSendEmailSchema = z.object({
+  mfaToken: z.string().min(1),
+})
+
+export const mfaVerifySchema = z.object({
+  mfaToken: z.string().min(1),
+  method: z.enum(['email', 'totp', 'passkey']),
+  code: z.string().optional(),
+  assertion: z.any().optional(),
+})
+
+export const mfaRecoverSchema = z.object({
+  mfaToken: z.string().min(1),
+  recoveryCode: z.string().min(1),
+})
+
+export const mfaManageSchema = z.object({
+  method: z.enum(['email', 'totp', 'passkey']),
+  action: z.enum(['enable', 'disable', 'setup', 'confirm']),
+  code: z.string().optional(),
+  password: z.string().optional(),
+  attestation: z.any().optional(),
+})
+
 export async function parseBody<T extends z.ZodType>(
   request: Request,
   schema: T,
@@ -78,10 +102,25 @@ export async function parseBody<T extends z.ZodType>(
     throw new BadRequestError('Invalid JSON body')
   }
 
+  body = stripNulls(body)
+
   const result = schema.safeParse(body)
   if (!result.success) {
     throw new BadRequestError(result.error.issues[0]?.message ?? 'Validation failed')
   }
 
   return result.data
+}
+
+function stripNulls(value: unknown): unknown {
+  if (value === null || value === undefined) return value
+  if (Array.isArray(value)) return value.map(stripNulls)
+  if (typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v !== null) out[k] = stripNulls(v)
+    }
+    return out
+  }
+  return value
 }

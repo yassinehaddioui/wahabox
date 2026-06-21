@@ -96,3 +96,38 @@ export async function checkNotificationRateLimit(userId: string): Promise<boolea
     return false
   }, false)
 }
+
+export async function sendMfaCodeEmail(
+  to: string,
+  username: string,
+  code: string,
+): Promise<void> {
+  if (process.env.APP_MODE === 'development') {
+    console.log(`[email] MFA code for ${to}: ${code}`)
+  }
+
+  const client = getSes()
+
+  await client.send(new SendEmailCommand({
+    FromEmailAddress: getFromAddress(),
+    Destination: { ToAddresses: [to] },
+    Content: {
+      Simple: {
+        Subject: { Data: 'Your Wahabox verification code' },
+        Body: {
+          Text: {
+            Data: [
+              `Hello ${username},`,
+              '',
+              `Your verification code is: ${code}`,
+              '',
+              'This code expires in 5 minutes.',
+              '',
+              'If you did not attempt to sign in, your password may be compromised. Change it immediately.',
+            ].join('\n'),
+          },
+        },
+      },
+    },
+  }))
+}

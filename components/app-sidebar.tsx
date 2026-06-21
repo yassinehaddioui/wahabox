@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Settings } from 'lucide-react'
+import { Package, Settings } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -20,7 +20,7 @@ import {
 import { useSession } from '@/lib/session-provider'
 
 const navItems = [
-  { href: '/dashboard', label: 'PO Boxes' },
+  { href: '/dashboard', label: 'Boxes', icon: Package },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
