@@ -27,12 +27,23 @@ services:
       timeout: 5s
       retries: 5
 
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - caddy_dev_data:/data
+    depends_on:
+      - app
+
   app:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    ports:
-      - "${PORT:-3000}:3000"
+    expose:
+      - "3000"
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/wahabox?schema=public
       REDIS_URL: redis://redis:6379
@@ -52,3 +63,4 @@ services:
 volumes:
   postgres_dev_data:
   redis_dev_data:
+  caddy_dev_data:

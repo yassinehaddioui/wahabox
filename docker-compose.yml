@@ -27,8 +27,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "${PORT:-3000}:3000"
+    expose:
+      - "3000"
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/wahabox?schema=public
       REDIS_URL: redis://redis:6379
@@ -41,6 +41,20 @@ services:
       redis:
         condition: service_healthy
 
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    depends_on:
+      - app
+
 volumes:
   postgres_data:
   redis_data:
+  caddy_data:
