@@ -162,6 +162,25 @@ export default function DashboardPage() {
     }
   }
 
+  async function removePassword() {
+    if (!editBox) return
+    const csrfToken = await fetchCsrfToken('edit-box')
+    const res = await fetch(`/api/boxes/${editBox.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: null, csrfToken }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      toast.success('Password removed')
+      setEditBox(null)
+      setEditPasswordTouched(false)
+      await fetchBoxes()
+    } else {
+      toast.error(data.error)
+    }
+  }
+
   async function updateBox() {
     if (!editBox || !editLabel.trim()) return
     const body: Record<string, unknown> = { label: editLabel }
@@ -437,7 +456,7 @@ export default function DashboardPage() {
                                   variant="outline"
                                   size="sm"
                                   className="shrink-0"
-                                  onClick={() => { setEditPassword(''); setEditPasswordTouched(true) }}
+                                  onClick={removePassword}
                                 >
                                   Remove
                                 </Button>
