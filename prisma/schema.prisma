@@ -50,8 +50,9 @@ model PoBox {
   isActive    Boolean   @default(true) @map("is_active")
   expiresAt   DateTime? @map("expires_at")
   maxMessages Int?      @map("max_messages")
-  notify      Boolean   @default(true)
-  createdAt   DateTime  @default(now()) @map("created_at")
+  notify       Boolean   @default(true)
+  passwordHash String?   @map("password_hash")
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   messages Message[]

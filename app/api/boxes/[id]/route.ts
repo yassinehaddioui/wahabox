@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 import { success, error } from '@/lib/response'
 import { parseBody, updateBoxSchema } from '@/lib/validation'
 import { getAuthUser } from '@/lib/auth'
@@ -35,6 +36,9 @@ export async function PATCH(
     }
     if (body.maxMessages !== undefined) data.maxMessages = body.maxMessages
     if (body.notify !== undefined) data.notify = body.notify
+    if (body.password !== undefined) {
+      data.passwordHash = body.password ? await bcrypt.hash(body.password, 12) : null
+    }
     if (body.rotateSlug === true) {
       data.slug = crypto.randomBytes(16).toString('base64url')
     }
@@ -51,10 +55,21 @@ export async function PATCH(
         expiresAt: true,
         maxMessages: true,
         notify: true,
+        passwordHash: true,
       },
     })
 
-    return success(updated)
+    return success({
+      id: updated.id,
+      label: updated.label,
+      greeting: updated.greeting,
+      isActive: updated.isActive,
+      slug: updated.slug,
+      expiresAt: updated.expiresAt,
+      maxMessages: updated.maxMessages,
+      notify: updated.notify,
+      hasPassword: !!updated.passwordHash,
+    })
   } catch (err) {
     return error(err)
   }

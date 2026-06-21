@@ -50,6 +50,7 @@ export const recoveryCompleteSchema = z.object({
 export const createBoxSchema = z.object({
   label: z.string().min(1).max(128),
   greeting: z.string().max(500).nullable().optional(),
+  password: z.string().min(1).max(128).nullable().optional(),
   csrfToken: z.string().nullish(),
 })
 
@@ -61,6 +62,7 @@ export const updateBoxSchema = z.object({
   maxMessages: z.number().int().positive().nullable().optional(),
   notify: z.boolean().optional(),
   rotateSlug: z.boolean().optional(),
+  password: z.string().min(1).max(128).nullable().optional(),
   csrfToken: z.string().nullish(),
 })
 
@@ -70,6 +72,7 @@ export const submitMessageSchema = z.object({
   turnstileToken: z.string().nullish(),
   challenge: z.string().nullish(),
   nonce: z.string().nullish(),
+  password: z.string().nullish(),
   honeypot: z.string().max(0, 'Bot detected').nullish(),
 })
 

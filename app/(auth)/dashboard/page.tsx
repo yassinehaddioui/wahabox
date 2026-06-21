@@ -23,7 +23,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { Mail, Pencil, Copy, RefreshCw, WandSparkles } from 'lucide-react'
+import { Mail, Pencil, Copy, RefreshCw, WandSparkles, Lock } from 'lucide-react'
 
 async function fetchCsrfToken(tag: string): Promise<string | null> {
   const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
@@ -40,6 +40,7 @@ type PoBox = {
   expiresAt: string | null
   maxMessages: number | null
   notify: boolean
+  hasPassword: boolean
   createdAt: string
   _count: { messages: number }
   hasUnread: boolean
@@ -54,6 +55,8 @@ export default function DashboardPage() {
   const [editLabel, setEditLabel] = useState('')
   const [editGreeting, setEditGreeting] = useState('')
   const [editNotify, setEditNotify] = useState(true)
+  const [editPassword, setEditPassword] = useState('')
+  const [editPasswordTouched, setEditPasswordTouched] = useState(false)
   const [rotateBox, setRotateBox] = useState<PoBox | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [now, setNow] = useState(Date.now())
@@ -168,6 +171,9 @@ export default function DashboardPage() {
     if (editNotify !== editBox.notify) {
       body.notify = editNotify
     }
+    if (editPasswordTouched) {
+      body.password = editPassword || null
+    }
     const csrfToken = await fetchCsrfToken('edit-box')
     body.csrfToken = csrfToken
     const res = await fetch(`/api/boxes/${editBox.id}`, {
@@ -179,6 +185,7 @@ export default function DashboardPage() {
     if (data.success) {
       toast.success('Box updated')
       setEditBox(null)
+      setEditPasswordTouched(false)
       await fetchBoxes()
     } else {
       toast.error(data.error)
@@ -277,6 +284,9 @@ export default function DashboardPage() {
                       <Link href={`/dashboard/${box.id}`} className="hover:underline">
                         {box.label}
                       </Link>
+                      {box.hasPassword && (
+                        <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
+                      )}
                     </span>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
@@ -365,8 +375,11 @@ export default function DashboardPage() {
                           setEditLabel(box.label)
                           setEditGreeting(box.greeting ?? '')
                           setEditNotify(box.notify)
+                          setEditPassword('')
+                          setEditPasswordTouched(false)
                         } else {
                           setEditBox(null)
+                          setEditPasswordTouched(false)
                         }
                       }}>
                         <Tooltip>
@@ -406,6 +419,31 @@ export default function DashboardPage() {
                               This message is shown to people who open your drop link. Leave blank to use the default.
                             </p>
                           </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-password">
+                              {editBox?.hasPassword ? 'Change password' : 'Set a password (optional)'}
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id="edit-password"
+                                type="password"
+                                placeholder={editBox?.hasPassword ? 'Leave blank to keep current' : 'Require a password to send messages'}
+                                value={editPassword}
+                                onChange={(e) => { setEditPassword(e.target.value); setEditPasswordTouched(true) }}
+                                maxLength={128}
+                              />
+                              {editBox?.hasPassword && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="shrink-0"
+                                  onClick={() => { setEditPassword(''); setEditPasswordTouched(true) }}
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between rounded-lg border px-4 py-3">
                           <div className="min-w-0 flex-1">
@@ -423,7 +461,7 @@ export default function DashboardPage() {
                           />
                         </div>
                         <DialogFooter>
-                          <Button variant="outline" onClick={() => setEditBox(null)}>
+                          <Button variant="outline" onClick={() => { setEditBox(null); setEditPasswordTouched(false) }}>
                             Cancel
                           </Button>
                           <Button onClick={updateBox}>Save</Button>

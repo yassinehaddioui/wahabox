@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server'
 import { success, error } from '@/lib/response'
 import { parseBody, submitMessageSchema } from '@/lib/validation'
-import { BadRequestError, NotFoundError, RateLimitError } from '@/lib/errors'
+import { BadRequestError, NotFoundError, RateLimitError, InvalidPasswordError } from '@/lib/errors'
 import { notifyNewMessage } from '@/lib/notifications'
 import { checkDropRateLimit, getDropIpCounts, recordDropIp } from '@/lib/rate-limit'
 import { verifyPow, consumeChallenge } from '@/lib/pow'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { verifyTurnstile } from '@/lib/turnstile'
 import prisma from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
 
 const MAX_CIPHERTEXT_SIZE = 100 * 1024
 const HOURLY_QUOTA = 20
@@ -30,6 +31,7 @@ export async function GET(
         isActive: true,
         expiresAt: true,
         maxMessages: true,
+        passwordHash: true,
         owner: { select: { publicKey: true } },
         _count: { select: { messages: true } },
       },
@@ -48,6 +50,7 @@ export async function GET(
       label: box.label,
       greeting: box.greeting,
       publicKey: Buffer.from(box.owner.publicKey).toString('base64'),
+      hasPassword: !!box.passwordHash,
     })
   } catch (err) {
     return error(err)
@@ -79,6 +82,37 @@ export async function POST(
 
     const body = await parseBody(request, submitMessageSchema)
 
+    const box = await prisma.poBox.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        isActive: true,
+        expiresAt: true,
+        maxMessages: true,
+        passwordHash: true,
+        _count: { select: { messages: true } },
+      },
+    })
+
+    if (
+      !box ||
+      !box.isActive ||
+      (box.expiresAt && box.expiresAt < new Date()) ||
+      (box.maxMessages !== null && box._count.messages >= box.maxMessages)
+    ) {
+      throw new NotFoundError('Not found')
+    }
+
+    if (box.passwordHash) {
+      if (!body.password) {
+        throw new InvalidPasswordError('Password required')
+      }
+      const valid = await bcrypt.compare(body.password, box.passwordHash)
+      if (!valid) {
+        throw new InvalidPasswordError('Invalid password')
+      }
+    }
+
     const csrfValid = await verifyAndConsumeCsrfToken(slug, body.csrfToken ?? null)
     if (!csrfValid) {
       throw new BadRequestError('Invalid or expired CSRF token')
@@ -95,26 +129,6 @@ export async function POST(
       if (!valid || !consumed) {
         throw new BadRequestError('Invalid proof of work')
       }
-    }
-
-    const box = await prisma.poBox.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        isActive: true,
-        expiresAt: true,
-        maxMessages: true,
-        _count: { select: { messages: true } },
-      },
-    })
-
-    if (
-      !box ||
-      !box.isActive ||
-      (box.expiresAt && box.expiresAt < new Date()) ||
-      (box.maxMessages !== null && box._count.messages >= box.maxMessages)
-    ) {
-      throw new NotFoundError('Not found')
     }
 
     const now = new Date()

@@ -55,3 +55,10 @@ export class MfaRequiredError extends ApiError {
     this.methods = methods
   }
 }
+
+export class InvalidPasswordError extends ApiError {
+  constructor(message = 'Invalid password') {
+    super(message, 401, 'INVALID_PASSWORD')
+    this.name = 'InvalidPasswordError'
+  }
+}

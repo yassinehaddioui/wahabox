@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 import { success, error } from '@/lib/response'
 import { parseBody, createBoxSchema } from '@/lib/validation'
 import { getAuthUser } from '@/lib/auth'
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
         expiresAt: true,
         maxMessages: true,
         notify: true,
+        passwordHash: true,
         createdAt: true,
         _count: { select: { messages: true } },
         messages: {
@@ -39,9 +41,10 @@ export async function GET(request: NextRequest) {
     })
 
     return success(
-      boxes.map(({ messages: unreadMessages, ...box }: { messages: { id: string }[] } & Record<string, unknown>) => ({
+      boxes.map(({ messages: unreadMessages, passwordHash, ...box }: { messages: { id: string }[]; passwordHash: string | null } & Record<string, unknown>) => ({
         ...box,
         hasUnread: unreadMessages.length > 0,
+        hasPassword: !!passwordHash,
       }))
     )
   } catch (err) {
@@ -65,6 +68,7 @@ export async function POST(request: NextRequest) {
         slug,
         label: body.label,
         greeting: body.greeting ?? null,
+        passwordHash: body.password ? await bcrypt.hash(body.password, 12) : null,
       },
       select: { id: true, slug: true, label: true, greeting: true },
     })

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { TextEditor } from '@/components/ui/text-editor'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -10,6 +11,7 @@ type BoxInfo = {
   label: string
   greeting: string | null
   publicKey: string
+  hasPassword: boolean
 }
 
 const TURNSTILE_SITE_KEY = '1x00000000000000000000AA'
@@ -50,10 +52,17 @@ export default function DropPage() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const cachedPayloadRef = useRef<{ ciphertext: string; csrfToken: string | null; turnstileToken: string | null } | null>(null)
   const honeypotRef = useRef<HTMLInputElement>(null)
   const turnstileRef = useRef<HTMLDivElement>(null)
   const turnstileWidgetId = useRef<string | null>(null)
+
+  useEffect(() => {
+    cachedPayloadRef.current = null
+  }, [message])
 
   useEffect(() => {
     fetch(`/api/drop/${slug}`)
@@ -122,20 +131,31 @@ export default function DropPage() {
 
     setSending(true)
     setError('')
+    setPasswordError('')
 
     try {
-      const { crypto } = await import('@/lib/crypto')
-      await crypto.ready
+      let ciphertext: string
+      let csrfToken: string | null
 
-      const publicKey = crypto.fromBase64(box!.publicKey)
-      const ciphertext = crypto.sealMessage(message, publicKey)
+      if (cachedPayloadRef.current) {
+        ciphertext = cachedPayloadRef.current.ciphertext
+      } else {
+        const { crypto } = await import('@/lib/crypto')
+        await crypto.ready
+
+        const publicKey = crypto.fromBase64(box!.publicKey)
+        const raw = crypto.sealMessage(message, publicKey)
+        ciphertext = crypto.toBase64(raw)
+      }
 
       const csrfRes = await fetch(`/api/csrf?tag=${encodeURIComponent(slug)}`)
       const csrfData = await csrfRes.json()
-      const csrfToken = csrfData.success ? csrfData.data.csrfToken : null
+      csrfToken = csrfData.success ? csrfData.data.csrfToken : null
+
+      cachedPayloadRef.current = { ciphertext, csrfToken, turnstileToken: turnstileToken }
 
       const payload: Record<string, unknown> = {
-        ciphertext: crypto.toBase64(ciphertext),
+        ciphertext,
         csrfToken,
         honeypot: '',
       }
@@ -144,15 +164,27 @@ export default function DropPage() {
         payload.turnstileToken = turnstileToken
       }
 
+      if (box!.hasPassword && password) {
+        payload.password = password
+      }
+
       const res = await fetch(`/api/drop/${slug}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       const data = await res.json()
-      if (!data.success) throw new Error(data.error)
+      if (!data.success) {
+        if (data.code === 'INVALID_PASSWORD') {
+          setPasswordError(data.error)
+          return
+        }
+        throw new Error(data.error)
+      }
       setSent(true)
+      cachedPayloadRef.current = null
     } catch (err) {
+      cachedPayloadRef.current = null
       setError(err instanceof Error ? err.message : 'Failed to send message')
     } finally {
       setSending(false)
@@ -202,6 +234,18 @@ export default function DropPage() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {box!.hasPassword && (
+            <div className="space-y-1.5">
+              <Input
+                type="password"
+                placeholder="Enter password to send a message"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setPasswordError('') }}
+                className={passwordError ? 'border-destructive' : ''}
+              />
+              {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+            </div>
+          )}
           <div className="space-y-2">
               <TextEditor
                 id="message"
@@ -221,7 +265,7 @@ export default function DropPage() {
             aria-hidden="true"
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={sending} className="w-full">
+          <Button type="submit" disabled={sending || (box!.hasPassword && !password)} className="w-full">
             {sending ? 'Encrypting & Sending...' : 'Send Message'}
           </Button>
         </form>
