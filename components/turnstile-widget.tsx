@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 
 const TURNSTILE_SITE_KEY = '1x00000000000000000000AA'
 
@@ -24,26 +24,32 @@ interface TurnstileWidgetProps {
 export function TurnstileWidget({ onVerify, onExpire, onError }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetId = useRef<string | null>(null)
+  const onVerifyRef = useRef(onVerify)
+  const onExpireRef = useRef(onExpire)
+  const onErrorRef = useRef(onError)
 
-  const renderWidget = useCallback(() => {
-    if (!containerRef.current || !window.turnstile) return
-    if (widgetId.current) {
-      window.turnstile.reset(widgetId.current)
-      return
-    }
-    widgetId.current = window.turnstile.render(containerRef.current, {
-      sitekey: TURNSTILE_SITE_KEY,
-      callback: (token: string) => onVerify(token),
-      'expired-callback': () => {
-        onExpire?.()
-      },
-      'error-callback': () => {
-        onError?.()
-      },
-    })
-  }, [onVerify, onExpire, onError])
+  onVerifyRef.current = onVerify
+  onExpireRef.current = onExpire
+  onErrorRef.current = onError
 
   useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    function renderWidget() {
+      if (!window.turnstile || !container) return
+      if (widgetId.current) {
+        window.turnstile.reset(widgetId.current)
+        return
+      }
+      widgetId.current = window.turnstile.render(container, {
+        sitekey: TURNSTILE_SITE_KEY,
+        callback: (token: string) => onVerifyRef.current(token),
+        'expired-callback': () => onExpireRef.current?.(),
+        'error-callback': () => onErrorRef.current?.(),
+      })
+    }
+
     const existingScript = document.querySelector('script[src*="turnstile"]')
     if (existingScript) {
       if (window.turnstile) {
@@ -58,9 +64,7 @@ export function TurnstileWidget({ onVerify, onExpire, onError }: TurnstileWidget
       return
     }
 
-    window.onTurnstileLoad = () => {
-      renderWidget()
-    }
+    window.onTurnstileLoad = renderWidget
 
     const script = document.createElement('script')
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad'
@@ -75,7 +79,7 @@ export function TurnstileWidget({ onVerify, onExpire, onError }: TurnstileWidget
       }
       delete window.onTurnstileLoad
     }
-  }, [renderWidget])
+  }, [])
 
   return <div ref={containerRef} className="flex justify-center" />
 }
