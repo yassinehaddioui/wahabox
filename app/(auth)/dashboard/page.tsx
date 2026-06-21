@@ -116,6 +116,8 @@ export default function DashboardPage() {
     if (data.success) {
       toast.success(box.isActive ? 'Box deactivated' : 'Box activated')
       await fetchBoxes()
+    } else {
+      toast.error(data.error)
     }
   }
 

@@ -113,8 +113,7 @@ export default function MessagesPage() {
       const publicKey = sessionStorage.getItem('session:publicKey')
 
       if (!privateKey || !publicKey) {
-        toast.error('Session expired, please re-login')
-        router.push('/login')
+        toast.error('Encryption keys not found. Please refresh the page or sign in again.')
         return
       }
 
