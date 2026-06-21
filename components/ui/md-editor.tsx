@@ -35,7 +35,7 @@ export function MdEditor({
         value={value}
         onChange={handleChange}
         preview="edit"
-        height={200}
+        height={400}
         visibleDragbar={false}
         textareaProps={{
           id,

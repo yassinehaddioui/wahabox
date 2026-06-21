@@ -165,7 +165,7 @@ export default function DropPage() {
 
   if (error && !box) {
     return (
-      <Card className="w-full max-w-2xl bg-canvas-soft">
+      <Card className="w-full max-w-4xl bg-canvas-soft">
         <CardHeader className="text-center">
           <CardTitle>Not Found</CardTitle>
           <CardDescription>{error}</CardDescription>
@@ -176,7 +176,7 @@ export default function DropPage() {
 
   if (sent) {
     return (
-      <Card className="w-full max-w-2xl bg-canvas-soft">
+      <Card className="w-full max-w-4xl bg-canvas-soft">
         <CardHeader className="text-center">
           <CardTitle>Message Sent!</CardTitle>
           <CardDescription>
@@ -193,7 +193,7 @@ export default function DropPage() {
   }
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-4xl">
       <CardHeader>
         <CardTitle>{box!.label}</CardTitle>
         <CardDescription>
