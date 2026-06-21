@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
     const user = await getAuthUser(request)
     const body = await parseBody(request, createBoxSchema)
 
-    const csrfValid = await verifyAndConsumeCsrfToken('create-box', body.csrfToken ?? null)
+    const sessionId = request.cookies.get('session')?.value
+    const csrfValid = await verifyAndConsumeCsrfToken('create-box', body.csrfToken ?? null, sessionId)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
     const slug = generateSlug()
