@@ -1,15 +1,23 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
 function VerifyContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
+  const router = useRouter()
   const [state, setState] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    if (state === 'success') {
+      const timer = setTimeout(() => router.push('/login'), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [state, router])
 
   useEffect(() => {
     if (!token) {

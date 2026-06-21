@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
 }
 
 const EMAIL_WINDOW = { windowMs: 300_000, max: 20 }
+const EMAIL_RESEND_COOLDOWN_S = 30
 
 export async function PUT(request: NextRequest) {
   try {
@@ -63,7 +64,14 @@ export async function PUT(request: NextRequest) {
       throw new RateLimitError('Too many requests. Try again later.')
     }
 
-    const { email, csrfToken } = await request.json().catch(() => ({})) as { email?: string; csrfToken?: string }
+    const redis = await getRedis()
+    const cooldownKey = `email-resend-cooldown:${user.id}`
+    if (await redis.exists(cooldownKey)) {
+      const ttl = await redis.ttl(cooldownKey)
+      throw new RateLimitError(`Wait ${ttl}s before resending.`)
+    }
+
+    const { email, csrfToken } = await request.json() as { email?: string; csrfToken?: string }
     const csrfValid = await verifyAndConsumeCsrfToken('email-set', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
@@ -86,7 +94,6 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    const redis = await getRedis()
     await redis.set(
       `verify:${tokenHash}`,
       user.id,
@@ -103,6 +110,8 @@ export async function PUT(request: NextRequest) {
       await redis.del(`verify:${tokenHash}`)
       throw new Error('Failed to send verification email')
     }
+
+    await redis.set(cooldownKey, '1', 'EX', EMAIL_RESEND_COOLDOWN_S)
 
     return success({ message: 'Verification email sent.' })
   } catch (err) {
@@ -122,6 +131,13 @@ export async function POST(request: NextRequest) {
         await checkUserRate(user.username, EMAIL_WINDOW) ||
         await checkGlobalRate()) {
       throw new RateLimitError('Too many requests. Try again later.')
+    }
+
+    const redis = await getRedis()
+    const cooldownKey = `email-resend-cooldown:${user.id}`
+    if (await redis.exists(cooldownKey)) {
+      const ttl = await redis.ttl(cooldownKey)
+      throw new RateLimitError(`Wait ${ttl}s before resending.`)
     }
 
     const { csrfToken } = await request.json().catch(() => ({})) as { csrfToken?: string }
@@ -149,7 +165,6 @@ export async function POST(request: NextRequest) {
     const token = crypto.randomBytes(32).toString('hex')
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
 
-    const redis = await getRedis()
     await redis.set(`verify:${tokenHash}`, user.id, 'EX', 3600)
 
     try {
@@ -161,6 +176,8 @@ export async function POST(request: NextRequest) {
       await redis.del(`verify:${tokenHash}`)
       throw new Error('Failed to send verification email')
     }
+
+    await redis.set(cooldownKey, '1', 'EX', EMAIL_RESEND_COOLDOWN_S)
 
     return success({ message: 'Verification email sent.' })
   } catch (err) {

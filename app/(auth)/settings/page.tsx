@@ -20,6 +20,8 @@ import {
 import { toast } from 'sonner'
 import { CheckCircle, XCircle, Loader2, Shield, Smartphone, Key, Copy, Trash2, KeyRound } from 'lucide-react'
 
+const RESEND_COOLDOWN_S = 30
+
 type EmailStatus = {
   hasEmail: boolean
   isVerified: boolean
@@ -63,6 +65,7 @@ export default function SettingsPage() {
   const [resending, setResending] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [toggling, setToggling] = useState(false)
+  const [sendCooldown, setSendCooldown] = useState(0)
 
   const [mfaStatus, setMfaStatus] = useState<MfaStatus | null>(null)
   const [mfaLoading, setMfaLoading] = useState(true)
@@ -117,6 +120,12 @@ export default function SettingsPage() {
   useEffect(() => { fetchMfaStatus() }, [fetchMfaStatus])
   useEffect(() => { fetchPasskeys() }, [fetchPasskeys])
 
+  useEffect(() => {
+    if (sendCooldown <= 0) return
+    const timer = setInterval(() => setSendCooldown((c) => c - 1), 1000)
+    return () => clearInterval(timer)
+  }, [sendCooldown])
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     if (!email.includes('@')) {
@@ -136,8 +145,13 @@ export default function SettingsPage() {
       if (data.success) {
         toast.success(data.data.message)
         setEmail('')
+        setSendCooldown(RESEND_COOLDOWN_S)
         await fetchStatus()
       } else {
+        if (data.error?.startsWith('Wait ')) {
+          const match = data.error.match(/Wait (\d+)s/)
+          if (match) setSendCooldown(parseInt(match[1], 10))
+        }
         toast.error(data.error)
       }
     } catch {
@@ -159,7 +173,12 @@ export default function SettingsPage() {
       const data = await res.json()
       if (data.success) {
         toast.success(data.data.message)
+        setSendCooldown(RESEND_COOLDOWN_S)
       } else {
+        if (data.error?.startsWith('Wait ')) {
+          const match = data.error.match(/Wait (\d+)s/)
+          if (match) setSendCooldown(parseInt(match[1], 10))
+        }
         toast.error(data.error)
       }
     } catch {
@@ -484,18 +503,18 @@ export default function SettingsPage() {
                   placeholder="you@example.com"
                   required
                 />
-                <Button type="submit" disabled={saving}>
+                <Button type="submit" disabled={saving || sendCooldown > 0}>
                   {saving && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-                  {status?.hasEmail ? 'Update' : 'Save'}
+                  {sendCooldown > 0 ? `${status?.hasEmail ? 'Update' : 'Save'} (${sendCooldown}s)` : (status?.hasEmail ? 'Update' : 'Save')}
                 </Button>
               </form>
 
               {status?.hasEmail && (
                 <div className="flex gap-2">
                   {!status.isVerified && (
-                    <Button variant="outline" onClick={handleResend} disabled={resending} className="flex-1">
+                    <Button variant="outline" onClick={handleResend} disabled={resending || sendCooldown > 0} className="flex-1">
                       {resending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-                      Resend Verification
+                      {sendCooldown > 0 ? `Resend (${sendCooldown}s)` : 'Resend Verification'}
                     </Button>
                   )}
                   <Button
