@@ -10,6 +10,7 @@ import { ArrowLeft, Eye, EyeOff, Trash2, Unlock } from 'lucide-react'
 import { Markdown } from '@/components/ui/markdown'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 const AUTO_DECRYPT_KEY = 'wahabox:autoDecrypt'
@@ -28,16 +29,19 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [decrypted, setDecrypted] = useState<Set<string>>(new Set())
-  const [autoDecrypt, setAutoDecrypt] = useState(() => {
+  const [autoDecrypt, setAutoDecrypt] = useState(false)
+
+  useEffect(() => {
     try {
       const stored = localStorage.getItem(AUTO_DECRYPT_KEY)
       if (stored) {
         const ids: string[] = JSON.parse(stored)
-        return ids.includes(id)
+        if (ids.includes(id)) {
+          setAutoDecrypt(true)
+        }
       }
     } catch {}
-    return false
-  })
+  }, [id])
 
   function toggleAutoDecrypt() {
     setAutoDecrypt((prev) => {
@@ -213,7 +217,7 @@ export default function MessagesPage() {
         </Card>
       ) : (
         messages.map((msg) => (
-          <Card key={msg.id} className="group">
+          <Card key={msg.id} className={cn("group", !msg.isRead && "ring-2 ring-inset ring-amber-400")}>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-2">

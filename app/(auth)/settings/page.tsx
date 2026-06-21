@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
@@ -13,6 +15,7 @@ type EmailStatus = {
   hasEmail: boolean
   isVerified: boolean
   maskedEmail?: string
+  notificationsEnabled: boolean
 }
 
 export default function SettingsPage() {
@@ -22,6 +25,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [resending, setResending] = useState(false)
   const [removing, setRemoving] = useState(false)
+  const [toggling, setToggling] = useState(false)
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -101,6 +105,28 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleToggleNotifications(enabled: boolean) {
+    setToggling(true)
+    try {
+      const res = await fetch('/api/account/email', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationsEnabled: enabled }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setStatus((prev) => prev ? { ...prev, notificationsEnabled: enabled } : prev)
+        toast.success(enabled ? 'Notifications enabled' : 'Notifications disabled')
+      } else {
+        toast.error(data.error)
+      }
+    } catch {
+      toast.error('Failed to update setting')
+    } finally {
+      setToggling(false)
+    }
+  }
+
   return (
     <div className="w-full max-w-xl space-y-6">
       <div>
@@ -130,7 +156,7 @@ export default function SettingsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{status.maskedEmail}</p>
                     <p className="text-xs text-muted-foreground">
-                      {status.isVerified ? 'Verified. You will receive notifications.' : 'Not verified. Check your inbox.'}
+                      {status.isVerified ? 'Verified' : 'Not verified. Check your inbox.'}
                     </p>
                   </div>
                   {status.isVerified ? (
@@ -144,6 +170,27 @@ export default function SettingsPage() {
                       Pending
                     </Badge>
                   )}
+                </div>
+              )}
+
+              {status?.hasEmail && status.isVerified && (
+                <div className="flex items-center justify-between rounded-lg border bg-canvas-soft px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="notif-toggle" className="text-sm font-medium cursor-pointer">
+                      Message notifications
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {status.notificationsEnabled
+                        ? 'You will be notified when a box receives a new message.'
+                        : 'You will not receive email notifications.'}
+                    </p>
+                  </div>
+                  <Switch
+                    id="notif-toggle"
+                    checked={status.notificationsEnabled}
+                    onCheckedChange={handleToggleNotifications}
+                    disabled={toggling}
+                  />
                 </div>
               )}
 

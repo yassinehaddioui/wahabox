@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const [editBox, setEditBox] = useState<PoBox | null>(null)
   const [editLabel, setEditLabel] = useState('')
   const [editGreeting, setEditGreeting] = useState('')
+  const [editNotify, setEditNotify] = useState(true)
   const [rotateBox, setRotateBox] = useState<PoBox | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [now, setNow] = useState(Date.now())
@@ -115,6 +116,9 @@ export default function DashboardPage() {
     const body: Record<string, unknown> = { label: editLabel }
     if (editGreeting !== (editBox.greeting ?? '')) {
       body.greeting = editGreeting || null
+    }
+    if (editNotify !== editBox.notify) {
+      body.notify = editNotify
     }
     const res = await fetch(`/api/boxes/${editBox.id}`, {
       method: 'PATCH',
@@ -286,6 +290,7 @@ export default function DashboardPage() {
                           setEditBox(box)
                           setEditLabel(box.label)
                           setEditGreeting(box.greeting ?? '')
+                          setEditNotify(box.notify)
                         } else {
                           setEditBox(null)
                         }
@@ -324,6 +329,21 @@ export default function DashboardPage() {
                               This message is shown to people who open your drop link. Leave blank to use the default.
                             </p>
                           </div>
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                          <div className="min-w-0 flex-1">
+                            <Label htmlFor="edit-notify" className="text-sm font-medium cursor-pointer">
+                              Notify on new messages
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Receive email notifications when this box gets a new message.
+                            </p>
+                          </div>
+                          <Switch
+                            id="edit-notify"
+                            checked={editNotify}
+                            onCheckedChange={setEditNotify}
+                          />
                         </div>
                         <DialogFooter>
                           <Button variant="outline" onClick={() => setEditBox(null)}>

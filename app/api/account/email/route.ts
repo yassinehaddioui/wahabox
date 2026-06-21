@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
 
     const record = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { emailEncrypted: true, emailNonce: true, emailVerified: true },
+      select: { emailEncrypted: true, emailNonce: true, emailVerified: true, notificationsEnabled: true },
     })
 
     if (!record?.emailEncrypted || !record?.emailNonce) {
-      return success({ hasEmail: false, isVerified: false })
+      return success({ hasEmail: false, isVerified: false, notificationsEnabled: record?.notificationsEnabled ?? true })
     }
 
     const email = decryptEmail(
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       hasEmail: true,
       isVerified: record.emailVerified,
       maskedEmail: maskEmail(email),
+      notificationsEnabled: record.notificationsEnabled,
     })
   } catch (err) {
     return error(err)
@@ -149,6 +150,26 @@ export async function DELETE(request: NextRequest) {
     })
 
     return success({ message: 'Email removed' })
+  } catch (err) {
+    return error(err)
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const user = await getAuthUser(request)
+    const { notificationsEnabled } = await request.json() as { notificationsEnabled?: boolean }
+
+    if (typeof notificationsEnabled !== 'boolean') {
+      throw new BadRequestError('notificationsEnabled must be a boolean')
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { notificationsEnabled },
+    })
+
+    return success({ notificationsEnabled })
   } catch (err) {
     return error(err)
   }
