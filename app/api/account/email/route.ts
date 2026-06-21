@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-const EMAIL_WINDOW = { windowMs: 300_000, max: 3 }
+const EMAIL_WINDOW = { windowMs: 300_000, max: 20 }
 
 export async function PUT(request: NextRequest) {
   try {
