@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -39,7 +43,6 @@ export default function SignupPage() {
 
       const authVerifier = crypto.computeAuthVerifier(authKey, authSalt)
 
-      // Store all derived data in sessionStorage for the API call
       sessionStorage.setItem('signup:username', username)
       sessionStorage.setItem('signup:authVerifier', crypto.toBase64(authVerifier))
       sessionStorage.setItem('signup:authSalt', crypto.toBase64(authSalt))
@@ -89,12 +92,8 @@ export default function SignupPage() {
       })
 
       const data = await res.json()
+      if (!data.success) throw new Error(data.error)
 
-      if (!data.success) {
-        throw new Error(data.error)
-      }
-
-      // Clear session storage
       for (const key of Object.keys(sessionStorage)) {
         if (key.startsWith('signup:')) sessionStorage.removeItem(key)
       }
@@ -110,113 +109,102 @@ export default function SignupPage() {
 
   if (step === 'recovery' || step === 'confirm') {
     return (
-      <div className="flex min-h-screen items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-6">
-          <h1 className="text-2xl font-bold text-center">Save Your Recovery Code</h1>
-
-          <p className="text-sm text-gray-600 text-center">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Save Your Recovery Code</CardTitle>
+          <CardDescription>
             This code is the <strong>only</strong> way to recover your account if you
             lose your password. Write it down and keep it safe.
-          </p>
-
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
-            <code className="text-lg font-mono font-bold break-all select-all">
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg bg-amber-50 p-4 text-center dark:bg-amber-950">
+            <code className="select-all text-lg font-bold font-mono break-all">
               {recoveryCode}
             </code>
           </div>
 
           {step === 'recovery' && (
-            <button
-              onClick={() => setStep('confirm')}
-              className="w-full rounded-lg bg-black py-2 text-white hover:bg-gray-800"
-            >
+            <Button onClick={() => setStep('confirm')} className="w-full">
               I&apos;ve saved my recovery code
-            </button>
+            </Button>
           )}
 
           {step === 'confirm' && (
             <form onSubmit={handleConfirm} className="space-y-4">
-              <p className="text-sm text-gray-600 text-center">
+              <p className="text-sm text-muted-foreground text-center">
                 Re-type your recovery code to confirm you&apos;ve saved it:
               </p>
-              <input
+              <Input
                 type="text"
                 value={confirmCode}
                 onChange={(e) => setConfirmCode(e.target.value)}
                 placeholder="Enter your recovery code"
-                className="w-full rounded-lg border px-3 py-2 font-mono text-sm"
+                className="font-mono"
                 autoComplete="off"
                 required
               />
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-lg bg-black py-2 text-white hover:bg-gray-800 disabled:opacity-50"
-              >
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button type="submit" disabled={loading} className="w-full">
                 {loading ? 'Creating account...' : 'Create Account'}
-              </button>
+              </Button>
             </form>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     )
   }
 
   if (step === 'done') {
     return (
-      <div className="flex min-h-screen items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Account Created!</h1>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle>Account Created!</CardTitle>
+          <CardDescription>Redirecting to login...</CardDescription>
+        </CardHeader>
+      </Card>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-8">
-      <div className="w-full max-w-md space-y-6">
-        <h1 className="text-2xl font-bold text-center">Create Account</h1>
-
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Create Account</CardTitle>
+        <CardDescription>
+          Your keys are generated in your browser. We never see your password.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Username</label>
-            <input
-              type="text"
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2"
               minLength={3}
               maxLength={32}
               pattern="^[a-zA-Z0-9_]+$"
               required
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2"
               minLength={8}
               required
             />
           </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-black py-2 text-white hover:bg-gray-800 disabled:opacity-50"
-          >
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? 'Generating keys...' : 'Create Account'}
-          </button>
+          </Button>
         </form>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

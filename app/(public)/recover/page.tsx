@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function RecoverPage() {
   const router = useRouter()
@@ -21,18 +25,14 @@ export default function RecoverPage() {
       const { crypto } = await import('@/lib/crypto')
       await crypto.ready
 
-      // Step 1: Get recovery data from server
       const startRes = await fetch('/api/auth/recovery-start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username }),
       })
       const startData = await startRes.json()
-      if (!startData.success) {
-        throw new Error('Invalid username or recovery code')
-      }
+      if (!startData.success) throw new Error('Invalid username or recovery code')
 
-      // Step 2: Derive KEK_rec and unwrap private key
       const recKdfSalt = crypto.fromBase64(startData.data.recKdfSalt)
       const kekRec = crypto.deriveRecoveryKey(recoveryCode, recKdfSalt)
 
@@ -45,19 +45,13 @@ export default function RecoverPage() {
         throw new Error('Invalid recovery code')
       }
 
-      // Step 3: Derive new master key from new password
       const pwKdfSalt = crypto.randomBytes(16)
       const authSalt = crypto.randomBytes(16)
       const masterKey = crypto.deriveMasterKey(newPassword, pwKdfSalt)
       const { authKey, kekPw } = crypto.splitMasterKey(masterKey)
-
-      // Step 4: Re-wrap private key under new KEK_pw
       const encPrivPw = crypto.wrapPrivateKey(privateKey, kekPw)
-
-      // Step 5: Compute new auth verifier
       const authVerifier = crypto.computeAuthVerifier(authKey, authSalt)
 
-      // Step 6: POST new credentials to server
       const completeRes = await fetch('/api/auth/recovery-complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,9 +65,7 @@ export default function RecoverPage() {
         }),
       })
       const completeData = await completeRes.json()
-      if (!completeData.success) {
-        throw new Error(completeData.error)
-      }
+      if (!completeData.success) throw new Error(completeData.error)
 
       setDone(true)
       setTimeout(() => router.push('/login'), 2000)
@@ -86,67 +78,62 @@ export default function RecoverPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Password Updated!</h1>
-          <p className="text-gray-600">You can now sign in with your new password.</p>
-        </div>
-      </div>
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle>Password Updated!</CardTitle>
+          <CardDescription>You can now sign in with your new password.</CardDescription>
+        </CardHeader>
+      </Card>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-8">
-      <div className="w-full max-w-md space-y-6">
-        <h1 className="text-2xl font-bold text-center">Recover Account</h1>
-
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Recover Account</CardTitle>
+        <CardDescription>
+          Use your recovery code to set a new password. Your PO boxes and messages remain intact.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Username</label>
-            <input
-              type="text"
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2"
               required
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Recovery Code</label>
-            <input
-              type="text"
+          <div className="space-y-2">
+            <Label htmlFor="recoveryCode">Recovery Code</Label>
+            <Input
+              id="recoveryCode"
               value={recoveryCode}
               onChange={(e) => setRecoveryCode(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2 font-mono"
+              className="font-mono"
               autoComplete="off"
               required
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">New Password</label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">New Password</Label>
+            <Input
+              id="newPassword"
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2"
               minLength={8}
               required
             />
           </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-black py-2 text-white hover:bg-gray-800 disabled:opacity-50"
-          >
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? 'Recovering...' : 'Recover Account'}
-          </button>
+          </Button>
         </form>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

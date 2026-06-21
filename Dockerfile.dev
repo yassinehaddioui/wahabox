@@ -12,4 +12,4 @@ RUN DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy pnpm prisma generate
 EXPOSE 3000
 ENV NEXT_TELEMETRY_DISABLED=1
 
-CMD ["sh", "-c", "pnpm prisma generate && pnpm prisma migrate deploy && pnpm dev"]
+CMD ["sh", "-c", "pnpm install --frozen-lockfile && pnpm prisma generate && pnpm prisma migrate deploy && pnpm dev"]

@@ -2,6 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,26 +24,21 @@ export default function LoginPage() {
       const { crypto } = await import('@/lib/crypto')
       await crypto.ready
 
-      // Step 1: Fetch salts for the username
       const saltRes = await fetch('/api/auth/salts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username }),
       })
       const saltData = await saltRes.json()
-      if (!saltData.success) {
-        throw new Error('Invalid credentials')
-      }
+      if (!saltData.success) throw new Error('Invalid credentials')
 
       const pwKdfSalt = crypto.fromBase64(saltData.data.pwKdfSalt)
       const authSalt = crypto.fromBase64(saltData.data.authSalt)
 
-      // Step 2: Derive master key and compute auth verifier
       const masterKey = crypto.deriveMasterKey(password, pwKdfSalt)
       const { authKey } = crypto.splitMasterKey(masterKey)
       const authVerifier = crypto.computeAuthVerifier(authKey, authSalt)
 
-      // Step 3: POST verifier to login endpoint
       const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,17 +48,13 @@ export default function LoginPage() {
         }),
       })
       const loginData = await loginRes.json()
-      if (!loginData.success) {
-        throw new Error('Invalid credentials')
-      }
+      if (!loginData.success) throw new Error('Invalid credentials')
 
-      // Step 4: Unwrap private key into memory
       const encPrivPw = crypto.fromBase64(loginData.data.encPrivPw)
       const pwNonce = crypto.fromBase64(loginData.data.pwNonce)
       const { kekPw } = crypto.splitMasterKey(masterKey)
       const privateKey = crypto.unwrapPrivateKey(encPrivPw, pwNonce, kekPw)
 
-      // Store in memory (sessionStorage, cleared on tab close or logout)
       sessionStorage.setItem('session:privateKey', crypto.toBase64(privateKey))
       sessionStorage.setItem('session:publicKey', loginData.data.publicKey)
 
@@ -71,48 +67,46 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-8">
-      <div className="w-full max-w-md space-y-6">
-        <h1 className="text-2xl font-bold text-center">Sign In</h1>
-
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Sign In</CardTitle>
+        <CardDescription>Enter your credentials to access your PO boxes.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Username</label>
-            <input
-              type="text"
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2"
               required
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2"
               required
             />
           </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-black py-2 text-white hover:bg-gray-800 disabled:opacity-50"
-          >
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+          </Button>
         </form>
-
-        <p className="text-center text-sm text-gray-600">
-          <a href="/signup" className="underline">Create an account</a>
-        </p>
-      </div>
-    </div>
+        <div className="flex justify-between text-sm">
+          <Link href="/signup" className="text-muted-foreground hover:text-foreground transition-colors">
+            Create an account
+          </Link>
+          <Link href="/recover" className="text-muted-foreground hover:text-foreground transition-colors">
+            Recover account
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

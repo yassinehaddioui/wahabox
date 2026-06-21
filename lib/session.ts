@@ -7,29 +7,52 @@ type SessionData = {
   createdAt: number
 }
 
-const sessions = new Map<string, SessionData>()
-
 const SESSION_COOKIE = 'session'
-const SESSION_MAX_AGE = 24 * 60 * 60 * 1000 // 24 hours
+const SESSION_MAX_AGE = 24 * 60 * 60 * 1000
+
+function sign(data: string): string {
+  const secret = process.env.SESSION_SECRET
+  if (!secret) throw new Error('SESSION_SECRET is not set')
+  return crypto.createHmac('sha256', secret).update(data).digest('base64')
+}
 
 export function createSession(userId: string, username: string): string {
-  const token = crypto.randomBytes(32).toString('hex')
-  sessions.set(token, { userId, username, createdAt: Date.now() })
-  return token
+  const payload: SessionData = { userId, username, createdAt: Date.now() }
+  const json = JSON.stringify(payload)
+  const encoded = Buffer.from(json).toString('base64')
+  const signature = sign(encoded)
+  return `${encoded}.${signature}`
 }
 
 export function getSession(token: string): SessionData | undefined {
-  const session = sessions.get(token)
-  if (!session) return undefined
-  if (Date.now() - session.createdAt > SESSION_MAX_AGE) {
-    sessions.delete(token)
+  try {
+    const dot = token.lastIndexOf('.')
+    if (dot === -1) return undefined
+
+    const encoded = token.slice(0, dot)
+    const signature = token.slice(dot + 1)
+
+    if (sign(encoded) !== signature) return undefined
+
+    const json = Buffer.from(encoded, 'base64').toString('utf-8')
+    const session = JSON.parse(json) as SessionData
+
+    if (typeof session.userId !== 'string' || typeof session.username !== 'string') {
+      return undefined
+    }
+
+    if (Date.now() - session.createdAt > SESSION_MAX_AGE) {
+      return undefined
+    }
+
+    return session
+  } catch {
     return undefined
   }
-  return session
 }
 
-export function destroySession(token: string): void {
-  sessions.delete(token)
+export function destroySession(_token: string): void {
+  // stateless — cookie is cleared via clearSessionCookie
 }
 
 export async function setSessionCookie(token: string): Promise<void> {
