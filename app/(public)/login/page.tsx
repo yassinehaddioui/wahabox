@@ -38,7 +38,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const masterKeyRef = useRef<Uint8Array | null>(null)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
-  const [needsTurnstile, setNeedsTurnstile] = useState(false)
+  const [showTurnstile, setShowTurnstile] = useState(false)
+  const failedAttemptsRef = useRef(0)
 
   const [mfa, setMfa] = useState<MfaState>({
     mfaToken: '',
@@ -151,13 +152,15 @@ export default function LoginPage() {
         throw new Error(loginData.error ?? 'Invalid credentials')
       }
 
+      failedAttemptsRef.current = 0
       await finishLogin(mk, loginData.data)
     } catch (err) {
+      failedAttemptsRef.current++
+      setTurnstileToken(null)
       const message = err instanceof Error ? err.message : 'Login failed'
       setError(message)
-      if (message.includes('CAPTCHA')) {
-        setNeedsTurnstile(true)
-        setTurnstileToken(null)
+      if (failedAttemptsRef.current >= 1) {
+        setShowTurnstile(true)
       }
     } finally {
       setLoading(false)
@@ -502,14 +505,14 @@ export default function LoginPage() {
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          {needsTurnstile && (
+          {showTurnstile && (
             <TurnstileWidget
               onVerify={(token) => setTurnstileToken(token)}
               onExpire={() => setTurnstileToken(null)}
               onError={() => setTurnstileToken(null)}
             />
           )}
-          <Button type="submit" disabled={loading || (needsTurnstile && !turnstileToken)} className="w-full">
+          <Button type="submit" disabled={loading || (showTurnstile && !turnstileToken)} className="w-full">
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
