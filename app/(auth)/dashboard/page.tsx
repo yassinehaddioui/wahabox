@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import {
@@ -282,6 +281,239 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {loading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      ) : boxes.length === 0 ? (
+        <Card className="bg-canvas-soft">
+          <CardContent className="py-16 text-center text-sm text-muted-foreground">
+            No PO boxes yet. Create one below to get started.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {boxes.map((box) => (
+            <Card key={box.id} size="sm">
+              <CardContent className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="inline-flex items-center gap-2 font-medium min-w-0">
+                    {box.hasUnread && (
+                      <span className="flex h-2 w-2 rounded-full bg-primary shrink-0" />
+                    )}
+                    {box.hasPassword && (
+                      <Tooltip>
+                        <TooltipTrigger render={<Lock className="h-3 w-3 text-amber-500 shrink-0" />} />
+                        <TooltipContent>Password protected</TooltipContent>
+                      </Tooltip>
+                    )}
+                    <Link href={`/dashboard/${box.id}`} className="hover:underline truncate">
+                      {box.label}
+                    </Link>
+                  </span>
+                  <Badge variant={box.hasUnread ? 'default' : 'secondary'} className="shrink-0 text-xs">
+                    {box._count.messages}
+                  </Badge>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <a
+                    href={`/drop/${box.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-xs text-muted-foreground hover:underline truncate"
+                  >
+                    /drop/{box.slug}
+                  </a>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-muted-foreground">Active</span>
+                    <Switch
+                      checked={box.isActive}
+                      onCheckedChange={() => toggleActive(box)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex items-center justify-end gap-0.5">
+                <Tooltip>
+                  <TooltipTrigger render={<Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => copyDropLink(box.slug)}
+                    aria-label="Copy drop link"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>} />
+                  <TooltipContent>Copy drop link</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger render={<Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => toggleAutoDecrypt(box.id)}
+                    aria-label="Toggle auto-decrypt"
+                    className={autoDecryptMap[box.id] ? 'text-primary' : ''}
+                  >
+                    <WandSparkles className="h-3.5 w-3.5" />
+                  </Button>} />
+                  <TooltipContent>Auto-decrypt</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger render={<Button
+                    variant={box.hasUnread ? 'default' : 'ghost'}
+                    size="icon-sm"
+                    onClick={() => router.push(`/dashboard/${box.id}`)}
+                    aria-label="View messages"
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                  </Button>} />
+                  <TooltipContent>View messages</TooltipContent>
+                </Tooltip>
+                <Dialog open={rotateBox?.id === box.id} onOpenChange={(open: boolean) => {
+                  if (open) setRotateBox(box)
+                  else setRotateBox(null)
+                }}>
+                  <Tooltip>
+                    <TooltipTrigger render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Rotate drop link" />}>
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </DialogTrigger>} />
+                    <TooltipContent>Rotate drop link</TooltipContent>
+                  </Tooltip>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Rotate Drop Link</DialogTitle>
+                      <DialogDescription>
+                        This will generate a new sharing link for <strong>{box.label}</strong>.
+                        The old link will stop working immediately.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setRotateBox(null)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={rotateSlug}>
+                        Rotate & Copy Link
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={editBox?.id === box.id} onOpenChange={(open: boolean) => {
+                  if (open) {
+                    setEditBox(box)
+                    setEditLabel(box.label)
+                    setEditGreeting(box.greeting ?? '')
+                    setEditNotify(box.notify)
+                    setEditPassword('')
+                    setEditPasswordTouched(false)
+                  } else {
+                    setEditBox(null)
+                    setEditPasswordTouched(false)
+                  }
+                }}>
+                  <Tooltip>
+                    <TooltipTrigger render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Edit box" />}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </DialogTrigger>} />
+                    <TooltipContent>Edit box</TooltipContent>
+                  </Tooltip>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Box</DialogTitle>
+                      <DialogDescription>
+                        Customize the label and greeting message for this PO box.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-label">Label</Label>
+                        <Input
+                          id="edit-label"
+                          value={editLabel}
+                          onChange={(e) => setEditLabel(e.target.value)}
+                          maxLength={128}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-greeting">Greeting (optional)</Label>
+                        <Textarea
+                          id="edit-greeting"
+                          value={editGreeting}
+                          onChange={(e) => setEditGreeting(e.target.value)}
+                          placeholder="Send an encrypted message to this PO Box. Your message is encrypted in your browser before being sent."
+                          className="min-h-20"
+                          maxLength={500}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          This message is shown to people who open your drop link. Leave blank to use the default.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-password">
+                          {editBox?.hasPassword ? 'Change password' : 'Set a password (optional)'}
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="edit-password"
+                            type="password"
+                            placeholder={editBox?.hasPassword ? 'Leave blank to keep current' : 'Require a password to send messages'}
+                            value={editPassword}
+                            onChange={(e) => { setEditPassword(e.target.value); setEditPasswordTouched(true) }}
+                            maxLength={128}
+                          />
+                          {editBox?.hasPassword && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
+                              onClick={removePassword}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <Label htmlFor="edit-notify" className="text-sm font-medium cursor-pointer">
+                          Notify on new messages
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Receive email notifications when this box gets a new message.
+                        </p>
+                      </div>
+                      <Switch
+                        id="edit-notify"
+                        checked={editNotify}
+                        onCheckedChange={setEditNotify}
+                      />
+                    </div>
+                    <DialogFooter className="sm:justify-between">
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          setDeleteConfirmBox(editBox)
+                          setDeleteConfirmText('')
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete box
+                      </Button>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => { setEditBox(null); setEditPasswordTouched(false) }}>
+                          Cancel
+                        </Button>
+                        <Button onClick={updateBox}>Save</Button>
+                      </div>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Create New Box</CardTitle>
@@ -299,248 +531,6 @@ export default function DashboardPage() {
           </form>
         </CardContent>
       </Card>
-
-      {loading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-      ) : boxes.length === 0 ? (
-        <Card className="bg-canvas-soft">
-          <CardContent className="py-16 text-center text-sm text-muted-foreground">
-            No PO boxes yet. Create one above to get started.
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Box</TableHead>
-                <TableHead className="hidden sm:table-cell">Drop Link</TableHead>
-                <TableHead className="text-center">Messages</TableHead>
-                <TableHead className="text-center">Active</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {boxes.map((box) => (
-                <TableRow key={box.id}>
-                  <TableCell className="font-medium">
-                    <span className="inline-flex items-center gap-2">
-                      {box.hasUnread && (
-                        <span className="flex h-2 w-2 rounded-full bg-primary" />
-                      )}
-                      {box.hasPassword && (
-                        <Tooltip>
-                          <TooltipTrigger render={<Lock className="h-3 w-3 text-amber-500 shrink-0" />} />
-                          <TooltipContent>Password protected</TooltipContent>
-                        </Tooltip>
-                      )}
-                      <Link href={`/dashboard/${box.id}`} className="hover:underline">
-                        {box.label}
-                      </Link>
-                    </span>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <a href={`/drop/${box.slug}`} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-muted-foreground hover:underline">
-                      /drop/{box.slug}
-                    </a>
-                  </TableCell>
-                  <TableCell className="text-center text-sm">
-                    <span className={box.hasUnread ? 'font-medium text-foreground' : 'text-muted-foreground'}>
-                      {box._count.messages}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Switch
-                      checked={box.isActive}
-                      onCheckedChange={() => toggleActive(box)}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-0.5">
-                      <Tooltip>
-                        <TooltipTrigger render={<Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => copyDropLink(box.slug)}
-                          aria-label="Copy drop link"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>} />
-                        <TooltipContent>Copy drop link</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger render={<Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => toggleAutoDecrypt(box.id)}
-                          aria-label="Toggle auto-decrypt"
-                          className={autoDecryptMap[box.id] ? 'text-primary' : ''}
-                        >
-                          <WandSparkles className="h-3.5 w-3.5" />
-                        </Button>} />
-                        <TooltipContent>Auto-decrypt</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger render={<Button
-                          variant={box.hasUnread ? 'default' : 'ghost'}
-                          size="icon-sm"
-                          onClick={() => router.push(`/dashboard/${box.id}`)}
-                          aria-label="View messages"
-                        >
-                          <Mail className="h-3.5 w-3.5" />
-                        </Button>} />
-                        <TooltipContent>View messages</TooltipContent>
-                      </Tooltip>
-                      <Dialog open={rotateBox?.id === box.id} onOpenChange={(open: boolean) => {
-                        if (open) setRotateBox(box)
-                        else setRotateBox(null)
-                      }}>
-                        <Tooltip>
-                          <TooltipTrigger render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Rotate drop link" />}>
-                            <RefreshCw className="h-3.5 w-3.5" />
-                          </DialogTrigger>} />
-                          <TooltipContent>Rotate drop link</TooltipContent>
-                        </Tooltip>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Rotate Drop Link</DialogTitle>
-                          <DialogDescription>
-                            This will generate a new sharing link for <strong>{box.label}</strong>.
-                            The old link will stop working immediately.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setRotateBox(null)}>
-                            Cancel
-                          </Button>
-                          <Button onClick={rotateSlug}>
-                            Rotate & Copy Link
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                      <Dialog open={editBox?.id === box.id} onOpenChange={(open: boolean) => {
-                        if (open) {
-                          setEditBox(box)
-                          setEditLabel(box.label)
-                          setEditGreeting(box.greeting ?? '')
-                          setEditNotify(box.notify)
-                          setEditPassword('')
-                          setEditPasswordTouched(false)
-                        } else {
-                          setEditBox(null)
-                          setEditPasswordTouched(false)
-                        }
-                      }}>
-                        <Tooltip>
-                          <TooltipTrigger render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Edit box" />}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </DialogTrigger>} />
-                          <TooltipContent>Edit box</TooltipContent>
-                        </Tooltip>
-                        <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Box</DialogTitle>
-                          <DialogDescription>
-                            Customize the label and greeting message for this PO box.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="edit-label">Label</Label>
-                            <Input
-                              id="edit-label"
-                              value={editLabel}
-                              onChange={(e) => setEditLabel(e.target.value)}
-                              maxLength={128}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="edit-greeting">Greeting (optional)</Label>
-                            <Textarea
-                              id="edit-greeting"
-                              value={editGreeting}
-                              onChange={(e) => setEditGreeting(e.target.value)}
-                              placeholder="Send an encrypted message to this PO Box. Your message is encrypted in your browser before being sent."
-                              className="min-h-20"
-                              maxLength={500}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              This message is shown to people who open your drop link. Leave blank to use the default.
-                            </p>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="edit-password">
-                              {editBox?.hasPassword ? 'Change password' : 'Set a password (optional)'}
-                            </Label>
-                            <div className="flex gap-2">
-                              <Input
-                                id="edit-password"
-                                type="password"
-                                placeholder={editBox?.hasPassword ? 'Leave blank to keep current' : 'Require a password to send messages'}
-                                value={editPassword}
-                                onChange={(e) => { setEditPassword(e.target.value); setEditPasswordTouched(true) }}
-                                maxLength={128}
-                              />
-                              {editBox?.hasPassword && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="shrink-0"
-                                  onClick={removePassword}
-                                >
-                                  Remove
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between rounded-lg border px-4 py-3">
-                          <div className="min-w-0 flex-1">
-                            <Label htmlFor="edit-notify" className="text-sm font-medium cursor-pointer">
-                              Notify on new messages
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              Receive email notifications when this box gets a new message.
-                            </p>
-                          </div>
-                          <Switch
-                            id="edit-notify"
-                            checked={editNotify}
-                            onCheckedChange={setEditNotify}
-                          />
-                        </div>
-                        <DialogFooter className="sm:justify-between">
-                          <Button
-                            variant="destructive"
-                            onClick={() => {
-                              setDeleteConfirmBox(editBox)
-                              setDeleteConfirmText('')
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete box
-                          </Button>
-                          <div className="flex gap-2">
-                            <Button variant="outline" onClick={() => { setEditBox(null); setEditPasswordTouched(false) }}>
-                              Cancel
-                            </Button>
-                            <Button onClick={updateBox}>Save</Button>
-                          </div>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
 
       <Dialog
         open={deleteConfirmBox !== null}

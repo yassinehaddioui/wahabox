@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 import MDEditor from '@uiw/react-md-editor'
 import type { TextEditorProps } from './text-editor-types'
@@ -15,6 +15,15 @@ export function MdEditor({
 }: TextEditorProps) {
   const { resolvedTheme } = useTheme()
   const [charCount, setCharCount] = useState(value.length)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const mql = matchMedia('(max-width: 639px)')
+    setIsMobile(mql.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
 
   const handleChange = useCallback(
     (val?: string) => {
@@ -35,7 +44,7 @@ export function MdEditor({
         value={value}
         onChange={handleChange}
         preview="edit"
-        height={400}
+        height={isMobile ? 300 : 400}
         visibleDragbar={false}
         textareaProps={{
           id,
