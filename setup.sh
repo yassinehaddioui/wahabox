@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
-# setup.sh — One-command bootstrap for the Wahabox dev environment
+# setup.sh — One-command bootstrap for Wahabox
 # =============================================================================
 # - Checks prerequisites (docker, docker compose v2, openssl)
 # - Generates .env with secrets (if missing)
-# - Starts the dev Docker stack
+# - Starts the production Docker stack (PostgreSQL, Redis, app)
 # - Runs database migrations
 # =============================================================================
 set -euo pipefail
@@ -54,10 +54,10 @@ else
     info "→ .env already exists — skipping secret generation."
 fi
 
-# -- Start dev stack ----------------------------------------------------------
+# -- Start production stack ----------------------------------------------------
 echo ""
-info "→ Starting dev Docker stack..."
-docker compose -f docker-compose.dev.yml up -d
+info "→ Starting production Docker stack (postgres, redis, app)..."
+docker compose up -d
 
 # -- Wait for services --------------------------------------------------------
 echo ""
@@ -67,7 +67,7 @@ sleep 10
 # -- Run database migrations --------------------------------------------------
 echo ""
 info "→ Running database migrations..."
-if docker compose -f docker-compose.dev.yml exec -T app pnpm prisma migrate deploy; then
+if docker compose exec -T app pnpm prisma migrate deploy; then
     ok "  ✓ Migrations applied successfully"
 else
     warn "  ⚠ Migration command exited with an error."
@@ -76,4 +76,8 @@ fi
 
 # -- Done ---------------------------------------------------------------------
 echo ""
-ok "✅ Wahabox is running at https://wahabox.localhost"
+ok "✅ Wahabox is running at http://localhost:${HOST_PORT:-3000}"
+
+echo ""
+echo "  ${BOLD}First time?${NC} Create an account at http://localhost:${HOST_PORT:-3000}/signup"
+echo "  ${BOLD}Production deploy?${NC} See DEPLOYMENT.md for reverse proxy setup"
