@@ -6,9 +6,9 @@ import { UnauthorizedError, BadRequestError, RateLimitError, MfaRequiredError } 
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 import { createSession, setSessionCookie } from '@/lib/session'
-import { checkAuthRateLimit, getFailureCount, recordAuthFailure, clearFailures } from '@/lib/rate-limit'
+import { checkAuthRateLimit, recordAuthFailure, clearFailures } from '@/lib/rate-limit'
 import { getRedis } from '@/lib/redis'
-import { verifyTurnstile } from '@/lib/turnstile'
+import { checkTurnstile, TURNSTILE_PROOF_COOKIE } from '@/lib/turnstile'
 
 const HASH_BYTES = 32
 
@@ -36,6 +36,8 @@ function dummyTimingPath(username: string) {
 }
 
 export async function POST(request: NextRequest) {
+  let proofToken: string | null = null
+
   try {
     const body = await parseBody(request, loginSchema)
 
@@ -57,12 +59,14 @@ export async function POST(request: NextRequest) {
       throw new RateLimitError('Too many attempts. Try again later.')
     }
 
-    const failCount = await getFailureCount(body.username)
-    if (failCount >= 2) {
-      const turnstileVerified = await verifyTurnstile(body.turnstileToken ?? null, ip)
-      if (!turnstileVerified) {
-        throw new BadRequestError('CAPTCHA verification required. Please complete the challenge.')
-      }
+    const turnstileResult = await checkTurnstile(
+      request.cookies.get(TURNSTILE_PROOF_COOKIE)?.value,
+      body.turnstileToken ?? null,
+      ip,
+    )
+    proofToken = turnstileResult.setProofCookie
+    if (!turnstileResult.verified) {
+      throw new BadRequestError('CAPTCHA verification required. Please complete the challenge.')
     }
 
     const user = await prisma.user.findUnique({
@@ -130,12 +134,32 @@ export async function POST(request: NextRequest) {
     const token = await createSession(user.id, user.username)
     await setSessionCookie(token)
 
-    return success({
+    const res = success({
       encPrivPw: b64(user.encPrivPw),
       pwNonce: b64(user.pwNonce),
       publicKey: b64(user.publicKey),
     })
+    if (proofToken) {
+      res.cookies.set(TURNSTILE_PROOF_COOKIE, proofToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 2592000,
+      })
+    }
+    return res
   } catch (err) {
-    return error(err)
+    const errorRes = error(err)
+    if (proofToken) {
+      errorRes.cookies.set(TURNSTILE_PROOF_COOKIE, proofToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 2592000,
+      })
+    }
+    return errorRes
   }
 }

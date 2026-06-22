@@ -4,13 +4,12 @@ import '@/test/helpers/prisma-mock'
 import { resetRedisMock } from '@/test/helpers/redis-mock'
 import { POST } from './route'
 
-const { mockVerifyCsrf, mockCheckAuthRateLimit, mockGetFailureCount, mockRecordAuthFailure, mockClearFailures, mockVerifyTurnstile, mockCreateSession, mockSetSessionCookie } = vi.hoisted(() => ({
+const { mockVerifyCsrf, mockCheckAuthRateLimit, mockRecordAuthFailure, mockClearFailures, mockCheckTurnstile, mockCreateSession, mockSetSessionCookie } = vi.hoisted(() => ({
   mockVerifyCsrf: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
   mockCheckAuthRateLimit: vi.fn<(...args: unknown[]) => Promise<{ isLocked: boolean; ip: boolean; user: boolean; global: boolean; lockoutRemainingMs: number }>>(),
-  mockGetFailureCount: vi.fn<(...args: unknown[]) => Promise<number>>(),
   mockRecordAuthFailure: vi.fn<(...args: unknown[]) => Promise<void>>(),
   mockClearFailures: vi.fn<(...args: unknown[]) => Promise<void>>(),
-  mockVerifyTurnstile: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
+  mockCheckTurnstile: vi.fn<(...args: unknown[]) => Promise<{ verified: boolean; setProofCookie: string | null }>>(),
   mockCreateSession: vi.fn<(...args: unknown[]) => Promise<string>>(),
   mockSetSessionCookie: vi.fn<(...args: unknown[]) => Promise<void>>(),
 }))
@@ -18,11 +17,10 @@ const { mockVerifyCsrf, mockCheckAuthRateLimit, mockGetFailureCount, mockRecordA
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: mockVerifyCsrf }))
 vi.mock('@/lib/rate-limit', () => ({
   checkAuthRateLimit: mockCheckAuthRateLimit,
-  getFailureCount: mockGetFailureCount,
   recordAuthFailure: mockRecordAuthFailure,
   clearFailures: mockClearFailures,
 }))
-vi.mock('@/lib/turnstile', () => ({ verifyTurnstile: mockVerifyTurnstile }))
+vi.mock('@/lib/turnstile', () => ({ checkTurnstile: mockCheckTurnstile, TURNSTILE_PROOF_COOKIE: 'turnstile_proof' }))
 vi.mock('@/lib/session', () => ({ createSession: mockCreateSession, setSessionCookie: mockSetSessionCookie }))
 
 const baseBody = {
@@ -66,7 +64,7 @@ describe('POST /api/auth/login', () => {
       global: false,
       lockoutRemainingMs: 0,
     })
-    mockGetFailureCount.mockResolvedValue(0)
+    mockCheckTurnstile.mockResolvedValue({ verified: true, setProofCookie: null })
     mockCreateSession.mockResolvedValue('session-token')
     mockSetSessionCookie.mockResolvedValue(undefined)
   })
@@ -169,9 +167,8 @@ describe('POST /api/auth/login', () => {
     expect(body.success).toBe(false)
   })
 
-  it('returns 400 when Turnstile fails after 2+ failures', async () => {
-    mockGetFailureCount.mockResolvedValue(3)
-    mockVerifyTurnstile.mockResolvedValue(false)
+  it('returns 400 when Turnstile verification fails', async () => {
+    mockCheckTurnstile.mockResolvedValue({ verified: false, setProofCookie: null })
 
     const req = createNextRequest('http://localhost/api/auth/login', {
       method: 'POST',
@@ -183,6 +180,22 @@ describe('POST /api/auth/login', () => {
 
     expect(res.status).toBe(400)
     expect(body.success).toBe(false)
-    expect(mockVerifyTurnstile).toHaveBeenCalled()
+    expect(mockCheckTurnstile).toHaveBeenCalled()
+  })
+
+  it('sets proof cookie in response when turnstile is verified', async () => {
+    mockCheckTurnstile.mockResolvedValue({ verified: true, setProofCookie: 'proof-token-value' })
+
+    const { prismaMock } = await import('@/test/helpers/prisma-mock')
+    prismaMock.user.findUnique.mockResolvedValue(userWithoutMfa)
+
+    const req = createNextRequest('http://localhost/api/auth/login', {
+      method: 'POST',
+      body: baseBody,
+    })
+
+    const res = await POST(req)
+
+    expect(res.cookies.get('turnstile_proof')?.value).toBe('proof-token-value')
   })
 })
