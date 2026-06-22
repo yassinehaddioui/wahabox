@@ -1,3 +1,5 @@
+name: wahabox-prod
+
 services:
   postgres:
     image: postgres:17-alpine
