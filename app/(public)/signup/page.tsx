@@ -104,7 +104,10 @@ export default function SignupPage() {
       })
 
       const data = await res.json()
-      if (!data.success) throw new Error(data.error)
+      if (!data.success) {
+        if (res.status === 409) throw new Error('This username is already taken')
+        throw new Error(data.error)
+      }
 
       for (const key of Object.keys(sessionStorage)) {
         if (key.startsWith('signup:')) sessionStorage.removeItem(key)

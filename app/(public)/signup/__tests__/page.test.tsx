@@ -87,6 +87,7 @@ vi.mock('@/components/turnstile-widget', () => ({
 
 vi.mock('@/lib/turnstile-constants', () => ({
   TURNSTILE_PROOF_COOKIE: 'turnstile_proof',
+  isTurnstileClientEnabled: () => true,
 }))
 
 import SignupPage from '@/app/(public)/signup/page'

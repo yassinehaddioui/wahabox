@@ -30,7 +30,10 @@ const mockCrypto = vi.hoisted(() => ({
 
 vi.mock('@/lib/crypto', () => ({ crypto: mockCrypto }))
 vi.mock('@/lib/session-keys', () => ({ setSessionKeys: vi.fn() }))
-vi.mock('@/lib/turnstile-constants', () => ({ TURNSTILE_PROOF_COOKIE: 'turnstile_proof' }))
+vi.mock('@/lib/turnstile-constants', () => ({
+  TURNSTILE_PROOF_COOKIE: 'turnstile_proof',
+  isTurnstileClientEnabled: () => true,
+}))
 vi.mock('@/components/turnstile-widget', () => ({
   TurnstileWidget: ({ onVerify }: { onVerify: (token: string) => void }) => {
     React.useEffect(() => {

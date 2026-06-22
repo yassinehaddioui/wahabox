@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code
       if (code === 'P2002') {
-        throw new ConflictError('Registration failed')
+        throw new ConflictError('This username is already taken')
       }
       throw err
     }

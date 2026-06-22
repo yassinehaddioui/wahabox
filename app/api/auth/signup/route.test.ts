@@ -84,6 +84,7 @@ describe('POST /api/auth/signup', () => {
 
     expect(res.status).toBe(409)
     expect(body.success).toBe(false)
+    expect(body.error).toBe('This username is already taken')
   })
 
   it('returns 400 when CSRF verification fails', async () => {
