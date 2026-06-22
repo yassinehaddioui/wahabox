@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TurnstileWidget } from '@/components/turnstile-widget'
 import { CheckCircle, Loader2 } from 'lucide-react'
+import { setSessionKeys } from '@/lib/session-keys'
 
 async function fetchCsrfToken(tag: string): Promise<string | null> {
   const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
@@ -88,8 +89,7 @@ export default function LoginPage() {
     const { kekPw } = crypto.splitMasterKey(mk)
     const privateKey = crypto.unwrapPrivateKey(encPrivPw, pwNonce, kekPw)
 
-    sessionStorage.setItem('session:privateKey', crypto.toBase64(privateKey))
-    sessionStorage.setItem('session:publicKey', loginData.publicKey)
+    setSessionKeys(crypto.toBase64(privateKey), loginData.publicKey)
 
     router.push('/dashboard')
   }

@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { getSessionKeys } from '@/lib/session-keys'
 import {
   Dialog,
   DialogContent,
@@ -109,18 +110,17 @@ export default function MessagesPage() {
     try {
       const { crypto } = await import('@/lib/crypto')
       await crypto.ready
-      const privateKey = sessionStorage.getItem('session:privateKey')
-      const publicKey = sessionStorage.getItem('session:publicKey')
+      const keys = getSessionKeys()
 
-      if (!privateKey || !publicKey) {
+      if (!keys) {
         toast.error('Encryption keys not found. Please refresh the page or sign in again.')
         return
       }
 
       const plaintext = crypto.openMessage(
         crypto.fromBase64(msg.ciphertext),
-        crypto.fromBase64(publicKey),
-        crypto.fromBase64(privateKey),
+        crypto.fromBase64(keys.publicKey),
+        crypto.fromBase64(keys.privateKey),
       )
 
       setMessages((prev) =>
@@ -147,15 +147,14 @@ export default function MessagesPage() {
     try {
       const { crypto } = await import('@/lib/crypto')
       await crypto.ready
-      const privateKey = sessionStorage.getItem('session:privateKey')
-      const publicKey = sessionStorage.getItem('session:publicKey')
+      const keys = getSessionKeys()
 
-      if (!privateKey || !publicKey) return
+      if (!keys) return
 
       const plaintext = crypto.openMessage(
         crypto.fromBase64(msg.ciphertext),
-        crypto.fromBase64(publicKey),
-        crypto.fromBase64(privateKey),
+        crypto.fromBase64(keys.publicKey),
+        crypto.fromBase64(keys.privateKey),
       )
 
       setMessages((prev) =>

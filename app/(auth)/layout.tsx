@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
+import { SessionKeySync } from '@/components/session-key-sync'
 import { SessionProvider } from '@/lib/session-provider'
 import { getSession } from '@/lib/session'
 
@@ -15,6 +16,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
 
   return (
     <SessionProvider value={{ username: sessionData.username }}>
+      <SessionKeySync />
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>

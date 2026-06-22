@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { CheckCircle, XCircle, Loader2, Shield, Smartphone, Key, Copy, Trash2, KeyRound } from 'lucide-react'
+import { clearSessionKeys } from '@/lib/session-keys'
 
 const RESEND_COOLDOWN_S = 30
 
@@ -410,8 +411,7 @@ export default function SettingsPage() {
 
       if (data.success) {
         toast.success(data.data.message)
-        sessionStorage.removeItem('session:privateKey')
-        sessionStorage.removeItem('session:publicKey')
+        clearSessionKeys()
         router.push('/login')
       } else {
         toast.error(data.error)

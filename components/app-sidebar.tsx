@@ -18,6 +18,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar'
 import { useSession } from '@/lib/session-provider'
+import { clearSessionKeys } from '@/lib/session-keys'
 
 const navItems = [
   { href: '/dashboard', label: 'Boxes', icon: Package },
@@ -30,7 +31,7 @@ export function AppSidebar() {
   const session = useSession()
 
   async function handleLogout() {
-    sessionStorage.clear()
+    clearSessionKeys()
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
   }
