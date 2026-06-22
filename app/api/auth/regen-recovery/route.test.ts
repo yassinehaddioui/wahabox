@@ -11,6 +11,7 @@ const { mockGetAuthUser, mockVerifyCsrf } = vi.hoisted(() => ({
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: mockGetAuthUser }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: mockVerifyCsrf }))
+vi.mock('@/lib/notifications')
 
 const USER = createUser()
 
@@ -27,10 +28,12 @@ function makeRequest(overrides: Record<string, unknown> = {}) {
   })
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks()
   mockGetAuthUser.mockResolvedValue({ id: USER.id, username: USER.username })
   mockVerifyCsrf.mockResolvedValue(true)
+  const { notifyRecoveryRegenerated } = await import('@/lib/notifications')
+  notifyRecoveryRegenerated.mockResolvedValue(undefined)
 })
 
 describe('PUT /api/auth/regen-recovery', () => {
@@ -94,5 +97,29 @@ describe('PUT /api/auth/regen-recovery', () => {
     const json = await res.json()
 
     expect(json.data?.passwordHash).toBeUndefined()
+  })
+
+  it('sends notification after successful update', async () => {
+    const { notifyRecoveryRegenerated } = await import('@/lib/notifications')
+
+    const res = await PUT(makeRequest())
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json.success).toBe(true)
+    expect(notifyRecoveryRegenerated).toHaveBeenCalledTimes(1)
+    expect(notifyRecoveryRegenerated).toHaveBeenCalledWith(USER.id)
+  })
+
+  it('notification failure does not affect response', async () => {
+    const { notifyRecoveryRegenerated } = await import('@/lib/notifications')
+    notifyRecoveryRegenerated.mockRejectedValue(new Error('Email service down'))
+
+    const res = await PUT(makeRequest())
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json.success).toBe(true)
+    expect(json.data.message).toBe('Recovery code updated')
   })
 })

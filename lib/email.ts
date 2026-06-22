@@ -131,3 +131,40 @@ export async function sendMfaCodeEmail(
     },
   }))
 }
+
+export async function sendRecoveryKeyRegeneratedNotification(
+  to: string,
+  username: string,
+  timestamp: Date,
+): Promise<void> {
+  const loginLink = `${ENV.APP_URL}/login`
+  const formattedTimestamp = timestamp.toLocaleString()
+
+  if (process.env.APP_MODE === 'development') {
+    console.log(`[email] Recovery key regenerated notification sent to ${to}`)
+  }
+
+  const client = getSes()
+
+  await client.send(new SendEmailCommand({
+    FromEmailAddress: getFromAddress(),
+    Destination: { ToAddresses: [to] },
+    Content: {
+      Simple: {
+        Subject: { Data: 'Your Wahabox recovery key was changed' },
+        Body: {
+          Text: {
+            Data: [
+              `Hello ${username},`,
+              '',
+              `A new recovery key was generated for your account at ${formattedTimestamp}.`,
+              'If you did not make this change, sign in immediately and secure your account.',
+              '',
+              loginLink,
+            ].join('\n'),
+          },
+        },
+      },
+    },
+  }))
+}

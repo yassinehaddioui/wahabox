@@ -53,9 +53,10 @@ export async function POST(request: NextRequest) {
           encPrivPw: b64(body.encPrivPw),
           pwKdfSalt: b64(body.pwKdfSalt),
           pwNonce: b64(body.pwNonce),
-          encPrivRec: b64(body.encPrivRec),
-          recKdfSalt: b64(body.recKdfSalt),
-          recNonce: b64(body.recNonce),
+	          encPrivRec: b64(body.encPrivRec),
+	          recKdfSalt: b64(body.recKdfSalt),
+	          recNonce: b64(body.recNonce),
+	          recoveryCodeCreatedAt: new Date(),
         },
       })
     } catch (err: unknown) {

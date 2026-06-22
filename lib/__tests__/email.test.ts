@@ -99,6 +99,39 @@ describe('sendMfaCodeEmail', () => {
   })
 })
 
+describe('sendRecoveryKeyRegeneratedNotification', () => {
+  it('calls SES send with correct subject and body', async () => {
+    const { sendRecoveryKeyRegeneratedNotification } = await import('@/lib/email')
+
+    const ts = new Date('2025-06-22T12:00:00Z')
+    await sendRecoveryKeyRegeneratedNotification('user@test.com', 'alice', ts)
+
+    expect(mockSend).toHaveBeenCalledTimes(1)
+    const cmd = mockSend.mock.calls[0][0] as {
+      Destination: { ToAddresses: string[] }
+      Content: { Simple: { Subject: { Data: string }; Body: { Text: { Data: string } } } }
+    }
+    expect(cmd.Destination?.ToAddresses).toEqual(['user@test.com'])
+    expect(cmd.Content?.Simple?.Subject?.Data).toBe('Your Wahabox recovery key was changed')
+    expect(cmd.Content?.Simple?.Body?.Text?.Data).toContain('A new recovery key was generated for your account')
+    expect(cmd.Content?.Simple?.Body?.Text?.Data).not.toContain('recovery-key')
+  })
+
+  it('logs to console in dev mode', async () => {
+    process.env.APP_MODE = 'development'
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const { sendRecoveryKeyRegeneratedNotification } = await import('@/lib/email')
+
+    await sendRecoveryKeyRegeneratedNotification('user@test.com', 'alice', new Date())
+
+    expect(logSpy).toHaveBeenCalledWith(
+      '[email] Recovery key regenerated notification sent to user@test.com',
+    )
+    logSpy.mockRestore()
+    delete process.env.APP_MODE
+  })
+})
+
 describe('checkNotificationRateLimit', () => {
   it('returns false on first call (no recent notification)', async () => {
     const { checkNotificationRateLimit } = await import('@/lib/email')

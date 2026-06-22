@@ -1,5 +1,5 @@
 import { decryptEmail } from './email-crypto'
-import { sendNewMessageNotification, checkNotificationRateLimit } from './email'
+import { sendNewMessageNotification, sendRecoveryKeyRegeneratedNotification, checkNotificationRateLimit } from './email'
 import prisma from './prisma'
 
 export async function notifyNewMessage(poBoxId: string): Promise<void> {
@@ -35,5 +35,27 @@ export async function notifyNewMessage(poBoxId: string): Promise<void> {
     await sendNewMessageNotification(email, box.label)
   } catch {
     console.error('[notification] Failed to send')
+  }
+}
+
+export async function notifyRecoveryRegenerated(userId: string): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { emailVerified: true, emailEncrypted: true, emailNonce: true, username: true },
+    })
+
+    if (!user?.emailVerified || !user?.emailEncrypted || !user?.emailNonce) return
+
+    if (await checkNotificationRateLimit(userId)) return
+
+    const email = decryptEmail(
+      new Uint8Array(user.emailEncrypted),
+      new Uint8Array(user.emailNonce),
+    )
+
+    await sendRecoveryKeyRegeneratedNotification(email, user.username, new Date())
+  } catch (err) {
+    console.error('[notifications] Failed to send recovery key notification:', err)
   }
 }

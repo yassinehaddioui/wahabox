@@ -4,6 +4,7 @@ import { getAuthUser } from '@/lib/auth'
 import { BadRequestError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
+import { notifyRecoveryRegenerated } from '@/lib/notifications'
 
 export async function PUT(request: NextRequest) {
   try {
@@ -27,6 +28,8 @@ export async function PUT(request: NextRequest) {
         recoveryCodeCreatedAt: new Date(),
       },
     })
+
+    notifyRecoveryRegenerated(user.id).catch(() => {})
 
     return success({ message: 'Recovery code updated' })
   } catch (err) {

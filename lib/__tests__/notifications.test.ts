@@ -16,7 +16,7 @@ vi.mock('@aws-sdk/client-sesv2', () => ({
 
 import { withRedis } from '@/lib/redis'
 import { decryptEmail } from '@/lib/email-crypto'
-import { notifyNewMessage } from '@/lib/notifications'
+import { notifyNewMessage, notifyRecoveryRegenerated } from '@/lib/notifications'
 
 function owner(overrides: Partial<{
   id: string
@@ -95,6 +95,66 @@ describe('notifyNewMessage', () => {
     vi.mocked(withRedis).mockResolvedValue(false)
     vi.mocked(decryptEmail).mockReturnValue('user@example.com')
     await notifyNewMessage('box-id')
+    expect(withRedis).toHaveBeenCalled()
+    expect(decryptEmail).toHaveBeenCalled()
+  })
+})
+
+function user(overrides: Partial<{
+  emailEncrypted: Uint8Array
+  emailNonce: Uint8Array
+  emailVerified: boolean
+  username: string
+}> = {}) {
+  return {
+    emailEncrypted: new Uint8Array(10),
+    emailNonce: new Uint8Array(12),
+    emailVerified: true,
+    username: 'testuser',
+    ...overrides,
+  }
+}
+
+describe('notifyRecoveryRegenerated', () => {
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
+
+  it('returns early when user is not found', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null)
+    await notifyRecoveryRegenerated('user-id')
+    expect(withRedis).not.toHaveBeenCalled()
+    expect(decryptEmail).not.toHaveBeenCalled()
+  })
+
+  it('skips sending when email is not verified', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(user({ emailVerified: false }))
+    await notifyRecoveryRegenerated('user-id')
+    expect(withRedis).not.toHaveBeenCalled()
+    expect(decryptEmail).not.toHaveBeenCalled()
+  })
+
+  it('skips sending when emailEncrypted is missing', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(user({ emailEncrypted: undefined as unknown as Uint8Array }))
+    await notifyRecoveryRegenerated('user-id')
+    expect(withRedis).not.toHaveBeenCalled()
+    expect(decryptEmail).not.toHaveBeenCalled()
+  })
+
+  it('skips sending when rate limited', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(user())
+    vi.mocked(withRedis).mockResolvedValue(true)
+    await notifyRecoveryRegenerated('user-id')
+    expect(withRedis).toHaveBeenCalled()
+    expect(decryptEmail).not.toHaveBeenCalled()
+  })
+
+  it('decrypts email and sends notification on happy path', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(user())
+    vi.mocked(withRedis).mockResolvedValue(false)
+    vi.mocked(decryptEmail).mockReturnValue('user@example.com')
+    await notifyRecoveryRegenerated('user-id')
     expect(withRedis).toHaveBeenCalled()
     expect(decryptEmail).toHaveBeenCalled()
   })

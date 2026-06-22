@@ -18,8 +18,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { CheckCircle, XCircle, Loader2, Shield, Smartphone, Key, Copy, Trash2, KeyRound } from 'lucide-react'
-import { clearSessionKeys } from '@/lib/session-keys'
+import { CheckCircle, XCircle, Loader2, Shield, Smartphone, Key, Copy, Trash2, KeyRound, RefreshCw } from 'lucide-react'
+import { clearSessionKeys, getSessionKeys } from '@/lib/session-keys'
 
 const RESEND_COOLDOWN_S = 30
 
@@ -85,6 +85,11 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
 
+  const [recoveryStatus, setRecoveryStatus] = useState<{ createdAt: string | null } | null>(null)
+  const [recoveryLoading, setRecoveryLoading] = useState(true)
+  const [regeneratingRecovery, setRegeneratingRecovery] = useState(false)
+  const [accountRecoveryCode, setAccountRecoveryCode] = useState<string | null>(null)
+
   const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/account/email')
@@ -117,9 +122,22 @@ export default function SettingsPage() {
     } catch {}
   }, [])
 
+  const fetchRecoveryStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/account/recovery-status')
+      const data = await res.json()
+      if (data.success) setRecoveryStatus(data.data)
+    } catch {
+      toast.error('Failed to load recovery key status')
+    } finally {
+      setRecoveryLoading(false)
+    }
+  }, [])
+
   useEffect(() => { fetchStatus() }, [fetchStatus])
   useEffect(() => { fetchMfaStatus() }, [fetchMfaStatus])
   useEffect(() => { fetchPasskeys() }, [fetchPasskeys])
+  useEffect(() => { fetchRecoveryStatus() }, [fetchRecoveryStatus])
 
   useEffect(() => {
     if (sendCooldown <= 0) return
@@ -423,10 +441,58 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleRegenRecoveryKey() {
+    setRegeneratingRecovery(true)
+    try {
+      const { crypto } = await import('@/lib/crypto')
+      await crypto.ready
+
+      const keys = getSessionKeys()
+      if (!keys?.privateKey) {
+        toast.error('Encryption keys not found. Please refresh the page or sign in again.')
+        return
+      }
+
+      const newCode = crypto.generateRecoveryCode()
+      const newRecKdfSalt = crypto.randomBytes(16)
+      const kekRec = crypto.deriveRecoveryKey(newCode, newRecKdfSalt)
+      const wrapped = crypto.wrapPrivateKey(crypto.fromBase64(keys.privateKey), kekRec)
+
+      const csrfToken = await fetchCsrfToken('regen-recovery')
+      const res = await fetch('/api/auth/regen-recovery', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          encPrivRec: crypto.toBase64(wrapped.ciphertext),
+          recKdfSalt: crypto.toBase64(newRecKdfSalt),
+          recNonce: crypto.toBase64(wrapped.nonce),
+          csrfToken: csrfToken ?? '',
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setAccountRecoveryCode(newCode)
+        await fetchRecoveryStatus()
+      } else {
+        toast.error(data.error)
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to regenerate recovery key')
+    } finally {
+      setRegeneratingRecovery(false)
+    }
+  }
+
   function copyCodes() {
     if (!recoveryCodes) return
     navigator.clipboard.writeText(recoveryCodes.join('\n'))
     toast.success('Recovery codes copied')
+  }
+
+  function copyAccountRecoveryCode() {
+    if (!accountRecoveryCode) return
+    navigator.clipboard.writeText(accountRecoveryCode)
+    toast.success('Recovery key copied')
   }
 
   return (
@@ -586,6 +652,53 @@ export default function SettingsPage() {
               Change Password
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-base">Password Recovery Key</CardTitle>
+          </div>
+          <CardDescription>
+            If you forget your password, you can use your recovery key to regain access to your account.
+            Generating a new key will invalidate the old one.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recoveryLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-canvas-soft px-4 py-3">
+                <p className="text-sm text-muted-foreground">
+                  Last generated{' '}
+                  {(() => {
+                    if (!recoveryStatus?.createdAt) return 'at account creation'
+                    const days = Math.floor((Date.now() - new Date(recoveryStatus.createdAt).getTime()) / 86400000)
+                    return days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`
+                  })()}
+                  {recoveryStatus?.createdAt && (
+                    <>
+                      {' · '}
+                      {new Date(recoveryStatus.createdAt).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' })}
+                    </>
+                  )}
+                </p>
+              </div>
+              <Button
+                onClick={handleRegenRecoveryKey}
+                disabled={regeneratingRecovery}
+                variant="outline"
+              >
+                {regeneratingRecovery && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                Regenerate Recovery Key
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -817,6 +930,32 @@ export default function SettingsPage() {
             </Button>
             <Button onClick={() => setRecoveryCodes(null)}>
               I&apos;ve saved my codes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={accountRecoveryCode !== null} onOpenChange={() => setAccountRecoveryCode(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Recovery Key</DialogTitle>
+            <DialogDescription>
+              Save this key in a secure place. You&apos;ll need it to recover your account if you forget your password.
+              It is only shown now and cannot be retrieved later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border bg-canvas-soft p-4">
+            <code className="block font-mono text-lg text-center tracking-widest">
+              {accountRecoveryCode}
+            </code>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={copyAccountRecoveryCode} className="gap-1">
+              <Copy className="h-4 w-4" />
+              Copy
+            </Button>
+            <Button onClick={() => setAccountRecoveryCode(null)}>
+              I&apos;ve saved my key
             </Button>
           </DialogFooter>
         </DialogContent>

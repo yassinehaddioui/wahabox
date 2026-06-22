@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import React from 'react'
 import { mockFetch, resetMockFetch } from '@/test/helpers/mock-fetch'
+import { toast } from 'sonner'
 
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
@@ -13,7 +14,10 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
-vi.mock('@/lib/session-keys', () => ({ clearSessionKeys: vi.fn() }))
+vi.mock('@/lib/session-keys', () => ({
+  clearSessionKeys: vi.fn(),
+  getSessionKeys: vi.fn(() => ({ privateKey: 'mock-private-key', publicKey: 'mock-public-key' })),
+}))
 
 const mockCrypto = vi.hoisted(() => ({
   ready: Promise.resolve(),
@@ -25,6 +29,8 @@ const mockCrypto = vi.hoisted(() => ({
   computeAuthVerifier: vi.fn(() => new Uint8Array(32)),
   wrapPrivateKey: vi.fn(() => ({ ciphertext: new Uint8Array(32), nonce: new Uint8Array(24) })),
   randomBytes: vi.fn((n: number) => new Uint8Array(n)),
+  generateRecoveryCode: vi.fn(() => 'MOCK-CODE-1234-XXXX'),
+  deriveRecoveryKey: vi.fn(() => new Uint8Array(32)),
 }))
 
 vi.mock('@/lib/crypto', () => ({ crypto: mockCrypto }))
@@ -153,6 +159,188 @@ describe('SettingsPage', () => {
     await waitFor(() => {
       const regen = screen.queryByText('Regenerate Recovery Codes')
       if (regen) fireEvent.click(regen)
+    })
+  })
+
+  it('renders password recovery key section', async () => {
+    mockFetch([
+      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
+      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+    ])
+    render(React.createElement(SettingsPage))
+    await waitFor(() => {
+      expect(screen.getByText('Password Recovery Key')).toBeInTheDocument()
+    })
+  })
+
+  it('shows last generated date when recovery key exists', async () => {
+    mockFetch([
+      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
+      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+    ])
+    render(React.createElement(SettingsPage))
+    await waitFor(() => {
+      expect(screen.getByText(/Last generated/)).toBeInTheDocument()
+    })
+  })
+
+  it('shows at account creation when no regeneration date exists', async () => {
+    mockFetch([
+      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
+      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: null } }), ok: true },
+    ])
+    render(React.createElement(SettingsPage))
+    await waitFor(() => {
+      expect(screen.getByText(/at account creation/)).toBeInTheDocument()
+    })
+  })
+
+  it('regenerates recovery key and shows dialog', async () => {
+    mockFetch([
+      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
+      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
+      { json: () => ({ success: true, data: { message: 'Recovery code updated' } }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+    ])
+
+    mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
+    mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
+    mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
+
+    render(React.createElement(SettingsPage))
+
+    await waitFor(() => {
+      expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Regenerate Recovery Key'))
+
+    await waitFor(() => {
+      expect(screen.getByText('ABCD-EFGH-IJKL-MNOP')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('New Recovery Key')).toBeInTheDocument()
+    expect(screen.getByText("I've saved my key")).toBeInTheDocument()
+  })
+
+  it('copy button copies recovery key to clipboard', async () => {
+    const writeText = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, writable: true, configurable: true })
+
+    mockFetch([
+      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
+      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
+      { json: () => ({ success: true, data: { message: 'Recovery code updated' } }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+    ])
+
+    mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
+    mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
+    mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
+
+    render(React.createElement(SettingsPage))
+    await waitFor(() => { expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument() })
+    fireEvent.click(screen.getByText('Regenerate Recovery Key'))
+    await waitFor(() => { expect(screen.getByText('ABCD-EFGH-IJKL-MNOP')).toBeInTheDocument() })
+
+    fireEvent.click(screen.getByText('Copy'))
+    expect(writeText).toHaveBeenCalledWith('ABCD-EFGH-IJKL-MNOP')
+  })
+
+  it('shows error toast when regeneration API fails', async () => {
+    mockFetch([
+      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
+      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
+      { json: () => ({ success: false, error: 'CSRF token invalid' }), ok: true },
+    ])
+
+    mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
+    mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
+    mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
+
+    render(React.createElement(SettingsPage))
+    await waitFor(() => { expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument() })
+    fireEvent.click(screen.getByText('Regenerate Recovery Key'))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled()
+    })
+  })
+
+  it('disables button while regenerating', async () => {
+    const putResolve = vi.fn()
+    const putPromise = new Promise((resolve) => { putResolve.mockImplementation(() => resolve({ json: () => ({ success: true, data: { message: 'ok' } }), ok: true })) })
+
+    mockFetch([
+      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
+      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
+      putPromise,
+    ])
+
+    mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
+    mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
+    mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
+
+    render(React.createElement(SettingsPage))
+    await waitFor(() => { expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument() })
+    fireEvent.click(screen.getByText('Regenerate Recovery Key'))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /regenerate/i })).toBeDisabled()
+    })
+  })
+
+  it('dismisses dialog with saved my key', async () => {
+    mockFetch([
+      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
+      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
+      { json: () => ({ success: true, data: { message: 'Recovery code updated' } }), ok: true },
+      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+    ])
+
+    mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
+    mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
+    mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
+
+    render(React.createElement(SettingsPage))
+    await waitFor(() => { expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument() })
+    fireEvent.click(screen.getByText('Regenerate Recovery Key'))
+    await waitFor(() => { expect(screen.getByText('ABCD-EFGH-IJKL-MNOP')).toBeInTheDocument() })
+
+    fireEvent.click(screen.getByText("I've saved my key"))
+    await waitFor(() => {
+      expect(screen.queryByText('ABCD-EFGH-IJKL-MNOP')).not.toBeInTheDocument()
     })
   })
 })
