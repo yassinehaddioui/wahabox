@@ -177,6 +177,11 @@ echo "  ✓ Reset to origin/${CURRENT_BRANCH}"
 echo ""
 
 # ── Phase 7: Build and deploy ───────────────────────────────────────
+echo "▸ Ensuring dependencies are running (postgres, redis, migrate)..."
+docker compose up -d postgres redis migrate
+echo "  ✓ Dependencies ready"
+echo ""
+
 echo "▸ Building ${APP_SERVICE} image..."
 docker compose build "$APP_SERVICE"
 echo "  ✓ Build complete"
