@@ -7,13 +7,13 @@ import { createNextRequest, createRouteContext } from '@/test/helpers/request'
 vi.mock('@/lib/rate-limit', () => ({ checkDropRateLimit: vi.fn(), getDropIpCounts: vi.fn(), recordDropIp: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@/lib/pow', () => ({ verifyPow: vi.fn(), consumeChallenge: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
-vi.mock('@/lib/turnstile', () => ({ verifyTurnstile: vi.fn() }))
+vi.mock('@/lib/turnstile', () => ({ checkTurnstile: vi.fn(), TURNSTILE_PROOF_COOKIE: 'turnstile_proof' }))
 vi.mock('@/lib/notifications', () => ({ notifyNewMessage: vi.fn().mockResolvedValue(undefined) }))
 
 import { checkDropRateLimit, getDropIpCounts, recordDropIp } from '@/lib/rate-limit'
 import { verifyPow, consumeChallenge } from '@/lib/pow'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
-import { verifyTurnstile } from '@/lib/turnstile'
+import { checkTurnstile } from '@/lib/turnstile'
 import { notifyNewMessage } from '@/lib/notifications'
 
 const SLUG = 'test-slug'
@@ -118,7 +118,7 @@ describe('POST /api/drop/[slug]', () => {
     vi.mocked(getDropIpCounts).mockResolvedValue({ hourly: 0, daily: 0 })
     prismaMock.poBox.findUnique.mockResolvedValue(createPoBox())
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    vi.mocked(verifyTurnstile).mockResolvedValue(false)
+    vi.mocked(checkTurnstile).mockResolvedValue({ verified: false, setProofCookie: null })
     const res = await POST(createNextRequest(`http://localhost/api/drop/${SLUG}`, { method: 'POST', body: { ciphertext: CIPHER, csrfToken: 't', turnstileToken: 'b' } }), createRouteContext({ slug: SLUG }))
     expect(res.status).toBe(400)
   })
@@ -128,7 +128,7 @@ describe('POST /api/drop/[slug]', () => {
     vi.mocked(getDropIpCounts).mockResolvedValue({ hourly: 0, daily: 0 })
     prismaMock.poBox.findUnique.mockResolvedValue(createPoBox())
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    vi.mocked(verifyTurnstile).mockResolvedValue(true)
+    vi.mocked(checkTurnstile).mockResolvedValue({ verified: true, setProofCookie: null })
     vi.mocked(verifyPow).mockReturnValue(false)
     const res = await POST(createNextRequest(`http://localhost/api/drop/${SLUG}`, { method: 'POST', body: { ciphertext: CIPHER, csrfToken: 't', turnstileToken: 't', challenge: 'c', nonce: 'n' } }), createRouteContext({ slug: SLUG }))
     expect(res.status).toBe(400)
@@ -139,7 +139,7 @@ describe('POST /api/drop/[slug]', () => {
     vi.mocked(getDropIpCounts).mockResolvedValue({ hourly: 0, daily: 0 })
     prismaMock.poBox.findUnique.mockResolvedValue(createPoBox({ _count: { messages: 15 } }))
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    vi.mocked(verifyTurnstile).mockResolvedValue(true)
+    vi.mocked(checkTurnstile).mockResolvedValue({ verified: true, setProofCookie: null })
     prismaMock.message.count.mockResolvedValueOnce(20).mockResolvedValueOnce(5)
     const res = await POST(createNextRequest(`http://localhost/api/drop/${SLUG}`, { method: 'POST', body: { ciphertext: CIPHER, csrfToken: 't', turnstileToken: 't' } }), createRouteContext({ slug: SLUG }))
     expect(res.status).toBe(429)
@@ -150,7 +150,7 @@ describe('POST /api/drop/[slug]', () => {
     vi.mocked(getDropIpCounts).mockResolvedValue({ hourly: 0, daily: 0 })
     prismaMock.poBox.findUnique.mockResolvedValue(createPoBox())
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    vi.mocked(verifyTurnstile).mockResolvedValue(true)
+    vi.mocked(checkTurnstile).mockResolvedValue({ verified: true, setProofCookie: null })
     prismaMock.message.count.mockResolvedValue(0)
     const huge = Buffer.alloc(200 * 1024, 0x01).toString('base64')
     const res = await POST(createNextRequest(`http://localhost/api/drop/${SLUG}`, { method: 'POST', body: { ciphertext: huge, csrfToken: 't', turnstileToken: 't' } }), createRouteContext({ slug: SLUG }))
@@ -168,7 +168,7 @@ describe('POST /api/drop/[slug]', () => {
     vi.mocked(checkDropRateLimit).mockResolvedValue(false)
     vi.mocked(getDropIpCounts).mockResolvedValue({ hourly: 0, daily: 0 })
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    vi.mocked(verifyTurnstile).mockResolvedValue(true)
+    vi.mocked(checkTurnstile).mockResolvedValue({ verified: true, setProofCookie: null })
     prismaMock.poBox.findUnique.mockResolvedValue(createPoBox())
     prismaMock.message.count.mockResolvedValue(0)
     prismaMock.message.create.mockResolvedValue({} as any)
@@ -184,7 +184,7 @@ describe('POST /api/drop/[slug]', () => {
     vi.mocked(checkDropRateLimit).mockResolvedValue(false)
     vi.mocked(getDropIpCounts).mockResolvedValue({ hourly: 0, daily: 0 })
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    vi.mocked(verifyTurnstile).mockResolvedValue(true)
+    vi.mocked(checkTurnstile).mockResolvedValue({ verified: true, setProofCookie: null })
     prismaMock.poBox.findUnique.mockResolvedValue(createPoBox())
     prismaMock.message.count.mockResolvedValue(0)
     prismaMock.message.create.mockResolvedValue({} as any)

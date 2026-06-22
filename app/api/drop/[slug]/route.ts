@@ -6,7 +6,7 @@ import { notifyNewMessage } from '@/lib/notifications'
 import { checkDropRateLimit, getDropIpCounts, recordDropIp } from '@/lib/rate-limit'
 import { verifyPow, consumeChallenge } from '@/lib/pow'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
-import { verifyTurnstile } from '@/lib/turnstile'
+import { checkTurnstile, TURNSTILE_PROOF_COOKIE } from '@/lib/turnstile'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
@@ -61,6 +61,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
+  let proofToken: string | null = null
   try {
     const { slug } = await params
 
@@ -118,10 +119,15 @@ export async function POST(
       throw new BadRequestError('Invalid or expired CSRF token')
     }
 
-    const turnstileVerified = await verifyTurnstile(body.turnstileToken ?? null, ip)
-    if (!turnstileVerified) {
+    const turnstileResult = await checkTurnstile(
+      request.cookies.get(TURNSTILE_PROOF_COOKIE)?.value,
+      body.turnstileToken ?? null,
+      ip,
+    )
+    if (!turnstileResult.verified) {
       throw new BadRequestError('CAPTCHA verification failed')
     }
+    proofToken = turnstileResult.setProofCookie
 
     if (body.challenge && body.nonce) {
       const valid = verifyPow(body.challenge, body.nonce)
@@ -173,8 +179,28 @@ export async function POST(
     recordDropIp(ip).catch(() => {})
     notifyNewMessage(box.id).catch(() => {})
 
-    return success({ message: 'Message sent' }, 201)
+    const res = success({ message: 'Message sent' }, 201)
+    if (proofToken) {
+      res.cookies.set(TURNSTILE_PROOF_COOKIE, proofToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 2592000,
+      })
+    }
+    return res
   } catch (err) {
-    return error(err)
+    const res = error(err)
+    if (proofToken) {
+      res.cookies.set(TURNSTILE_PROOF_COOKIE, proofToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 2592000,
+      })
+    }
+    return res
   }
 }

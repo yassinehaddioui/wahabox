@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { TURNSTILE_PROOF_COOKIE } from '@/lib/turnstile-constants'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -53,6 +54,11 @@ export default function DropPage() {
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const hasSiteKey = typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  const [hasProof, setHasProof] = useState(() => {
+    if (typeof document === 'undefined') return false
+    return document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
+  })
   const cachedPayloadRef = useRef<{ ciphertext: string; csrfToken: string | null; turnstileToken: string | null } | null>(null)
   const honeypotRef = useRef<HTMLInputElement>(null)
   const turnstileRef = useRef<HTMLDivElement>(null)
@@ -89,6 +95,7 @@ export default function DropPage() {
 
   useEffect(() => {
     if (loading) return
+    if (hasProof) return
 
     const existingScript = document.querySelector('script[src*="turnstile"]')
     if (existingScript) {
@@ -121,7 +128,7 @@ export default function DropPage() {
       }
       delete window.onTurnstileLoad
     }
-  }, [loading, renderTurnstile])
+  }, [loading, renderTurnstile, hasProof])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -185,6 +192,9 @@ export default function DropPage() {
       cachedPayloadRef.current = null
       setError(err instanceof Error ? err.message : 'Failed to send message')
     } finally {
+      if (!hasProof && document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))) {
+        setHasProof(true)
+      }
       setSending(false)
     }
   }
@@ -252,7 +262,7 @@ export default function DropPage() {
                 maxLength={50000}
               />
           </div>
-          <div ref={turnstileRef} className="flex justify-center" />
+          {!hasProof && <div ref={turnstileRef} className="flex justify-center" />}
           <input
             ref={honeypotRef}
             type="text"
