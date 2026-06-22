@@ -7,6 +7,7 @@ Wahabox takes security seriously. If you discover a vulnerability, please report
 **Preferred method:** Use the ["Report a vulnerability"](https://github.com/yassinehaddioui/wahabox/security/advisories/new) page to submit a private advisory. This keeps the report confidential while we investigate and prepare a fix.
 
 **What to include:**
+
 - A clear description of the vulnerability and its impact
 - Steps to reproduce or a proof-of-concept
 - The version of Wahabox affected
@@ -19,6 +20,7 @@ We will acknowledge your report within 48 hours. Our goal is to ship a patch wit
 ### Scope
 
 The following are in scope for our security program:
+
 - Breaks in the zero-knowledge guarantee (server-accessible plaintext)
 - Cryptographic weaknesses in key derivation, encryption, or sealing
 - Authentication or session bypass
