@@ -69,7 +69,11 @@ describe('VerifyEmailPage', () => {
 
   it('shows error state on network failure', async () => {
     mockSearchParamsGet.mockReturnValue('valid-token')
-    mockFetch({ json: () => { throw new Error('Network error') } })
+    mockFetch({
+      json: () => {
+        throw new Error('Network error')
+      },
+    })
     render(<VerifyEmailPage />)
     await waitFor(() => {
       expect(screen.getByText('Verification Failed')).toBeInTheDocument()

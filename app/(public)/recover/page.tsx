@@ -39,9 +39,11 @@ export default function RecoverPage() {
         body: JSON.stringify({ username, csrfToken }),
       })
       const startData = await startRes.json()
-      if (!startData.success) throw new Error(startData.error || 'Invalid username or recovery code')
+      if (!startData.success)
+        throw new Error(startData.error || 'Invalid username or recovery code')
 
-      const { encPrivRec, recKdfSalt, recNonce, publicKey, sealedChallenge, recoveryToken } = startData.data
+      const { encPrivRec, recKdfSalt, recNonce, publicKey, sealedChallenge, recoveryToken } =
+        startData.data
 
       const recKdfSaltBytes = crypto.fromBase64(recKdfSalt)
       const kekRec = crypto.deriveRecoveryKey(recoveryCode, recKdfSaltBytes)
@@ -59,11 +61,7 @@ export default function RecoverPage() {
       const sealedBytes = crypto.fromBase64(sealedChallenge)
       let decryptedChallenge: string
       try {
-        const decrypted = crypto.openSealed(
-          sealedBytes,
-          publicKeyBytes,
-          privateKey,
-        )
+        const decrypted = crypto.openSealed(sealedBytes, publicKeyBytes, privateKey)
         decryptedChallenge = crypto.toBase64(decrypted)
       } catch {
         throw new Error('Recovery code does not match this account')

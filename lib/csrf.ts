@@ -16,10 +16,7 @@ function hashToken(token: string): string {
 export function generateCsrfToken(tag: string, bindId?: string): string {
   const nonce = crypto.randomUUID()
   const payload = bindId ? `${tag}:${nonce}:${bindId}` : `${tag}:${nonce}`
-  const signature = crypto
-    .createHmac('sha256', getCsrfSecret())
-    .update(payload)
-    .digest('base64url')
+  const signature = crypto.createHmac('sha256', getCsrfSecret()).update(payload).digest('base64url')
   return `${nonce}.${signature}`
 }
 
@@ -27,8 +24,7 @@ export async function storeCsrfToken(token: string): Promise<void> {
   try {
     const redis = await getRedis()
     await redis.set(`csrf:${hashToken(token)}`, '1', 'EX', CSRF_TTL)
-  } catch {
-  }
+  } catch {}
 }
 
 export async function verifyAndConsumeCsrfToken(
@@ -45,10 +41,7 @@ export async function verifyAndConsumeCsrfToken(
   const signature = token.slice(dot + 1)
 
   const payload = bindId ? `${tag}:${nonce}:${bindId}` : `${tag}:${nonce}`
-  const expected = crypto
-    .createHmac('sha256', getCsrfSecret())
-    .update(payload)
-    .digest('base64url')
+  const expected = crypto.createHmac('sha256', getCsrfSecret()).update(payload).digest('base64url')
 
   if (signature.length !== expected.length) return false
   if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {

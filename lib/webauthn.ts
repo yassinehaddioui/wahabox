@@ -57,7 +57,12 @@ export async function generateRegOptions(
 export async function verifyRegResponse(
   userId: string,
   response: RegistrationResponseJSON,
-): Promise<{ credentialId: Uint8Array; publicKey: Uint8Array; counter: number; transports?: string }> {
+): Promise<{
+  credentialId: Uint8Array
+  publicKey: Uint8Array
+  counter: number
+  transports?: string
+}> {
   const redis = await getRedis()
   const challenge = await redis.get(`passkey:challenge:${userId}`)
   if (!challenge) throw new Error('Challenge expired')
@@ -130,7 +135,9 @@ export async function verifyAuthResponse(
 
   return {
     verified: verification.verified,
-    newCounter: verification.verified ? verification.authenticationInfo.newCounter : credential.counter,
+    newCounter: verification.verified
+      ? verification.authenticationInfo.newCounter
+      : credential.counter,
   }
 }
 

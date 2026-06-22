@@ -47,9 +47,10 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? request.headers.get('x-real-ip')
-      ?? 'unknown'
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
     if (await checkIpRate(`password:${ip}`, WINDOW)) {
       throw new RateLimitError('Too many requests')
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
       throw new RateLimitError('Too many requests')
     }
 
-    const body = await request.json() as {
+    const body = (await request.json()) as {
       currentAuthVerifier?: string
       newAuthVerifier?: string
       newAuthSalt?: string
@@ -71,9 +72,23 @@ export async function POST(request: NextRequest) {
     const csrfValid = await verifyAndConsumeCsrfToken('password-change', body.csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
-    const { currentAuthVerifier, newAuthVerifier, newAuthSalt, newEncPrivPw, newPwKdfSalt, newPwNonce } = body
+    const {
+      currentAuthVerifier,
+      newAuthVerifier,
+      newAuthSalt,
+      newEncPrivPw,
+      newPwKdfSalt,
+      newPwNonce,
+    } = body
 
-    if (!currentAuthVerifier || !newAuthVerifier || !newAuthSalt || !newEncPrivPw || !newPwKdfSalt || !newPwNonce) {
+    if (
+      !currentAuthVerifier ||
+      !newAuthVerifier ||
+      !newAuthSalt ||
+      !newEncPrivPw ||
+      !newPwKdfSalt ||
+      !newPwNonce
+    ) {
       throw new BadRequestError('Missing required fields')
     }
 

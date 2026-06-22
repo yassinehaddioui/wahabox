@@ -20,7 +20,10 @@ function mockAuth(): void {
 }
 
 describe('GET /api/account/password', () => {
-  beforeEach(() => { resetPrismaMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 401 when not authenticated', async () => {
     vi.mocked(getAuthUser).mockRejectedValue(new UnauthorizedError())
@@ -50,7 +53,10 @@ describe('GET /api/account/password', () => {
 })
 
 describe('POST /api/account/password', () => {
-  beforeEach(() => { resetPrismaMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
 
   const validBody = {
     currentAuthVerifier: Buffer.alloc(32, 0xaa).toString('base64'),
@@ -64,14 +70,24 @@ describe('POST /api/account/password', () => {
 
   it('returns 401 when not authenticated', async () => {
     vi.mocked(getAuthUser).mockRejectedValue(new UnauthorizedError())
-    const res = await POST(createNextRequest('http://localhost/api/account/password', { method: 'POST', body: validBody }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/password', {
+        method: 'POST',
+        body: validBody,
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
   it('returns 429 when rate limited', async () => {
     mockAuth()
     vi.mocked(checkIpRate).mockResolvedValue(true)
-    const res = await POST(createNextRequest('http://localhost/api/account/password', { method: 'POST', body: validBody }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/password', {
+        method: 'POST',
+        body: validBody,
+      }),
+    )
     expect(res.status).toBe(429)
   })
 
@@ -80,7 +96,12 @@ describe('POST /api/account/password', () => {
     vi.mocked(checkIpRate).mockResolvedValue(false)
     vi.mocked(checkGlobalRate).mockResolvedValue(false)
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(false)
-    const res = await POST(createNextRequest('http://localhost/api/account/password', { method: 'POST', body: validBody }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/password', {
+        method: 'POST',
+        body: validBody,
+      }),
+    )
     expect(res.status).toBe(400)
     expect(verifyAndConsumeCsrfToken).toHaveBeenCalledWith('password-change', 'valid-csrf')
   })
@@ -90,7 +111,12 @@ describe('POST /api/account/password', () => {
     vi.mocked(checkIpRate).mockResolvedValue(false)
     vi.mocked(checkGlobalRate).mockResolvedValue(false)
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    const res = await POST(createNextRequest('http://localhost/api/account/password', { method: 'POST', body: { csrfToken: 't' } }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/password', {
+        method: 'POST',
+        body: { csrfToken: 't' },
+      }),
+    )
     expect(res.status).toBe(400)
   })
 
@@ -99,8 +125,15 @@ describe('POST /api/account/password', () => {
     vi.mocked(checkIpRate).mockResolvedValue(false)
     vi.mocked(checkGlobalRate).mockResolvedValue(false)
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    prismaMock.user.findUnique.mockResolvedValue(createUser({ authVerifier: Buffer.alloc(32, 0xff) }))
-    const res = await POST(createNextRequest('http://localhost/api/account/password', { method: 'POST', body: validBody }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({ authVerifier: Buffer.alloc(32, 0xff) }),
+    )
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/password', {
+        method: 'POST',
+        body: validBody,
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
@@ -111,16 +144,24 @@ describe('POST /api/account/password', () => {
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.user.findUnique.mockResolvedValue(createUser())
     prismaMock.user.update.mockResolvedValue({})
-    const res = await POST(createNextRequest('http://localhost/api/account/password', { method: 'POST', body: validBody }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/password', {
+        method: 'POST',
+        body: validBody,
+      }),
+    )
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.success).toBe(true)
     expect(prismaMock.user.update).toHaveBeenCalledWith({
       where: { id: 'user-1' },
       data: {
-        authVerifier: expect.any(Buffer), authSalt: expect.any(Buffer),
-        encPrivPw: expect.any(Buffer), pwKdfSalt: expect.any(Buffer),
-        pwNonce: expect.any(Buffer), tokenVersion: { increment: 1 },
+        authVerifier: expect.any(Buffer),
+        authSalt: expect.any(Buffer),
+        encPrivPw: expect.any(Buffer),
+        pwKdfSalt: expect.any(Buffer),
+        pwNonce: expect.any(Buffer),
+        tokenVersion: { increment: 1 },
       },
     })
     expect(clearSessionCookie).toHaveBeenCalled()

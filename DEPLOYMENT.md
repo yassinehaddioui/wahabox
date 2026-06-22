@@ -54,6 +54,7 @@ docker compose -f docker-compose.dev.yml up -d
 ```
 
 This starts:
+
 - **PostgreSQL 17** on port 5432
 - **Redis 7** on port 6379
 - **Caddy** reverse proxy with auto-TLS on port 443 (self-signed cert via `tls internal`)
@@ -124,6 +125,7 @@ docker compose up -d --build
 ```
 
 This starts the production stack:
+
 - **PostgreSQL 17** with persistent volume
 - **Redis 7** with persistent volume
 - **Next.js standalone server** built from the multi-stage `Dockerfile`, listening internally on port **3000**
@@ -228,17 +230,17 @@ sudo apache2ctl configtest && sudo systemctl reload apache2
 
 ## Key Commands
 
-| Action | Command |
-|---|---|
-| Start dev stack | `docker compose -f docker-compose.dev.yml up -d` |
-| Stop dev stack | `docker compose -f docker-compose.dev.yml down` |
-| Reset dev volumes | `docker compose -f docker-compose.dev.yml down -v` |
-| View dev logs | `docker compose -f docker-compose.dev.yml logs -f app` |
-| Run migrations | `pnpm prisma migrate deploy` |
-| Create migration | `pnpm prisma migrate dev --name <name>` |
-| Run tests | `pnpm vitest run` |
-| Start production | `docker compose up -d --build` |
-| Stop production | `docker compose down` |
+| Action            | Command                                                |
+| ----------------- | ------------------------------------------------------ |
+| Start dev stack   | `docker compose -f docker-compose.dev.yml up -d`       |
+| Stop dev stack    | `docker compose -f docker-compose.dev.yml down`        |
+| Reset dev volumes | `docker compose -f docker-compose.dev.yml down -v`     |
+| View dev logs     | `docker compose -f docker-compose.dev.yml logs -f app` |
+| Run migrations    | `pnpm prisma migrate deploy`                           |
+| Create migration  | `pnpm prisma migrate dev --name <name>`                |
+| Run tests         | `pnpm vitest run`                                      |
+| Start production  | `docker compose up -d --build`                         |
+| Stop production   | `docker compose down`                                  |
 
 ## Security Notes
 

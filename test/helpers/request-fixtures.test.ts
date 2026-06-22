@@ -1,12 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
 import { createNextRequest, createRouteContext } from './request'
-import {
-  createUser,
-  createPoBox,
-  createMessage,
-  createPasskeyCredential,
-} from './fixtures'
+import { createUser, createPoBox, createMessage, createPasskeyCredential } from './fixtures'
 import { parseBody } from '@/lib/validation'
 
 describe('createNextRequest', () => {

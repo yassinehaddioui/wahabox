@@ -46,7 +46,9 @@ describe('MarkdownEditor', () => {
   })
 
   it('applies custom className', () => {
-    const { container } = render(<MarkdownEditor value="" onChange={vi.fn()} className="custom-class" />)
+    const { container } = render(
+      <MarkdownEditor value="" onChange={vi.fn()} className="custom-class" />,
+    )
     expect(container.firstChild).toHaveClass('custom-class')
   })
 
@@ -55,14 +57,16 @@ describe('MarkdownEditor', () => {
     render(<MarkdownEditor value="hello world" onChange={onChange} />)
     const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
     textarea.setSelectionRange(6, 11)
-    const execMock = vi.spyOn(document, 'execCommand').mockImplementation((_cmd, _showUI, value) => {
-      const val = value as string
-      textarea.value =
-        textarea.value.substring(0, textarea.selectionStart) +
-        val +
-        textarea.value.substring(textarea.selectionEnd)
-      return true
-    })
+    const execMock = vi
+      .spyOn(document, 'execCommand')
+      .mockImplementation((_cmd, _showUI, value) => {
+        const val = value as string
+        textarea.value =
+          textarea.value.substring(0, textarea.selectionStart) +
+          val +
+          textarea.value.substring(textarea.selectionEnd)
+        return true
+      })
     fireEvent.click(screen.getByLabelText('Bold'))
     expect(execMock).toHaveBeenCalledWith('insertText', false, '**world**')
     expect(onChange).toHaveBeenCalledWith('hello **world**')
@@ -74,14 +78,16 @@ describe('MarkdownEditor', () => {
     render(<MarkdownEditor value="hello" onChange={onChange} />)
     const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
     textarea.setSelectionRange(0, 0)
-    const execMock = vi.spyOn(document, 'execCommand').mockImplementation((_cmd, _showUI, value) => {
-      const val = value as string
-      textarea.value =
-        textarea.value.substring(0, textarea.selectionStart) +
-        val +
-        textarea.value.substring(textarea.selectionEnd)
-      return true
-    })
+    const execMock = vi
+      .spyOn(document, 'execCommand')
+      .mockImplementation((_cmd, _showUI, value) => {
+        const val = value as string
+        textarea.value =
+          textarea.value.substring(0, textarea.selectionStart) +
+          val +
+          textarea.value.substring(textarea.selectionEnd)
+        return true
+      })
     fireEvent.click(screen.getByLabelText('Heading'))
     expect(execMock).toHaveBeenCalledWith('insertText', false, '## ')
     expect(onChange).toHaveBeenCalledWith('## hello')
@@ -93,14 +99,16 @@ describe('MarkdownEditor', () => {
     render(<MarkdownEditor value="click here" onChange={onChange} />)
     const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
     textarea.setSelectionRange(0, 5)
-    const execMock = vi.spyOn(document, 'execCommand').mockImplementation((_cmd, _showUI, value) => {
-      const val = value as string
-      textarea.value =
-        textarea.value.substring(0, textarea.selectionStart) +
-        val +
-        textarea.value.substring(textarea.selectionEnd)
-      return true
-    })
+    const execMock = vi
+      .spyOn(document, 'execCommand')
+      .mockImplementation((_cmd, _showUI, value) => {
+        const val = value as string
+        textarea.value =
+          textarea.value.substring(0, textarea.selectionStart) +
+          val +
+          textarea.value.substring(textarea.selectionEnd)
+        return true
+      })
     fireEvent.click(screen.getByLabelText('Link'))
     expect(execMock).toHaveBeenCalledWith('insertText', false, '[click](url)')
     execMock.mockRestore()

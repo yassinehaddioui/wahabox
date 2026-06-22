@@ -81,7 +81,12 @@ describe('POST /api/auth/mfa/send-email', () => {
   })
 
   it('returns 400 when email MFA is not enabled for the session', async () => {
-    await redisMock.set('mfa:valid-token', JSON.stringify(makeSession({ methods: ['totp'] })), 'EX', 300)
+    await redisMock.set(
+      'mfa:valid-token',
+      JSON.stringify(makeSession({ methods: ['totp'] })),
+      'EX',
+      300,
+    )
 
     const res = await POST(makeRequest('valid-token'))
     const json = await res.json()
@@ -112,7 +117,9 @@ describe('POST /api/auth/mfa/send-email', () => {
 
   it('returns 400 when user has no verified email', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
-    prismaMock.user.findUnique.mockResolvedValue(createUser({ emailEncrypted: null, emailNonce: null }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({ emailEncrypted: null, emailNonce: null }),
+    )
 
     await redisMock.set('mfa:valid-token', JSON.stringify(makeSession()), 'EX', 300)
 

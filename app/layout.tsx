@@ -1,39 +1,39 @@
-import type { Metadata } from "next";
-import { Inter, Source_Serif_4, JetBrains_Mono } from "next/font/google";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
-import "./globals.css";
+import type { Metadata } from 'next'
+import { Inter, Source_Serif_4, JetBrains_Mono } from 'next/font/google'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { Toaster } from '@/components/ui/sonner'
+import './globals.css'
 
 const fontSans = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
+  variable: '--font-sans',
+  subsets: ['latin'],
+})
 
 const fontSerif = Source_Serif_4({
-  variable: "--font-serif",
-  subsets: ["latin"],
-});
+  variable: '--font-serif',
+  subsets: ['latin'],
+})
 
 const fontMono = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-});
+  variable: '--font-mono',
+  subsets: ['latin'],
+})
 
 export const metadata: Metadata = {
-  title: "Wahabox",
-  description: "Encrypted virtual PO box messaging",
+  title: 'Wahabox',
+  description: 'Encrypted virtual PO box messaging',
   icons: {
     icon: [
-      { url: "/WahaBox-Logo-512.png", sizes: "512x512", type: "image/png" },
-      { url: "/WahaBox-Logo.svg", type: "image/svg+xml" },
+      { url: '/WahaBox-Logo-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/WahaBox-Logo.svg', type: 'image/svg+xml' },
     ],
   },
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en" className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable}`}>
@@ -44,5 +44,5 @@ export default function RootLayout({
         </TooltipProvider>
       </body>
     </html>
-  );
+  )
 }

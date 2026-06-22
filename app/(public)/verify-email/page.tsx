@@ -46,7 +46,9 @@ function VerifyContent() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <div className="mx-auto mb-2">
-          {state === 'loading' && <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />}
+          {state === 'loading' && (
+            <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+          )}
           {state === 'success' && <CheckCircle className="h-10 w-10 text-primary" />}
           {state === 'error' && <XCircle className="h-10 w-10 text-destructive" />}
         </div>

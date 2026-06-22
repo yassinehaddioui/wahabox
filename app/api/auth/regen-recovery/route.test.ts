@@ -59,7 +59,9 @@ describe('PUT /api/auth/regen-recovery', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetAuthUser.mockRejectedValue(new (await import('@/lib/errors')).UnauthorizedError('No session token'))
+    mockGetAuthUser.mockRejectedValue(
+      new (await import('@/lib/errors')).UnauthorizedError('No session token'),
+    )
 
     const res = await PUT(makeRequest())
     const json = await res.json()

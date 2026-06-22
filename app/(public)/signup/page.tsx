@@ -24,7 +24,7 @@ export default function SignupPage() {
   const hasSiteKey = typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
   const [hasProof, setHasProof] = useState(() => {
     if (typeof document === 'undefined') return false
-    return document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
+    return document.cookie.split(';').some((c) => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
   })
 
   async function handleSubmit(e: React.FormEvent) {
@@ -115,7 +115,10 @@ export default function SignupPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed')
     } finally {
-      if (!hasProof && document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))) {
+      if (
+        !hasProof &&
+        document.cookie.split(';').some((c) => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
+      ) {
         setHasProof(true)
       }
       setLoading(false)
@@ -128,15 +131,13 @@ export default function SignupPage() {
         <CardHeader>
           <CardTitle>Save Your Recovery Code</CardTitle>
           <CardDescription>
-            This code is the <strong>only</strong> way to recover your account if you
-            lose your password. Write it down and keep it safe.
+            This code is the <strong>only</strong> way to recover your account if you lose your
+            password. Write it down and keep it safe.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg bg-amber-50 p-4 text-center dark:bg-amber-950">
-            <code className="select-all text-lg font-bold font-mono break-all">
-              {recoveryCode}
-            </code>
+            <code className="select-all text-lg font-bold font-mono break-all">{recoveryCode}</code>
           </div>
 
           {step === 'recovery' && (
@@ -168,7 +169,11 @@ export default function SignupPage() {
                 />
               )}
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" disabled={loading || (!hasProof && !turnstileToken)} className="w-full">
+              <Button
+                type="submit"
+                disabled={loading || (!hasProof && !turnstileToken)}
+                className="w-full"
+              >
                 {loading ? 'Creating account...' : 'Create Account'}
               </Button>
             </form>

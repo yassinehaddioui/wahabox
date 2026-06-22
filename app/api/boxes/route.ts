@@ -9,8 +9,7 @@ import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 
 function generateSlug(): string {
-  return crypto.randomBytes(16)
-    .toString('base64url')
+  return crypto.randomBytes(16).toString('base64url')
 }
 
 export async function GET(request: NextRequest) {
@@ -41,23 +40,33 @@ export async function GET(request: NextRequest) {
     })
 
     const boxIds = boxes.map((b) => b.id)
-    const latestMessages = boxIds.length > 0
-      ? await prisma.message.groupBy({
-          by: ['poBoxId'],
-          where: { poBoxId: { in: boxIds } },
-          _max: { createdAt: true },
-        })
-      : []
+    const latestMessages =
+      boxIds.length > 0
+        ? await prisma.message.groupBy({
+            by: ['poBoxId'],
+            where: { poBoxId: { in: boxIds } },
+            _max: { createdAt: true },
+          })
+        : []
 
     const lastMessageMap = new Map(latestMessages.map((m) => [m.poBoxId, m._max.createdAt]))
 
     return success(
-      boxes.map(({ messages: unreadMessages, passwordHash, ...box }: { messages: { id: string }[]; passwordHash: string | null } & Record<string, unknown>) => ({
-        ...box,
-        hasUnread: unreadMessages.length > 0,
-        hasPassword: !!passwordHash,
-        lastMessageAt: lastMessageMap.get(box.id as string)?.toISOString() ?? null,
-      }))
+      boxes.map(
+        ({
+          messages: unreadMessages,
+          passwordHash,
+          ...box
+        }: { messages: { id: string }[]; passwordHash: string | null } & Record<
+          string,
+          unknown
+        >) => ({
+          ...box,
+          hasUnread: unreadMessages.length > 0,
+          hasPassword: !!passwordHash,
+          lastMessageAt: lastMessageMap.get(box.id as string)?.toISOString() ?? null,
+        }),
+      ),
     )
   } catch (err) {
     return error(err)

@@ -7,7 +7,7 @@ import prisma from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json() as { token?: string }
+    const { token } = (await request.json()) as { token?: string }
     if (!token || typeof token !== 'string') {
       throw new BadRequestError('Invalid verification link')
     }

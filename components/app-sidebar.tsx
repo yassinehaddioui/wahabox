@@ -40,8 +40,17 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link href="/dashboard" className="flex items-center px-4 py-2 text-lg font-bold tracking-tight">
-          <Image src="/WahaBox-Logo.svg" alt="Wahabox" width={0} height={0} className="h-12 w-auto" />
+        <Link
+          href="/dashboard"
+          className="flex items-center px-4 py-2 text-lg font-bold tracking-tight"
+        >
+          <Image
+            src="/WahaBox-Logo.svg"
+            alt="Wahabox"
+            width={0}
+            height={0}
+            className="h-12 w-auto"
+          />
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -50,7 +59,10 @@ export function AppSidebar() {
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton render={<Link href={item.href} />} isActive={pathname === item.href}>
+                <SidebarMenuButton
+                  render={<Link href={item.href} />}
+                  isActive={pathname === item.href}
+                >
                   {item.icon && <item.icon className="mr-2 h-4 w-4" />}
                   {item.label}
                 </SidebarMenuButton>

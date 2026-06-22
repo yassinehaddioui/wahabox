@@ -107,9 +107,7 @@ describe('signupSchema', () => {
   })
 
   it('rejects an invalid username', () => {
-    expect(
-      signupSchema.safeParse({ ...validSignup, username: 'no' }).success,
-    ).toBe(false)
+    expect(signupSchema.safeParse({ ...validSignup, username: 'no' }).success).toBe(false)
   })
 })
 
@@ -139,15 +137,11 @@ describe('loginSchema', () => {
   })
 
   it('rejects an empty authVerifier', () => {
-    expect(
-      loginSchema.safeParse({ ...validLogin, authVerifier: '' }).success,
-    ).toBe(false)
+    expect(loginSchema.safeParse({ ...validLogin, authVerifier: '' }).success).toBe(false)
   })
 
   it('rejects an invalid username', () => {
-    expect(
-      loginSchema.safeParse({ ...validLogin, username: '!!' }).success,
-    ).toBe(false)
+    expect(loginSchema.safeParse({ ...validLogin, username: '!!' }).success).toBe(false)
   })
 })
 
@@ -170,9 +164,7 @@ describe('recoveryStartSchema', () => {
   })
 
   it('rejects an invalid username', () => {
-    expect(
-      recoveryStartSchema.safeParse({ username: 'a' }).success,
-    ).toBe(false)
+    expect(recoveryStartSchema.safeParse({ username: 'a' }).success).toBe(false)
   })
 })
 
@@ -208,16 +200,15 @@ describe('recoveryCompleteSchema', () => {
   })
 
   it('rejects an empty recoveryToken', () => {
-    expect(
-      recoveryCompleteSchema.safeParse({ ...validRecovery, recoveryToken: '' })
-        .success,
-    ).toBe(false)
+    expect(recoveryCompleteSchema.safeParse({ ...validRecovery, recoveryToken: '' }).success).toBe(
+      false,
+    )
   })
 
   it('rejects an invalid username', () => {
-    expect(
-      recoveryCompleteSchema.safeParse({ ...validRecovery, username: '!' }).success,
-    ).toBe(false)
+    expect(recoveryCompleteSchema.safeParse({ ...validRecovery, username: '!' }).success).toBe(
+      false,
+    )
   })
 })
 
@@ -258,9 +249,9 @@ describe('createBoxSchema', () => {
   })
 
   it('rejects a greeting longer than 500 chars', () => {
-    expect(
-      createBoxSchema.safeParse({ label: 'ok', greeting: 'g'.repeat(501) }).success,
-    ).toBe(false)
+    expect(createBoxSchema.safeParse({ label: 'ok', greeting: 'g'.repeat(501) }).success).toBe(
+      false,
+    )
   })
 
   it('rejects a missing label', () => {
@@ -313,9 +304,7 @@ describe('updateBoxSchema', () => {
   })
 
   it('rejects an invalid ISO datetime for expiresAt', () => {
-    expect(
-      updateBoxSchema.safeParse({ expiresAt: 'not-a-date' }).success,
-    ).toBe(false)
+    expect(updateBoxSchema.safeParse({ expiresAt: 'not-a-date' }).success).toBe(false)
   })
 
   it('rejects a non-positive maxMessages', () => {
@@ -390,16 +379,13 @@ describe('submitMessageSchema', () => {
   })
 
   it('rejects a ciphertext longer than 200_000 chars', () => {
-    expect(
-      submitMessageSchema.safeParse({ ciphertext: 'x'.repeat(200_001) }).success,
-    ).toBe(false)
+    expect(submitMessageSchema.safeParse({ ciphertext: 'x'.repeat(200_001) }).success).toBe(false)
   })
 
   it('rejects a non-empty honeypot (bot detected)', () => {
-    expect(
-      submitMessageSchema.safeParse({ ciphertext: 'ok', honeypot: 'filled' })
-        .success,
-    ).toBe(false)
+    expect(submitMessageSchema.safeParse({ ciphertext: 'ok', honeypot: 'filled' }).success).toBe(
+      false,
+    )
   })
 
   it('rejects a missing ciphertext', () => {
@@ -453,15 +439,11 @@ describe('mfaVerifySchema', () => {
   })
 
   it('rejects an invalid method enum', () => {
-    expect(
-      mfaVerifySchema.safeParse({ mfaToken: 'token', method: 'sms' }).success,
-    ).toBe(false)
+    expect(mfaVerifySchema.safeParse({ mfaToken: 'token', method: 'sms' }).success).toBe(false)
   })
 
   it('rejects an empty mfaToken', () => {
-    expect(
-      mfaVerifySchema.safeParse({ mfaToken: '', method: 'email' }).success,
-    ).toBe(false)
+    expect(mfaVerifySchema.safeParse({ mfaToken: '', method: 'email' }).success).toBe(false)
   })
 
   it('rejects a missing method', () => {
@@ -480,15 +462,11 @@ describe('mfaRecoverSchema', () => {
   })
 
   it('rejects an empty mfaToken', () => {
-    expect(
-      mfaRecoverSchema.safeParse({ mfaToken: '', recoveryCode: 'code' }).success,
-    ).toBe(false)
+    expect(mfaRecoverSchema.safeParse({ mfaToken: '', recoveryCode: 'code' }).success).toBe(false)
   })
 
   it('rejects an empty recoveryCode', () => {
-    expect(
-      mfaRecoverSchema.safeParse({ mfaToken: 'token', recoveryCode: '' }).success,
-    ).toBe(false)
+    expect(mfaRecoverSchema.safeParse({ mfaToken: 'token', recoveryCode: '' }).success).toBe(false)
   })
 
   it('rejects a missing recoveryCode', () => {
@@ -527,15 +505,11 @@ describe('mfaManageSchema', () => {
   })
 
   it('rejects an invalid method enum', () => {
-    expect(
-      mfaManageSchema.safeParse({ method: 'sms', action: 'enable' }).success,
-    ).toBe(false)
+    expect(mfaManageSchema.safeParse({ method: 'sms', action: 'enable' }).success).toBe(false)
   })
 
   it('rejects an invalid action enum', () => {
-    expect(
-      mfaManageSchema.safeParse({ method: 'totp', action: 'delete' }).success,
-    ).toBe(false)
+    expect(mfaManageSchema.safeParse({ method: 'totp', action: 'delete' }).success).toBe(false)
   })
 
   it('rejects a missing method', () => {
@@ -597,9 +571,7 @@ describe('parseBody', () => {
       body: '',
     })
 
-    await expect(parseBody(request, loginSchema)).rejects.toThrow(
-      'Invalid JSON body',
-    )
+    await expect(parseBody(request, loginSchema)).rejects.toThrow('Invalid JSON body')
   })
 
   it('returns parsed data for a createBox payload via parseBody', async () => {

@@ -56,7 +56,9 @@ describe('verifyTurnstile', () => {
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '1x00000000000000000000AA'
     process.env.TURNSTILE_SECRET_KEY = '1x00000000000000000000AA'
     mockFetch({
-      json: () => { throw new Error('Network failure') },
+      json: () => {
+        throw new Error('Network failure')
+      },
     })
     const { verifyTurnstile } = await import('@/lib/turnstile')
     await expect(verifyTurnstile('some-token', '127.0.0.1')).resolves.toBe(false)

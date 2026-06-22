@@ -16,7 +16,10 @@ function mockAuth(): void {
 }
 
 describe('GET /api/boxes', () => {
-  beforeEach(() => { resetPrismaMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 401 when not authenticated', async () => {
     vi.mocked(getAuthUser).mockRejectedValue(new UnauthorizedError())
@@ -66,26 +69,46 @@ describe('GET /api/boxes', () => {
 })
 
 describe('POST /api/boxes', () => {
-  beforeEach(() => { resetPrismaMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 401 when not authenticated', async () => {
     vi.mocked(getAuthUser).mockRejectedValue(new UnauthorizedError())
-    const res = await POST(createNextRequest('http://localhost/api/boxes', { method: 'POST', body: { label: 'Box' } }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/boxes', { method: 'POST', body: { label: 'Box' } }),
+    )
     expect(res.status).toBe(401)
   })
 
   it('returns 400 for invalid CSRF', async () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(false)
-    const res = await POST(createNextRequest('http://localhost/api/boxes', { method: 'POST', body: { label: 'Box', csrfToken: 'bad' } }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/boxes', {
+        method: 'POST',
+        body: { label: 'Box', csrfToken: 'bad' },
+      }),
+    )
     expect(res.status).toBe(400)
   })
 
   it('creates a box with slug', async () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    prismaMock.poBox.create.mockResolvedValue({ id: 'box-1', slug: 'generated', label: 'My Box', greeting: null })
-    const res = await POST(createNextRequest('http://localhost/api/boxes', { method: 'POST', body: { label: 'My Box', csrfToken: 'valid' } }))
+    prismaMock.poBox.create.mockResolvedValue({
+      id: 'box-1',
+      slug: 'generated',
+      label: 'My Box',
+      greeting: null,
+    })
+    const res = await POST(
+      createNextRequest('http://localhost/api/boxes', {
+        method: 'POST',
+        body: { label: 'My Box', csrfToken: 'valid' },
+      }),
+    )
     const body = await res.json()
     expect(res.status).toBe(201)
     expect(body.data.slug).toBe('generated')
@@ -94,8 +117,18 @@ describe('POST /api/boxes', () => {
   it('creates box with greeting and password', async () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    prismaMock.poBox.create.mockResolvedValue({ id: 'box-1', slug: 'slug', label: 'S', greeting: 'Hi' })
-    const res = await POST(createNextRequest('http://localhost/api/boxes', { method: 'POST', body: { label: 'S', greeting: 'Hi', password: 'secret', csrfToken: 'valid' } }))
+    prismaMock.poBox.create.mockResolvedValue({
+      id: 'box-1',
+      slug: 'slug',
+      label: 'S',
+      greeting: 'Hi',
+    })
+    const res = await POST(
+      createNextRequest('http://localhost/api/boxes', {
+        method: 'POST',
+        body: { label: 'S', greeting: 'Hi', password: 'secret', csrfToken: 'valid' },
+      }),
+    )
     const body = await res.json()
     expect(body.data.greeting).toBe('Hi')
   })
@@ -104,7 +137,12 @@ describe('POST /api/boxes', () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.poBox.create.mockResolvedValue({ id: 'b', slug: 's', label: 'B', greeting: null })
-    await POST(createNextRequest('http://localhost/api/boxes', { method: 'POST', body: { label: 'B', csrfToken: 't' } }))
+    await POST(
+      createNextRequest('http://localhost/api/boxes', {
+        method: 'POST',
+        body: { label: 'B', csrfToken: 't' },
+      }),
+    )
     expect(verifyAndConsumeCsrfToken).toHaveBeenCalledWith('create-box', 't')
   })
 })

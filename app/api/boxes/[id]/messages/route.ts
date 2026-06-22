@@ -8,10 +8,7 @@ function b64(u: Uint8Array): string {
   return Buffer.from(u).toString('base64')
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser(request)
     const { id } = await params
@@ -35,12 +32,14 @@ export async function GET(
     })
 
     return success(
-      messages.map((m: { id: string; ciphertext: Uint8Array; readAt: Date | null; createdAt: Date }) => ({
-        id: m.id,
-        ciphertext: b64(m.ciphertext),
-        readAt: m.readAt?.toISOString() ?? null,
-        createdAt: m.createdAt.toISOString(),
-      })),
+      messages.map(
+        (m: { id: string; ciphertext: Uint8Array; readAt: Date | null; createdAt: Date }) => ({
+          id: m.id,
+          ciphertext: b64(m.ciphertext),
+          readAt: m.readAt?.toISOString() ?? null,
+          createdAt: m.createdAt.toISOString(),
+        }),
+      ),
     )
   } catch (err) {
     return error(err)

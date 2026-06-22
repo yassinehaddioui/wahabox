@@ -7,7 +7,14 @@ import { toast } from 'sonner'
 
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn(), forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }))
 
 vi.mock('sonner', () => ({
@@ -50,10 +57,60 @@ describe('SettingsPage', () => {
     vi.restoreAllMocks()
   })
 
-  const emailStatus = { json: () => ({ success: true, data: { hasEmail: true, isVerified: true, maskedEmail: 'a***@example.com', notificationsEnabled: true } }), ok: true }
-  const mfaEnabledStatus = { json: () => ({ success: true, data: { mfaEmail: true, mfaTotp: true, mfaPasskey: false, hasRecoveryCodes: true, hasVerifiedEmail: true, hasEmail: true } }), ok: true }
-  const mfaDisabledStatus = { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: true, hasEmail: true } }), ok: true }
-  const passkeysData = { json: () => ({ success: true, data: [{ id: 'pk-1', deviceName: 'YubiKey', createdAt: '2024-01-01T00:00:00Z', lastUsedAt: '2024-06-01T00:00:00Z' }] }), ok: true }
+  const emailStatus = {
+    json: () => ({
+      success: true,
+      data: {
+        hasEmail: true,
+        isVerified: true,
+        maskedEmail: 'a***@example.com',
+        notificationsEnabled: true,
+      },
+    }),
+    ok: true,
+  }
+  const mfaEnabledStatus = {
+    json: () => ({
+      success: true,
+      data: {
+        mfaEmail: true,
+        mfaTotp: true,
+        mfaPasskey: false,
+        hasRecoveryCodes: true,
+        hasVerifiedEmail: true,
+        hasEmail: true,
+      },
+    }),
+    ok: true,
+  }
+  const mfaDisabledStatus = {
+    json: () => ({
+      success: true,
+      data: {
+        mfaEmail: false,
+        mfaTotp: false,
+        mfaPasskey: false,
+        hasRecoveryCodes: false,
+        hasVerifiedEmail: true,
+        hasEmail: true,
+      },
+    }),
+    ok: true,
+  }
+  const passkeysData = {
+    json: () => ({
+      success: true,
+      data: [
+        {
+          id: 'pk-1',
+          deviceName: 'YubiKey',
+          createdAt: '2024-01-01T00:00:00Z',
+          lastUsedAt: '2024-06-01T00:00:00Z',
+        },
+      ],
+    }),
+    ok: true,
+  }
   const emptyPasskeys = { json: () => ({ success: true, data: [] }), ok: true }
   const csrfOk = { json: () => ({ success: true, data: { csrfToken: 'csrf' } }), ok: true }
 
@@ -86,16 +143,43 @@ describe('SettingsPage', () => {
     render(React.createElement(SettingsPage))
     await waitFor(() => expect(screen.getByText('Email Notifications')).toBeInTheDocument())
 
-    fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'test@example.com' } })
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
+      target: { value: 'test@example.com' },
+    })
     fireEvent.click(screen.getByText('Update'))
   })
 
   it('changes password successfully with crypto re-wrap', async () => {
     mockFetch([
-      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
-      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasEmail: false, isVerified: false, notificationsEnabled: false },
+        }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: false,
+            mfaTotp: false,
+            mfaPasskey: false,
+            hasRecoveryCodes: false,
+            hasVerifiedEmail: false,
+            hasEmail: false,
+          },
+        }),
+        ok: true,
+      },
       emptyPasskeys,
-      { json: () => ({ success: true, data: { authSalt: 'salt', pwKdfSalt: 'kdf', encPrivPw: 'enc', pwNonce: 'nonce' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { authSalt: 'salt', pwKdfSalt: 'kdf', encPrivPw: 'enc', pwNonce: 'nonce' },
+        }),
+        ok: true,
+      },
       csrfOk,
       { json: () => ({ success: true, data: { message: 'Password changed' } }), ok: true },
     ])
@@ -104,7 +188,9 @@ describe('SettingsPage', () => {
 
     fireEvent.change(screen.getByLabelText('Current Password'), { target: { value: 'oldpass123' } })
     fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpass456' } })
-    fireEvent.change(screen.getByLabelText('Confirm New Password'), { target: { value: 'newpass456' } })
+    fireEvent.change(screen.getByLabelText('Confirm New Password'), {
+      target: { value: 'newpass456' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /change password/i }))
 
     await waitFor(() => {
@@ -136,7 +222,13 @@ describe('SettingsPage', () => {
       emailStatus,
       mfaDisabledStatus,
       emptyPasskeys,
-      { json: () => ({ success: true, data: { uri: 'otpauth://totp/test', secret: 'JBSWY3DPEHPK3PXP' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { uri: 'otpauth://totp/test', secret: 'JBSWY3DPEHPK3PXP' },
+        }),
+        ok: true,
+      },
     ])
     render(React.createElement(SettingsPage))
     await waitFor(() => expect(screen.getByText('Authenticator App')).toBeInTheDocument())
@@ -151,9 +243,28 @@ describe('SettingsPage', () => {
   it('regenerates recovery codes', async () => {
     mockFetch([
       emailStatus,
-      { json: () => ({ success: true, data: { mfaEmail: true, mfaTotp: true, mfaPasskey: false, hasRecoveryCodes: true, hasVerifiedEmail: true, hasEmail: true } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: true,
+            mfaTotp: true,
+            mfaPasskey: false,
+            hasRecoveryCodes: true,
+            hasVerifiedEmail: true,
+            hasEmail: true,
+          },
+        }),
+        ok: true,
+      },
       passkeysData,
-      { json: () => ({ success: true, data: { recoveryCodes: ['AAAA-BBBB-CCCC-DDDD', 'EEEE-FFFF-GGGG-HHHH'] } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { recoveryCodes: ['AAAA-BBBB-CCCC-DDDD', 'EEEE-FFFF-GGGG-HHHH'] },
+        }),
+        ok: true,
+      },
     ])
     render(React.createElement(SettingsPage))
     await waitFor(() => {
@@ -164,10 +275,35 @@ describe('SettingsPage', () => {
 
   it('renders password recovery key section', async () => {
     mockFetch([
-      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
-      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasEmail: false, isVerified: false, notificationsEnabled: false },
+        }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: false,
+            mfaTotp: false,
+            mfaPasskey: false,
+            hasRecoveryCodes: false,
+            hasVerifiedEmail: false,
+            hasEmail: false,
+          },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: [] }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
     ])
     render(React.createElement(SettingsPage))
     await waitFor(() => {
@@ -177,10 +313,35 @@ describe('SettingsPage', () => {
 
   it('shows last generated date when recovery key exists', async () => {
     mockFetch([
-      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
-      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasEmail: false, isVerified: false, notificationsEnabled: false },
+        }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: false,
+            mfaTotp: false,
+            mfaPasskey: false,
+            hasRecoveryCodes: false,
+            hasVerifiedEmail: false,
+            hasEmail: false,
+          },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: [] }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
     ])
     render(React.createElement(SettingsPage))
     await waitFor(() => {
@@ -190,10 +351,32 @@ describe('SettingsPage', () => {
 
   it('shows at account creation when no regeneration date exists', async () => {
     mockFetch([
-      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
-      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasEmail: false, isVerified: false, notificationsEnabled: false },
+        }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: false,
+            mfaTotp: false,
+            mfaPasskey: false,
+            hasRecoveryCodes: false,
+            hasVerifiedEmail: false,
+            hasEmail: false,
+          },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: [] }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: null } }), ok: true },
+      {
+        json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: null } }),
+        ok: true,
+      },
     ])
     render(React.createElement(SettingsPage))
     await waitFor(() => {
@@ -203,18 +386,52 @@ describe('SettingsPage', () => {
 
   it('regenerates recovery key and shows dialog', async () => {
     mockFetch([
-      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
-      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasEmail: false, isVerified: false, notificationsEnabled: false },
+        }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: false,
+            mfaTotp: false,
+            mfaPasskey: false,
+            hasRecoveryCodes: false,
+            hasVerifiedEmail: false,
+            hasEmail: false,
+          },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: [] }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
       { json: () => ({ success: true, data: { message: 'Recovery code updated' } }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
     ])
 
     mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
     mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
-    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({
+      ciphertext: new Uint8Array(48),
+      nonce: new Uint8Array(24),
+    }))
     mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
     mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
 
@@ -236,28 +453,70 @@ describe('SettingsPage', () => {
 
   it('copy button copies recovery key to clipboard', async () => {
     const writeText = vi.fn()
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, writable: true, configurable: true })
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      writable: true,
+      configurable: true,
+    })
 
     mockFetch([
-      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
-      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasEmail: false, isVerified: false, notificationsEnabled: false },
+        }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: false,
+            mfaTotp: false,
+            mfaPasskey: false,
+            hasRecoveryCodes: false,
+            hasVerifiedEmail: false,
+            hasEmail: false,
+          },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: [] }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
       { json: () => ({ success: true, data: { message: 'Recovery code updated' } }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
     ])
 
     mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
     mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
-    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({
+      ciphertext: new Uint8Array(48),
+      nonce: new Uint8Array(24),
+    }))
     mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
     mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
 
     render(React.createElement(SettingsPage))
-    await waitFor(() => { expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument() })
+    await waitFor(() => {
+      expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument()
+    })
     fireEvent.click(screen.getByText('Regenerate Recovery Key'))
-    await waitFor(() => { expect(screen.getByText('ABCD-EFGH-IJKL-MNOP')).toBeInTheDocument() })
+    await waitFor(() => {
+      expect(screen.getByText('ABCD-EFGH-IJKL-MNOP')).toBeInTheDocument()
+    })
 
     fireEvent.click(screen.getByText('Copy'))
     expect(writeText).toHaveBeenCalledWith('ABCD-EFGH-IJKL-MNOP')
@@ -265,22 +524,52 @@ describe('SettingsPage', () => {
 
   it('shows error toast when regeneration API fails', async () => {
     mockFetch([
-      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
-      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasEmail: false, isVerified: false, notificationsEnabled: false },
+        }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: false,
+            mfaTotp: false,
+            mfaPasskey: false,
+            hasRecoveryCodes: false,
+            hasVerifiedEmail: false,
+            hasEmail: false,
+          },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: [] }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
       { json: () => ({ success: false, error: 'CSRF token invalid' }), ok: true },
     ])
 
     mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
     mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
-    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({
+      ciphertext: new Uint8Array(48),
+      nonce: new Uint8Array(24),
+    }))
     mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
     mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
 
     render(React.createElement(SettingsPage))
-    await waitFor(() => { expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument() })
+    await waitFor(() => {
+      expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument()
+    })
     fireEvent.click(screen.getByText('Regenerate Recovery Key'))
 
     await waitFor(() => {
@@ -290,25 +579,59 @@ describe('SettingsPage', () => {
 
   it('disables button while regenerating', async () => {
     const putResolve = vi.fn()
-    const putPromise = new Promise((resolve) => { putResolve.mockImplementation(() => resolve({ json: () => ({ success: true, data: { message: 'ok' } }), ok: true })) })
+    const putPromise = new Promise((resolve) => {
+      putResolve.mockImplementation(() =>
+        resolve({ json: () => ({ success: true, data: { message: 'ok' } }), ok: true }),
+      )
+    })
 
     mockFetch([
-      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
-      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasEmail: false, isVerified: false, notificationsEnabled: false },
+        }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: false,
+            mfaTotp: false,
+            mfaPasskey: false,
+            hasRecoveryCodes: false,
+            hasVerifiedEmail: false,
+            hasEmail: false,
+          },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: [] }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
       putPromise,
     ])
 
     mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
     mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
-    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({
+      ciphertext: new Uint8Array(48),
+      nonce: new Uint8Array(24),
+    }))
     mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
     mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
 
     render(React.createElement(SettingsPage))
-    await waitFor(() => { expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument() })
+    await waitFor(() => {
+      expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument()
+    })
     fireEvent.click(screen.getByText('Regenerate Recovery Key'))
 
     await waitFor(() => {
@@ -318,25 +641,63 @@ describe('SettingsPage', () => {
 
   it('dismisses dialog with saved my key', async () => {
     mockFetch([
-      { json: () => ({ success: true, data: { hasEmail: false, isVerified: false, notificationsEnabled: false } }), ok: true },
-      { json: () => ({ success: true, data: { mfaEmail: false, mfaTotp: false, mfaPasskey: false, hasRecoveryCodes: false, hasVerifiedEmail: false, hasEmail: false } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasEmail: false, isVerified: false, notificationsEnabled: false },
+        }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            mfaEmail: false,
+            mfaTotp: false,
+            mfaPasskey: false,
+            hasRecoveryCodes: false,
+            hasVerifiedEmail: false,
+            hasEmail: false,
+          },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: [] }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
       { json: () => ({ success: true, data: { message: 'Recovery code updated' } }), ok: true },
-      { json: () => ({ success: true, data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: { hasRecoveryKey: true, createdAt: '2025-06-22T12:00:00.000Z' },
+        }),
+        ok: true,
+      },
     ])
 
     mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')
     mockCrypto.deriveRecoveryKey = vi.fn(() => new Uint8Array(32))
-    mockCrypto.wrapPrivateKey = vi.fn(() => ({ ciphertext: new Uint8Array(48), nonce: new Uint8Array(24) }))
+    mockCrypto.wrapPrivateKey = vi.fn(() => ({
+      ciphertext: new Uint8Array(48),
+      nonce: new Uint8Array(24),
+    }))
     mockCrypto.toBase64 = vi.fn(() => 'mock-base64')
     mockCrypto.fromBase64 = vi.fn(() => new Uint8Array(32))
 
     render(React.createElement(SettingsPage))
-    await waitFor(() => { expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument() })
+    await waitFor(() => {
+      expect(screen.getByText('Regenerate Recovery Key')).toBeInTheDocument()
+    })
     fireEvent.click(screen.getByText('Regenerate Recovery Key'))
-    await waitFor(() => { expect(screen.getByText('ABCD-EFGH-IJKL-MNOP')).toBeInTheDocument() })
+    await waitFor(() => {
+      expect(screen.getByText('ABCD-EFGH-IJKL-MNOP')).toBeInTheDocument()
+    })
 
     fireEvent.click(screen.getByText("I've saved my key"))
     await waitFor(() => {

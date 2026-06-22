@@ -12,9 +12,8 @@ import { checkIpRate, checkUserRate, checkGlobalRate } from '@/lib/rate-limit'
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split('@')
-  const maskedLocal = local.length <= 2
-    ? local[0] + '***'
-    : local[0] + '***' + local[local.length - 1]
+  const maskedLocal =
+    local.length <= 2 ? local[0] + '***' : local[0] + '***' + local[local.length - 1]
   return `${maskedLocal}@${domain}`
 }
 
@@ -24,11 +23,20 @@ export async function GET(request: NextRequest) {
 
     const record = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { emailEncrypted: true, emailNonce: true, emailVerified: true, notificationsEnabled: true },
+      select: {
+        emailEncrypted: true,
+        emailNonce: true,
+        emailVerified: true,
+        notificationsEnabled: true,
+      },
     })
 
     if (!record?.emailEncrypted || !record?.emailNonce) {
-      return success({ hasEmail: false, isVerified: false, notificationsEnabled: record?.notificationsEnabled ?? true })
+      return success({
+        hasEmail: false,
+        isVerified: false,
+        notificationsEnabled: record?.notificationsEnabled ?? true,
+      })
     }
 
     const email = decryptEmail(
@@ -54,13 +62,16 @@ export async function PUT(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? request.headers.get('x-real-ip')
-      ?? 'unknown'
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
-    if (await checkIpRate(`email:${ip}`, EMAIL_WINDOW) ||
-        await checkUserRate(user.username, EMAIL_WINDOW) ||
-        await checkGlobalRate()) {
+    if (
+      (await checkIpRate(`email:${ip}`, EMAIL_WINDOW)) ||
+      (await checkUserRate(user.username, EMAIL_WINDOW)) ||
+      (await checkGlobalRate())
+    ) {
       throw new RateLimitError('Too many requests. Try again later.')
     }
 
@@ -71,7 +82,7 @@ export async function PUT(request: NextRequest) {
       throw new RateLimitError(`Wait ${ttl}s before resending.`)
     }
 
-    const { email, csrfToken } = await request.json() as { email?: string; csrfToken?: string }
+    const { email, csrfToken } = (await request.json()) as { email?: string; csrfToken?: string }
     const csrfValid = await verifyAndConsumeCsrfToken('email-set', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
@@ -94,12 +105,7 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    await redis.set(
-      `verify:${tokenHash}`,
-      user.id,
-      'EX',
-      3600,
-    )
+    await redis.set(`verify:${tokenHash}`, user.id, 'EX', 3600)
 
     try {
       await sendVerificationEmail(email, user.username, token)
@@ -123,13 +129,16 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? request.headers.get('x-real-ip')
-      ?? 'unknown'
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
-    if (await checkIpRate(`email:${ip}`, EMAIL_WINDOW) ||
-        await checkUserRate(user.username, EMAIL_WINDOW) ||
-        await checkGlobalRate()) {
+    if (
+      (await checkIpRate(`email:${ip}`, EMAIL_WINDOW)) ||
+      (await checkUserRate(user.username, EMAIL_WINDOW)) ||
+      (await checkGlobalRate())
+    ) {
       throw new RateLimitError('Too many requests. Try again later.')
     }
 
@@ -140,7 +149,7 @@ export async function POST(request: NextRequest) {
       throw new RateLimitError(`Wait ${ttl}s before resending.`)
     }
 
-    const { csrfToken } = await request.json().catch(() => ({})) as { csrfToken?: string }
+    const { csrfToken } = (await request.json().catch(() => ({}))) as { csrfToken?: string }
     const csrfValid = await verifyAndConsumeCsrfToken('email-resend', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
@@ -189,7 +198,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
 
-    const { csrfToken } = await request.json().catch(() => ({})) as { csrfToken?: string }
+    const { csrfToken } = (await request.json().catch(() => ({}))) as { csrfToken?: string }
     const csrfValid = await verifyAndConsumeCsrfToken('email-delete', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
@@ -212,7 +221,10 @@ export async function DELETE(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
-    const { notificationsEnabled, csrfToken } = await request.json().catch(() => ({})) as { notificationsEnabled?: boolean; csrfToken?: string }
+    const { notificationsEnabled, csrfToken } = (await request.json().catch(() => ({}))) as {
+      notificationsEnabled?: boolean
+      csrfToken?: string
+    }
 
     const csrfValid = await verifyAndConsumeCsrfToken('email-notifications', csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')

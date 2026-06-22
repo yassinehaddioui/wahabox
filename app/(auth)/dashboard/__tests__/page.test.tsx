@@ -6,7 +6,14 @@ import { mockFetch, resetMockFetch } from '@/test/helpers/mock-fetch'
 
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn(), forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }))
 
 vi.mock('sonner', () => ({
@@ -24,10 +31,18 @@ describe('DashboardPage', () => {
     localStorageStore = {}
     vi.stubGlobal('localStorage', {
       getItem: vi.fn((key: string) => localStorageStore[key] ?? null),
-      setItem: vi.fn((key: string, val: string) => { localStorageStore[key] = val }),
-      removeItem: vi.fn((key: string) => { delete localStorageStore[key] }),
-      clear: vi.fn(() => { localStorageStore = {} }),
-      get length() { return Object.keys(localStorageStore).length },
+      setItem: vi.fn((key: string, val: string) => {
+        localStorageStore[key] = val
+      }),
+      removeItem: vi.fn((key: string) => {
+        delete localStorageStore[key]
+      }),
+      clear: vi.fn(() => {
+        localStorageStore = {}
+      }),
+      get length() {
+        return Object.keys(localStorageStore).length
+      },
       key: vi.fn((i: number) => Object.keys(localStorageStore)[i] ?? null),
     })
     vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn() } })
@@ -42,8 +57,36 @@ describe('DashboardPage', () => {
   const mockBoxesData = {
     success: true,
     data: [
-      { id: 'box-1', label: 'Inbox', greeting: null, slug: 'abc123', isActive: true, expiresAt: null, maxMessages: null, notify: true, hasPassword: false, createdAt: '2024-01-01T00:00:00Z', lastMessageAt: '2024-06-15T10:30:00Z', _count: { messages: 5 }, hasUnread: true },
-      { id: 'box-2', label: 'Work', greeting: 'Hello', slug: 'def456', isActive: false, expiresAt: null, maxMessages: null, notify: false, hasPassword: true, createdAt: '2024-01-02T00:00:00Z', lastMessageAt: null, _count: { messages: 2 }, hasUnread: false },
+      {
+        id: 'box-1',
+        label: 'Inbox',
+        greeting: null,
+        slug: 'abc123',
+        isActive: true,
+        expiresAt: null,
+        maxMessages: null,
+        notify: true,
+        hasPassword: false,
+        createdAt: '2024-01-01T00:00:00Z',
+        lastMessageAt: '2024-06-15T10:30:00Z',
+        _count: { messages: 5 },
+        hasUnread: true,
+      },
+      {
+        id: 'box-2',
+        label: 'Work',
+        greeting: 'Hello',
+        slug: 'def456',
+        isActive: false,
+        expiresAt: null,
+        maxMessages: null,
+        notify: false,
+        hasPassword: true,
+        createdAt: '2024-01-02T00:00:00Z',
+        lastMessageAt: null,
+        _count: { messages: 2 },
+        hasUnread: false,
+      },
     ],
   }
 
@@ -99,7 +142,26 @@ describe('DashboardPage', () => {
       { json: () => ({ success: true, data: [] }), ok: true },
       { json: () => ({ success: true, data: { csrfToken: 'csrf' } }), ok: true },
       { json: () => ({ success: true }), ok: true },
-      { json: () => ({ success: true, data: [{ id: 'box-new', label: 'New Box', slug: 'new-slug', isActive: true, _count: { messages: 0 }, hasUnread: false, notify: true, hasPassword: false, createdAt: '2024-01-01T00:00:00Z', lastMessageAt: null }] }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: [
+            {
+              id: 'box-new',
+              label: 'New Box',
+              slug: 'new-slug',
+              isActive: true,
+              _count: { messages: 0 },
+              hasUnread: false,
+              notify: true,
+              hasPassword: false,
+              createdAt: '2024-01-01T00:00:00Z',
+              lastMessageAt: null,
+            },
+          ],
+        }),
+        ok: true,
+      },
     ])
     render(React.createElement(DashboardPage))
     await waitFor(() => {
@@ -132,7 +194,9 @@ describe('DashboardPage', () => {
     expect(fetchSpy).toHaveBeenCalledWith('/api/boxes')
 
     fetchSpy.mockClear()
-    act(() => { vi.advanceTimersByTime(30000) })
+    act(() => {
+      vi.advanceTimersByTime(30000)
+    })
     expect(fetchSpy).toHaveBeenCalledWith('/api/boxes')
 
     vi.useRealTimers()
@@ -146,7 +210,9 @@ describe('DashboardPage', () => {
 
     unmount()
     fetchSpy.mockClear()
-    act(() => { vi.advanceTimersByTime(30000) })
+    act(() => {
+      vi.advanceTimersByTime(30000)
+    })
     expect(fetchSpy).not.toHaveBeenCalled()
 
     vi.useRealTimers()

@@ -40,10 +40,12 @@ export const crypto = {
   /**
    * HKDF-split a 64-byte master key into auth_key (32 B) and KEK_pw (32 B).
    */
-  splitMasterKey(
-    masterKey: Uint8Array,
-  ): { authKey: Uint8Array; kekPw: Uint8Array } {
-    const authKey = sodium.crypto_generichash(HASH_BYTES, masterKey, new TextEncoder().encode('auth'))
+  splitMasterKey(masterKey: Uint8Array): { authKey: Uint8Array; kekPw: Uint8Array } {
+    const authKey = sodium.crypto_generichash(
+      HASH_BYTES,
+      masterKey,
+      new TextEncoder().encode('auth'),
+    )
     const kekPw = sodium.crypto_generichash(HASH_BYTES, masterKey, new TextEncoder().encode('kek'))
     return { authKey, kekPw }
   },
@@ -110,11 +112,7 @@ export const crypto = {
   /**
    * Decrypt a ciphertext sealed for the given keypair.
    */
-  openMessage(
-    ciphertext: Uint8Array,
-    publicKey: Uint8Array,
-    privateKey: Uint8Array,
-  ): string {
+  openMessage(ciphertext: Uint8Array, publicKey: Uint8Array, privateKey: Uint8Array): string {
     const ptBytes = sodium.crypto_box_seal_open(ciphertext, publicKey, privateKey)
     return new TextDecoder().decode(ptBytes)
   },
@@ -122,11 +120,7 @@ export const crypto = {
   /**
    * Decrypt a ciphertext sealed for the given keypair, returning raw bytes.
    */
-  openSealed(
-    ciphertext: Uint8Array,
-    publicKey: Uint8Array,
-    privateKey: Uint8Array,
-  ): Uint8Array {
+  openSealed(ciphertext: Uint8Array, publicKey: Uint8Array, privateKey: Uint8Array): Uint8Array {
     return sodium.crypto_box_seal_open(ciphertext, publicKey, privateKey)
   },
 

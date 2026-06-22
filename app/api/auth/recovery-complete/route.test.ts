@@ -5,7 +5,13 @@ import { resetRedisMock, redisMock } from '@/test/helpers/redis-mock'
 import { createUser } from '@/test/helpers/fixtures'
 import { POST } from './route'
 
-const { mockVerifyCsrf, mockCheckIpRate, mockCheckUserRate, mockCheckGlobalRate, mockClearFailures } = vi.hoisted(() => ({
+const {
+  mockVerifyCsrf,
+  mockCheckIpRate,
+  mockCheckUserRate,
+  mockCheckGlobalRate,
+  mockClearFailures,
+} = vi.hoisted(() => ({
   mockVerifyCsrf: vi.fn(),
   mockCheckIpRate: vi.fn(),
   mockCheckUserRate: vi.fn(),
@@ -87,7 +93,9 @@ describe('POST /api/auth/recovery-complete', () => {
 
     await redisMock.set('recovery:challenge:rtoken123', CHALLENGE_B64, 'EX', 300)
 
-    const res = await POST(makeRequest({ decryptedChallenge: Buffer.alloc(32, 0xff).toString('base64') }))
+    const res = await POST(
+      makeRequest({ decryptedChallenge: Buffer.alloc(32, 0xff).toString('base64') }),
+    )
     const json = await res.json()
 
     expect(res.status).toBe(400)

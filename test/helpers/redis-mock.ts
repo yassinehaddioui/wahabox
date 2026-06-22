@@ -154,7 +154,11 @@ const { redisMock, resetRedisMock } = vi.hoisted(() => {
     return count
   }
 
-  async function zremrangebyscore(key: string, min: number | string, max: number | string): Promise<number> {
+  async function zremrangebyscore(
+    key: string,
+    min: number | string,
+    max: number | string,
+  ): Promise<number> {
     if (isExpired(key)) return 0
     const zset = sortedSets.get(key)
     if (!zset) return 0
@@ -206,8 +210,20 @@ const { redisMock, resetRedisMock } = vi.hoisted(() => {
   }
 
   const client = {
-    get, set, del, getdel, exists, ttl, pttl, expire, incr,
-    zadd, zcard, zcount, zremrangebyscore, multi: createMulti,
+    get,
+    set,
+    del,
+    getdel,
+    exists,
+    ttl,
+    pttl,
+    expire,
+    incr,
+    zadd,
+    zcard,
+    zcount,
+    zremrangebyscore,
+    multi: createMulti,
   }
 
   function resetRedisMock(): void {

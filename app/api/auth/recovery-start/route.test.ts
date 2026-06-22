@@ -5,20 +5,22 @@ import { resetRedisMock } from '@/test/helpers/redis-mock'
 import { createUser } from '@/test/helpers/fixtures'
 import { POST } from './route'
 
-const { mockVerifyCsrf, mockCheckAuthRateLimit, mockRecordAuthFailure, mockSodium } = vi.hoisted(() => ({
-  mockVerifyCsrf: vi.fn(),
-  mockCheckAuthRateLimit: vi.fn(),
-  mockRecordAuthFailure: vi.fn(),
-  mockSodium: {
-    ready: Promise.resolve(),
-    randombytes_buf: vi.fn((size: number) => new Uint8Array(size).fill(0xab)),
-    crypto_box_seal: vi.fn((msg: Uint8Array) => {
-      const out = new Uint8Array(48)
-      out.set(msg, 16)
-      return out
-    }),
-  },
-}))
+const { mockVerifyCsrf, mockCheckAuthRateLimit, mockRecordAuthFailure, mockSodium } = vi.hoisted(
+  () => ({
+    mockVerifyCsrf: vi.fn(),
+    mockCheckAuthRateLimit: vi.fn(),
+    mockRecordAuthFailure: vi.fn(),
+    mockSodium: {
+      ready: Promise.resolve(),
+      randombytes_buf: vi.fn((size: number) => new Uint8Array(size).fill(0xab)),
+      crypto_box_seal: vi.fn((msg: Uint8Array) => {
+        const out = new Uint8Array(48)
+        out.set(msg, 16)
+        return out
+      }),
+    },
+  }),
+)
 
 vi.mock('libsodium-wrappers-sumo', () => ({ default: mockSodium }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: mockVerifyCsrf }))
@@ -38,7 +40,11 @@ beforeEach(() => {
   resetRedisMock()
   vi.clearAllMocks()
   mockCheckAuthRateLimit.mockResolvedValue({
-    ip: false, user: false, global: false, isLocked: false, lockoutRemainingMs: 0,
+    ip: false,
+    user: false,
+    global: false,
+    isLocked: false,
+    lockoutRemainingMs: 0,
   })
   mockVerifyCsrf.mockResolvedValue(true)
 })
@@ -93,7 +99,11 @@ describe('POST /api/auth/recovery-start', () => {
 
   it('returns 429 when rate limit says locked', async () => {
     mockCheckAuthRateLimit.mockResolvedValue({
-      ip: false, user: false, global: false, isLocked: true, lockoutRemainingMs: 60_000,
+      ip: false,
+      user: false,
+      global: false,
+      isLocked: true,
+      lockoutRemainingMs: 60_000,
     })
 
     const res = await POST(makeRequest('testuser'))
@@ -106,7 +116,11 @@ describe('POST /api/auth/recovery-start', () => {
 
   it('returns 429 when rate limit exceeded', async () => {
     mockCheckAuthRateLimit.mockResolvedValue({
-      ip: true, user: false, global: false, isLocked: false, lockoutRemainingMs: 0,
+      ip: true,
+      user: false,
+      global: false,
+      isLocked: false,
+      lockoutRemainingMs: 0,
     })
 
     const res = await POST(makeRequest('testuser'))
@@ -130,10 +144,12 @@ describe('POST /api/auth/recovery-start', () => {
 
   it('returns 400 when CSRF token is null', async () => {
     mockVerifyCsrf.mockResolvedValue(false)
-    const res = await POST(createNextRequest('http://localhost/api/auth/recovery-start', {
-      method: 'POST',
-      body: { username: 'testuser' },
-    }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/auth/recovery-start', {
+        method: 'POST',
+        body: { username: 'testuser' },
+      }),
+    )
     const json = await res.json()
 
     expect(res.status).toBe(400)

@@ -9,10 +9,7 @@ async function checkPostgres(): Promise<'ok' | 'down' | 'timeout'> {
     setTimeout(() => reject(new Error('timeout')), CHECK_TIMEOUT_MS),
   )
   try {
-    await Promise.race([
-      prisma.$queryRaw<[{ '1': number }]>`SELECT 1 AS "1"`,
-      timeout,
-    ])
+    await Promise.race([prisma.$queryRaw<[{ '1': number }]>`SELECT 1 AS "1"`, timeout])
     return 'ok'
   } catch (err) {
     if (err instanceof Error && err.message === 'timeout') return 'timeout'

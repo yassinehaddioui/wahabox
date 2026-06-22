@@ -6,7 +6,9 @@ describe('middleware', () => {
   it('sets security headers', () => {
     const req = createNextRequest('http://localhost:3000/')
     const res = middleware(req)
-    expect(res.headers.get('Strict-Transport-Security')).toBe('max-age=31536000; includeSubDomains; preload')
+    expect(res.headers.get('Strict-Transport-Security')).toBe(
+      'max-age=31536000; includeSubDomains; preload',
+    )
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff')
     expect(res.headers.get('X-Frame-Options')).toBe('DENY')
     expect(res.headers.get('Referrer-Policy')).toBe('no-referrer')

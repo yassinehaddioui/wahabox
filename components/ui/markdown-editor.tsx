@@ -15,11 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-function insertAtCursor(
-  textarea: HTMLTextAreaElement,
-  before: string,
-  after: string = '',
-) {
+function insertAtCursor(textarea: HTMLTextAreaElement, before: string, after: string = '') {
   const start = textarea.selectionStart
   const end = textarea.selectionEnd
   const selected = textarea.value.substring(start, end)
@@ -42,12 +38,22 @@ type Tool = {
 const tools: Tool[] = [
   { icon: <Bold className="h-3.5 w-3.5" />, label: 'Bold', before: '**', after: '**' },
   { icon: <Italic className="h-3.5 w-3.5" />, label: 'Italic', before: '_', after: '_' },
-  { icon: <Strikethrough className="h-3.5 w-3.5" />, label: 'Strikethrough', before: '~~', after: '~~' },
+  {
+    icon: <Strikethrough className="h-3.5 w-3.5" />,
+    label: 'Strikethrough',
+    before: '~~',
+    after: '~~',
+  },
   { icon: <Code className="h-3.5 w-3.5" />, label: 'Code', before: '`', after: '`' },
   { icon: <Link className="h-3.5 w-3.5" />, label: 'Link', before: '[', after: '](url)' },
   { icon: <Heading className="h-3.5 w-3.5" />, label: 'Heading', before: '## ', after: '' },
   { icon: <List className="h-3.5 w-3.5" />, label: 'Bullet list', before: '- ', after: '' },
-  { icon: <ListOrdered className="h-3.5 w-3.5" />, label: 'Numbered list', before: '1. ', after: '' },
+  {
+    icon: <ListOrdered className="h-3.5 w-3.5" />,
+    label: 'Numbered list',
+    before: '1. ',
+    after: '',
+  },
   { icon: <Quote className="h-3.5 w-3.5" />, label: 'Blockquote', before: '> ', after: '' },
 ]
 

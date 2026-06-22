@@ -12,8 +12,7 @@ export async function POST(request: NextRequest) {
         where: { id: user.id },
         data: { tokenVersion: { increment: 1 } },
       })
-    } catch {
-    }
+    } catch {}
     await clearSessionCookie()
     return success({ message: 'Logged out' })
   } catch (err) {

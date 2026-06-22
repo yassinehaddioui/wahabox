@@ -20,8 +20,9 @@ export async function GET(request: NextRequest) {
 
     const hasRecoveryKey = !!(record?.encPrivRec && record?.recKdfSalt && record?.recNonce)
 
-    const createdAt = record?.recoveryCodeCreatedAt?.toISOString()
-      ?? (hasRecoveryKey && record?.createdAt ? record.createdAt.toISOString() : null)
+    const createdAt =
+      record?.recoveryCodeCreatedAt?.toISOString() ??
+      (hasRecoveryKey && record?.createdAt ? record.createdAt.toISOString() : null)
 
     return success({
       hasRecoveryKey,

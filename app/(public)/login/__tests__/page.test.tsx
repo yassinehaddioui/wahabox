@@ -7,7 +7,14 @@ import { mockFetch, resetMockFetch } from '@/test/helpers/mock-fetch'
 const mockPush = vi.fn()
 const mockReplace = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, replace: mockReplace, back: vi.fn(), forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({
+    push: mockPush,
+    replace: mockReplace,
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }))
 
 const mockCrypto = vi.hoisted(() => ({
@@ -26,7 +33,9 @@ vi.mock('@/lib/session-keys', () => ({ setSessionKeys: vi.fn() }))
 vi.mock('@/lib/turnstile-constants', () => ({ TURNSTILE_PROOF_COOKIE: 'turnstile_proof' }))
 vi.mock('@/components/turnstile-widget', () => ({
   TurnstileWidget: ({ onVerify }: { onVerify: (token: string) => void }) => {
-    React.useEffect(() => { onVerify('mock-turnstile-token') }, [onVerify])
+    React.useEffect(() => {
+      onVerify('mock-turnstile-token')
+    }, [onVerify])
     return React.createElement('div', { 'data-testid': 'turnstile-widget' })
   },
 }))
@@ -42,9 +51,15 @@ describe('LoginPage', () => {
   })
 
   const boxCheck = { json: () => ({ success: false }), ok: true }
-  const saltsOk = { json: () => ({ success: true, data: { pwKdfSalt: 'salt', authSalt: 'salt2' } }), ok: true }
+  const saltsOk = {
+    json: () => ({ success: true, data: { pwKdfSalt: 'salt', authSalt: 'salt2' } }),
+    ok: true,
+  }
   const csrfOk = { json: () => ({ success: true, data: { csrfToken: 'csrf' } }), ok: true }
-  const loginOk = { json: () => ({ success: true, data: { encPrivPw: 'enc', pwNonce: 'nonce', publicKey: 'pub' } }), ok: true }
+  const loginOk = {
+    json: () => ({ success: true, data: { encPrivPw: 'enc', pwNonce: 'nonce', publicKey: 'pub' } }),
+    ok: true,
+  }
 
   it('shows sign-in form after session check', async () => {
     mockFetch(boxCheck)
@@ -69,7 +84,9 @@ describe('LoginPage', () => {
     mockFetch([boxCheck, saltsOk, csrfOk, loginOk])
     render(React.createElement(LoginPage))
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument(),
+    )
 
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alice' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
@@ -90,7 +107,9 @@ describe('LoginPage', () => {
     ])
     render(React.createElement(LoginPage))
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument(),
+    )
 
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alice' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong' } })

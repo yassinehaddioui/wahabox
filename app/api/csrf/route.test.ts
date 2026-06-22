@@ -8,7 +8,10 @@ vi.mock('@/lib/csrf', () => ({ generateCsrfToken: vi.fn(), storeCsrfToken: vi.fn
 import { generateCsrfToken, storeCsrfToken } from '@/lib/csrf'
 
 describe('GET /api/csrf', () => {
-  beforeEach(() => { resetRedisMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetRedisMock()
+    vi.clearAllMocks()
+  })
 
   it('returns null csrfToken when no tag', async () => {
     const res = await GET(createNextRequest('http://localhost/api/csrf'))

@@ -20,7 +20,9 @@ describe('useCsrfToken', () => {
 
   it('swallows fetch errors without throwing', async () => {
     const fetchStub = mockFetch({
-      json: () => { throw new Error('Network error') },
+      json: () => {
+        throw new Error('Network error')
+      },
     })
     const { result } = renderHook(() => useCsrfToken('form'))
     await waitFor(() => expect(fetchStub).toHaveBeenCalledTimes(1))
@@ -32,10 +34,9 @@ describe('useCsrfToken', () => {
       { json: () => ({ success: true, data: { csrfToken: 'token-1' } }) },
       { json: () => ({ success: true, data: { csrfToken: 'token-2' } }) },
     ])
-    const { result, rerender } = renderHook(
-      (tag: string) => useCsrfToken(tag),
-      { initialProps: 'form' },
-    )
+    const { result, rerender } = renderHook((tag: string) => useCsrfToken(tag), {
+      initialProps: 'form',
+    })
     await waitFor(() => expect(result.current).toBe('token-1'))
     rerender('api')
     await waitFor(() => expect(result.current).toBe('token-2'))

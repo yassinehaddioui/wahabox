@@ -4,12 +4,29 @@ import '@/test/helpers/prisma-mock'
 import { resetRedisMock } from '@/test/helpers/redis-mock'
 import { POST } from './route'
 
-const { mockVerifyCsrf, mockCheckAuthRateLimit, mockRecordAuthFailure, mockClearFailures, mockCheckTurnstile, mockCreateSession, mockSetSessionCookie } = vi.hoisted(() => ({
+const {
+  mockVerifyCsrf,
+  mockCheckAuthRateLimit,
+  mockRecordAuthFailure,
+  mockClearFailures,
+  mockCheckTurnstile,
+  mockCreateSession,
+  mockSetSessionCookie,
+} = vi.hoisted(() => ({
   mockVerifyCsrf: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
-  mockCheckAuthRateLimit: vi.fn<(...args: unknown[]) => Promise<{ isLocked: boolean; ip: boolean; user: boolean; global: boolean; lockoutRemainingMs: number }>>(),
+  mockCheckAuthRateLimit: vi.fn<
+    (...args: unknown[]) => Promise<{
+      isLocked: boolean
+      ip: boolean
+      user: boolean
+      global: boolean
+      lockoutRemainingMs: number
+    }>
+  >(),
   mockRecordAuthFailure: vi.fn<(...args: unknown[]) => Promise<void>>(),
   mockClearFailures: vi.fn<(...args: unknown[]) => Promise<void>>(),
-  mockCheckTurnstile: vi.fn<(...args: unknown[]) => Promise<{ verified: boolean; setProofCookie: string | null }>>(),
+  mockCheckTurnstile:
+    vi.fn<(...args: unknown[]) => Promise<{ verified: boolean; setProofCookie: string | null }>>(),
   mockCreateSession: vi.fn<(...args: unknown[]) => Promise<string>>(),
   mockSetSessionCookie: vi.fn<(...args: unknown[]) => Promise<void>>(),
 }))
@@ -20,8 +37,14 @@ vi.mock('@/lib/rate-limit', () => ({
   recordAuthFailure: mockRecordAuthFailure,
   clearFailures: mockClearFailures,
 }))
-vi.mock('@/lib/turnstile', () => ({ checkTurnstile: mockCheckTurnstile, TURNSTILE_PROOF_COOKIE: 'turnstile_proof' }))
-vi.mock('@/lib/session', () => ({ createSession: mockCreateSession, setSessionCookie: mockSetSessionCookie }))
+vi.mock('@/lib/turnstile', () => ({
+  checkTurnstile: mockCheckTurnstile,
+  TURNSTILE_PROOF_COOKIE: 'turnstile_proof',
+}))
+vi.mock('@/lib/session', () => ({
+  createSession: mockCreateSession,
+  setSessionCookie: mockSetSessionCookie,
+}))
 
 const baseBody = {
   username: 'testuser',

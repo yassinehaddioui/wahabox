@@ -3,12 +3,7 @@ import { validateEnv } from '@/lib/env'
 
 // Env keys this suite mutates. Saved in beforeEach and restored in afterEach
 // so process.env is never permanently changed — test/setup.ts defaults survive.
-const MANAGED_KEYS = [
-  'DATABASE_URL',
-  'SERVER_MASTER_SECRET',
-  'SESSION_SECRET',
-  'NODE_ENV',
-] as const
+const MANAGED_KEYS = ['DATABASE_URL', 'SERVER_MASTER_SECRET', 'SESSION_SECRET', 'NODE_ENV'] as const
 
 let saved: Record<string, string | undefined>
 

@@ -21,11 +21,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: [
-        'lib/**',
-        'app/api/**',
-        'components/**',
-      ],
+      include: ['lib/**', 'app/api/**', 'components/**'],
       exclude: [
         '**/components/ui/{badge,button,card,dialog,dropdown-menu,input,label,select,separator,sheet,sidebar,skeleton,sonner,switch,table,textarea,tooltip}.tsx',
       ],

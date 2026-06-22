@@ -34,7 +34,7 @@ export async function verifyTurnstile(token: string | null, ip: string): Promise
         remoteip: ip,
       }),
     })
-    const data = await res.json() as { success: boolean }
+    const data = (await res.json()) as { success: boolean }
     return data.success === true
   } catch {
     return false
@@ -67,10 +67,17 @@ export function verifyTurnstileProof(token: string | null): boolean {
     if (signature.length !== expected.length) return false
     if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return false
     const payload = JSON.parse(Buffer.from(encoded, 'base64').toString('utf-8'))
-    if (payload.p !== 'turnstile' || typeof payload.iat !== 'number' || typeof payload.exp !== 'number') return false
+    if (
+      payload.p !== 'turnstile' ||
+      typeof payload.iat !== 'number' ||
+      typeof payload.exp !== 'number'
+    )
+      return false
     if (Date.now() > payload.exp) return false
     return true
-  } catch { return false }
+  } catch {
+    return false
+  }
 }
 
 export async function checkTurnstile(

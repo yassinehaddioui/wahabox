@@ -44,9 +44,7 @@ describe('generateRegOptions', () => {
 
     expect(mockGenerateRegistrationOptions).toHaveBeenCalledWith(
       expect.objectContaining({
-        excludeCredentials: expect.arrayContaining([
-          expect.objectContaining({ id: 'AQID' }),
-        ]),
+        excludeCredentials: expect.arrayContaining([expect.objectContaining({ id: 'AQID' })]),
       }),
     )
   })
@@ -89,7 +87,9 @@ describe('verifyRegResponse', () => {
     await generateRegOptions('user-1', 'alice', [])
 
     const { verifyRegResponse } = await import('@/lib/webauthn')
-    await expect(verifyRegResponse('user-1', {} as never)).rejects.toThrow('Passkey verification failed')
+    await expect(verifyRegResponse('user-1', {} as never)).rejects.toThrow(
+      'Passkey verification failed',
+    )
   })
 
   it('deletes the challenge after successful verification', async () => {
@@ -169,8 +169,8 @@ describe('verifyAuthResponse', () => {
 
   it('throws when challenge is missing', async () => {
     const { verifyAuthResponse } = await import('@/lib/webauthn')
-    await expect(
-      verifyAuthResponse('user-99', {} as never, {} as never),
-    ).rejects.toThrow('Challenge expired')
+    await expect(verifyAuthResponse('user-99', {} as never, {} as never)).rejects.toThrow(
+      'Challenge expired',
+    )
   })
 })

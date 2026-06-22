@@ -26,9 +26,10 @@ const WINDOW = { windowMs: 5_000, max: 3 }
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? request.headers.get('x-real-ip')
-      ?? 'unknown'
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
     if (await checkIpRate(`salts:${ip}`, WINDOW)) {
       throw new RateLimitError('Too many requests')
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       throw new RateLimitError('Too many requests')
     }
 
-    const { username } = await request.json() as { username?: string }
+    const { username } = (await request.json()) as { username?: string }
     if (!username || typeof username !== 'string') {
       return success({ pwKdfSalt: dummySalt(username ?? ''), authSalt: dummySalt(username ?? '') })
     }

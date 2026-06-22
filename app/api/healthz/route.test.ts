@@ -10,7 +10,9 @@ import prisma from '@/lib/prisma'
 const redisMockCtrl = vi.hoisted(() => {
   let _ping: () => Promise<unknown> = () => Promise.resolve('PONG')
   return {
-    setPing: (fn: () => Promise<unknown>) => { _ping = fn },
+    setPing: (fn: () => Promise<unknown>) => {
+      _ping = fn
+    },
     getPing: () => _ping,
   }
 })

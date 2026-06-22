@@ -95,9 +95,9 @@ export async function checkAuthRateLimit(username: string, ip: string): Promise<
 
   if (failCount >= 3) {
     const duration = lockoutDuration(failCount - 2)
-    const lastFail = await withRedis(async (redis) => {
+    const lastFail = (await withRedis(async (redis) => {
       return redis.get(`fail:last:${username}`)
-    }, null) as string | null
+    }, null)) as string | null
 
     if (lastFail) {
       const lastFailTime = parseInt(lastFail, 10)
@@ -137,25 +137,28 @@ export async function getDropIpCounts(ip: string): Promise<{ hourly: number; dai
   const hourAgo = now - 3600_000
   const dayAgo = now - 86_400_000
 
-  return withRedis(async (redis) => {
-    const multi = redis.multi()
-    const hourlyKey = `drop:count:hour:${ip}`
-    const dailyKey = `drop:count:day:${ip}`
+  return withRedis(
+    async (redis) => {
+      const multi = redis.multi()
+      const hourlyKey = `drop:count:hour:${ip}`
+      const dailyKey = `drop:count:day:${ip}`
 
-    multi.zremrangebyscore(hourlyKey, 0, hourAgo)
-    multi.zcount(hourlyKey, hourAgo, '+inf')
-    multi.expire(hourlyKey, 3600 + 60)
+      multi.zremrangebyscore(hourlyKey, 0, hourAgo)
+      multi.zcount(hourlyKey, hourAgo, '+inf')
+      multi.expire(hourlyKey, 3600 + 60)
 
-    multi.zremrangebyscore(dailyKey, 0, dayAgo)
-    multi.zcount(dailyKey, dayAgo, '+inf')
-    multi.expire(dailyKey, 86400 + 60)
+      multi.zremrangebyscore(dailyKey, 0, dayAgo)
+      multi.zcount(dailyKey, dayAgo, '+inf')
+      multi.expire(dailyKey, 86400 + 60)
 
-    const results = await multi.exec()
-    return {
-      hourly: (results?.[1]?.[1] as number) ?? 0,
-      daily: (results?.[3]?.[1] as number) ?? 0,
-    }
-  }, { hourly: 0, daily: 0 })
+      const results = await multi.exec()
+      return {
+        hourly: (results?.[1]?.[1] as number) ?? 0,
+        daily: (results?.[3]?.[1] as number) ?? 0,
+      }
+    },
+    { hourly: 0, daily: 0 },
+  )
 }
 
 export async function recordDropIp(ip: string): Promise<void> {

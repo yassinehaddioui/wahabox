@@ -1,5 +1,9 @@
 import { decryptEmail } from './email-crypto'
-import { sendNewMessageNotification, sendRecoveryKeyRegeneratedNotification, checkNotificationRateLimit } from './email'
+import {
+  sendNewMessageNotification,
+  sendRecoveryKeyRegeneratedNotification,
+  checkNotificationRateLimit,
+} from './email'
 import prisma from './prisma'
 
 export async function notifyNewMessage(poBoxId: string): Promise<void> {
@@ -49,10 +53,7 @@ export async function notifyRecoveryRegenerated(userId: string): Promise<void> {
 
     if (await checkNotificationRateLimit(userId)) return
 
-    const email = decryptEmail(
-      new Uint8Array(user.emailEncrypted),
-      new Uint8Array(user.emailNonce),
-    )
+    const email = decryptEmail(new Uint8Array(user.emailEncrypted), new Uint8Array(user.emailNonce))
 
     await sendRecoveryKeyRegeneratedNotification(email, user.username, new Date())
   } catch (err) {

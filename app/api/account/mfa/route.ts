@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         const secret = await redis.get(`mfa:setup:${authUser.id}`)
         if (!secret) throw new BadRequestError('Setup session expired. Please restart.')
 
-        if (!await verifyTotp(secret, body.code)) {
+        if (!(await verifyTotp(secret, body.code))) {
           throw new UnauthorizedError('Invalid code')
         }
 

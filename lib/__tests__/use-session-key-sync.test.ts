@@ -2,10 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSessionKeySync } from '@/lib/use-session-key-sync'
-import {
-  PRIVATE_KEY_STORAGE_KEY,
-  PUBLIC_KEY_STORAGE_KEY,
-} from '@/lib/session-keys'
+import { PRIVATE_KEY_STORAGE_KEY, PUBLIC_KEY_STORAGE_KEY } from '@/lib/session-keys'
 
 const mockReplace = vi.fn()
 

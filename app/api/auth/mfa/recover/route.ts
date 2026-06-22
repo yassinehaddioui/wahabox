@@ -34,14 +34,23 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
-      select: { id: true, username: true, encPrivPw: true, pwNonce: true, publicKey: true, mfaRecoveryCodes: true },
+      select: {
+        id: true,
+        username: true,
+        encPrivPw: true,
+        pwNonce: true,
+        publicKey: true,
+        mfaRecoveryCodes: true,
+      },
     })
 
     if (!user?.mfaRecoveryCodes) {
       throw new BadRequestError('No recovery codes configured')
     }
 
-    const storedHashes: string[] = JSON.parse(new TextDecoder().decode(new Uint8Array(user.mfaRecoveryCodes)))
+    const storedHashes: string[] = JSON.parse(
+      new TextDecoder().decode(new Uint8Array(user.mfaRecoveryCodes)),
+    )
 
     if (!verifyRecoveryCode(body.recoveryCode, storedHashes)) {
       session.recoveryAttempts = attempts

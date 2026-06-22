@@ -62,13 +62,11 @@ export function mockFetch(responseOrResponses: ResponseOrResponses): Mock<typeof
   if (savedFetch === null) {
     savedFetch = globalThis.fetch
   }
-  const stub = vi.fn(
-    async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
-      const mock = responses[callIndex] ?? responses[responses.length - 1]
-      callIndex++
-      return buildResponse(mock)
-    },
-  ) as Mock<typeof fetch>
+  const stub = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+    const mock = responses[callIndex] ?? responses[responses.length - 1]
+    callIndex++
+    return buildResponse(mock)
+  }) as Mock<typeof fetch>
   globalThis.fetch = stub
   return stub
 }

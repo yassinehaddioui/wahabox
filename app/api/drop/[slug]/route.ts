@@ -65,9 +65,10 @@ export async function POST(
   try {
     const { slug } = await params
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? request.headers.get('x-real-ip')
-      ?? 'unknown'
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
     if (await checkDropRateLimit(slug, ip)) {
       throw new RateLimitError('Too many submissions. Try again later.')

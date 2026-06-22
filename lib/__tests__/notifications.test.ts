@@ -18,13 +18,15 @@ import { withRedis } from '@/lib/redis'
 import { decryptEmail } from '@/lib/email-crypto'
 import { notifyNewMessage, notifyRecoveryRegenerated } from '@/lib/notifications'
 
-function owner(overrides: Partial<{
-  id: string
-  emailEncrypted: Uint8Array
-  emailNonce: Uint8Array
-  emailVerified: boolean
-  notificationsEnabled: boolean
-}> = {}) {
+function owner(
+  overrides: Partial<{
+    id: string
+    emailEncrypted: Uint8Array
+    emailNonce: Uint8Array
+    emailVerified: boolean
+    notificationsEnabled: boolean
+  }> = {},
+) {
   return {
     id: 'user-1',
     emailEncrypted: new Uint8Array(10),
@@ -35,11 +37,13 @@ function owner(overrides: Partial<{
   }
 }
 
-function box(overrides: Partial<{
-  label: string
-  notify: boolean
-  owner: ReturnType<typeof owner>
-}> = {}) {
+function box(
+  overrides: Partial<{
+    label: string
+    notify: boolean
+    owner: ReturnType<typeof owner>
+  }> = {},
+) {
   return {
     label: 'Test Box',
     notify: true,
@@ -69,7 +73,9 @@ describe('notifyNewMessage', () => {
   })
 
   it('skips SES when owner notifications are disabled', async () => {
-    prismaMock.poBox.findUnique.mockResolvedValue(box({ owner: owner({ notificationsEnabled: false }) }))
+    prismaMock.poBox.findUnique.mockResolvedValue(
+      box({ owner: owner({ notificationsEnabled: false }) }),
+    )
     await notifyNewMessage('box-id')
     expect(withRedis).not.toHaveBeenCalled()
     expect(decryptEmail).not.toHaveBeenCalled()
@@ -100,12 +106,14 @@ describe('notifyNewMessage', () => {
   })
 })
 
-function user(overrides: Partial<{
-  emailEncrypted: Uint8Array
-  emailNonce: Uint8Array
-  emailVerified: boolean
-  username: string
-}> = {}) {
+function user(
+  overrides: Partial<{
+    emailEncrypted: Uint8Array
+    emailNonce: Uint8Array
+    emailVerified: boolean
+    username: string
+  }> = {},
+) {
   return {
     emailEncrypted: new Uint8Array(10),
     emailNonce: new Uint8Array(12),
@@ -136,7 +144,9 @@ describe('notifyRecoveryRegenerated', () => {
   })
 
   it('skips sending when emailEncrypted is missing', async () => {
-    prismaMock.user.findUnique.mockResolvedValue(user({ emailEncrypted: undefined as unknown as Uint8Array }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      user({ emailEncrypted: undefined as unknown as Uint8Array }),
+    )
     await notifyRecoveryRegenerated('user-id')
     expect(withRedis).not.toHaveBeenCalled()
     expect(decryptEmail).not.toHaveBeenCalled()

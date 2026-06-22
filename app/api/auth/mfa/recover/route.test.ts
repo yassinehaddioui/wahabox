@@ -21,16 +21,7 @@ const USER_ID = '00000000-0000-0000-0000-000000000001'
 const SESSION_TOKEN = 'test-session-token'
 
 const RECOVERY_CODES_BUF = Buffer.from(
-  JSON.stringify([
-    'hash1',
-    'hash2',
-    'hash3',
-    'hash4',
-    'hash5',
-    'hash6',
-    'hash7',
-    'hash8',
-  ]),
+  JSON.stringify(['hash1', 'hash2', 'hash3', 'hash4', 'hash5', 'hash6', 'hash7', 'hash8']),
 )
 
 function makeRequest(mfaToken: string, recoveryCode: string) {
@@ -51,13 +42,15 @@ beforeEach(() => {
 describe('POST /api/auth/mfa/recover', () => {
   it('bypasses MFA with valid recovery code and creates session', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
-    prismaMock.user.findUnique.mockResolvedValue(createUser({
-      id: USER_ID,
-      mfaRecoveryCodes: RECOVERY_CODES_BUF,
-      encPrivPw: Buffer.alloc(48, 0x11),
-      pwNonce: Buffer.alloc(24, 0x33),
-      publicKey: Buffer.alloc(32, 0xcc),
-    }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({
+        id: USER_ID,
+        mfaRecoveryCodes: RECOVERY_CODES_BUF,
+        encPrivPw: Buffer.alloc(48, 0x11),
+        pwNonce: Buffer.alloc(24, 0x33),
+        publicKey: Buffer.alloc(32, 0xcc),
+      }),
+    )
 
     await redisMock.set('mfa:valid-token', JSON.stringify({ userId: USER_ID }), 'EX', 300)
 
@@ -91,10 +84,12 @@ describe('POST /api/auth/mfa/recover', () => {
   it('returns 401 for invalid recovery code', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     mockVerifyRecoveryCode.mockReturnValue(false)
-    prismaMock.user.findUnique.mockResolvedValue(createUser({
-      id: USER_ID,
-      mfaRecoveryCodes: RECOVERY_CODES_BUF,
-    }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({
+        id: USER_ID,
+        mfaRecoveryCodes: RECOVERY_CODES_BUF,
+      }),
+    )
 
     await redisMock.set('mfa:valid-token', JSON.stringify({ userId: USER_ID }), 'EX', 300)
 
@@ -109,10 +104,12 @@ describe('POST /api/auth/mfa/recover', () => {
   it('returns 401 and deletes session after 3 failed recovery attempts', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     mockVerifyRecoveryCode.mockReturnValue(false)
-    prismaMock.user.findUnique.mockResolvedValue(createUser({
-      id: USER_ID,
-      mfaRecoveryCodes: RECOVERY_CODES_BUF,
-    }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({
+        id: USER_ID,
+        mfaRecoveryCodes: RECOVERY_CODES_BUF,
+      }),
+    )
 
     await redisMock.set(
       'mfa:valid-token',
@@ -134,10 +131,12 @@ describe('POST /api/auth/mfa/recover', () => {
   it('tracks recovery attempts in session', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     mockVerifyRecoveryCode.mockReturnValue(false)
-    prismaMock.user.findUnique.mockResolvedValue(createUser({
-      id: USER_ID,
-      mfaRecoveryCodes: RECOVERY_CODES_BUF,
-    }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({
+        id: USER_ID,
+        mfaRecoveryCodes: RECOVERY_CODES_BUF,
+      }),
+    )
 
     await redisMock.set('mfa:valid-token', JSON.stringify({ userId: USER_ID }), 'EX', 300)
 
@@ -150,10 +149,12 @@ describe('POST /api/auth/mfa/recover', () => {
 
   it('returns 400 when user has no recovery codes configured', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
-    prismaMock.user.findUnique.mockResolvedValue(createUser({
-      id: USER_ID,
-      mfaRecoveryCodes: null,
-    }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({
+        id: USER_ID,
+        mfaRecoveryCodes: null,
+      }),
+    )
 
     await redisMock.set('mfa:valid-token', JSON.stringify({ userId: USER_ID }), 'EX', 300)
 
@@ -166,10 +167,12 @@ describe('POST /api/auth/mfa/recover', () => {
 
   it('never returns passwordHash in response', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
-    prismaMock.user.findUnique.mockResolvedValue(createUser({
-      id: USER_ID,
-      mfaRecoveryCodes: RECOVERY_CODES_BUF,
-    }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({
+        id: USER_ID,
+        mfaRecoveryCodes: RECOVERY_CODES_BUF,
+      }),
+    )
 
     await redisMock.set('mfa:valid-token', JSON.stringify({ userId: USER_ID }), 'EX', 300)
 

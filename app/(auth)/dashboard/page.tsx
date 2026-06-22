@@ -80,7 +80,9 @@ export default function DashboardPage() {
     }
   }, [])
 
-  useEffect(() => { fetchBoxes() }, [fetchBoxes])
+  useEffect(() => {
+    fetchBoxes()
+  }, [fetchBoxes])
 
   const AUTO_DECRYPT_KEY = 'wahabox:autoDecrypt'
 
@@ -305,7 +307,9 @@ export default function DashboardPage() {
                     )}
                     {box.hasPassword && (
                       <Tooltip>
-                        <TooltipTrigger render={<Lock className="h-3 w-3 text-amber-500 shrink-0" />} />
+                        <TooltipTrigger
+                          render={<Lock className="h-3 w-3 text-amber-500 shrink-0" />}
+                        />
                         <TooltipContent>Password protected</TooltipContent>
                       </Tooltip>
                     )}
@@ -313,7 +317,10 @@ export default function DashboardPage() {
                       {box.label}
                     </Link>
                   </span>
-                  <Badge variant={box.hasUnread ? 'default' : 'secondary'} className="shrink-0 text-xs">
+                  <Badge
+                    variant={box.hasUnread ? 'default' : 'secondary'}
+                    className="shrink-0 text-xs"
+                  >
                     {box._count.messages}
                   </Badge>
                 </div>
@@ -328,10 +335,7 @@ export default function DashboardPage() {
                   </a>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs text-muted-foreground">Active</span>
-                    <Switch
-                      checked={box.isActive}
-                      onCheckedChange={() => toggleActive(box)}
-                    />
+                    <Switch checked={box.isActive} onCheckedChange={() => toggleActive(box)} />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
@@ -343,84 +347,114 @@ export default function DashboardPage() {
               </CardContent>
               <CardFooter className="flex items-center justify-end gap-0.5">
                 <Tooltip>
-                  <TooltipTrigger render={<Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => copyDropLink(box.slug)}
-                    aria-label="Copy drop link"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>} />
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => copyDropLink(box.slug)}
+                        aria-label="Copy drop link"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    }
+                  />
                   <TooltipContent>Copy drop link</TooltipContent>
                 </Tooltip>
                 <Tooltip>
-                  <TooltipTrigger render={<Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => toggleAutoDecrypt(box.id)}
-                    aria-label="Toggle auto-decrypt"
-                    className={autoDecryptMap[box.id] ? 'text-primary' : ''}
-                  >
-                    <WandSparkles className="h-3.5 w-3.5" />
-                  </Button>} />
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => toggleAutoDecrypt(box.id)}
+                        aria-label="Toggle auto-decrypt"
+                        className={autoDecryptMap[box.id] ? 'text-primary' : ''}
+                      >
+                        <WandSparkles className="h-3.5 w-3.5" />
+                      </Button>
+                    }
+                  />
                   <TooltipContent>Auto-decrypt</TooltipContent>
                 </Tooltip>
                 <Tooltip>
-                  <TooltipTrigger render={<Button
-                    variant={box.hasUnread ? 'default' : 'ghost'}
-                    size="icon-sm"
-                    onClick={() => router.push(`/dashboard/boxes/${box.id}`)}
-                    aria-label="View messages"
-                  >
-                    <Mail className="h-3.5 w-3.5" />
-                  </Button>} />
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant={box.hasUnread ? 'default' : 'ghost'}
+                        size="icon-sm"
+                        onClick={() => router.push(`/dashboard/boxes/${box.id}`)}
+                        aria-label="View messages"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                      </Button>
+                    }
+                  />
                   <TooltipContent>View messages</TooltipContent>
                 </Tooltip>
-                <Dialog open={rotateBox?.id === box.id} onOpenChange={(open: boolean) => {
-                  if (open) setRotateBox(box)
-                  else setRotateBox(null)
-                }}>
+                <Dialog
+                  open={rotateBox?.id === box.id}
+                  onOpenChange={(open: boolean) => {
+                    if (open) setRotateBox(box)
+                    else setRotateBox(null)
+                  }}
+                >
                   <Tooltip>
-                    <TooltipTrigger render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Rotate drop link" />}>
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    </DialogTrigger>} />
+                    <TooltipTrigger
+                      render={
+                        <DialogTrigger
+                          render={
+                            <Button variant="ghost" size="icon-sm" aria-label="Rotate drop link" />
+                          }
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        </DialogTrigger>
+                      }
+                    />
                     <TooltipContent>Rotate drop link</TooltipContent>
                   </Tooltip>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Rotate Drop Link</DialogTitle>
                       <DialogDescription>
-                        This will generate a new sharing link for <strong>{box.label}</strong>.
-                        The old link will stop working immediately.
+                        This will generate a new sharing link for <strong>{box.label}</strong>. The
+                        old link will stop working immediately.
                       </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setRotateBox(null)}>
                         Cancel
                       </Button>
-                      <Button onClick={rotateSlug}>
-                        Rotate & Copy Link
-                      </Button>
+                      <Button onClick={rotateSlug}>Rotate & Copy Link</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                <Dialog open={editBox?.id === box.id} onOpenChange={(open: boolean) => {
-                  if (open) {
-                    setEditBox(box)
-                    setEditLabel(box.label)
-                    setEditGreeting(box.greeting ?? '')
-                    setEditNotify(box.notify)
-                    setEditPassword('')
-                    setEditPasswordTouched(false)
-                  } else {
-                    setEditBox(null)
-                    setEditPasswordTouched(false)
-                  }
-                }}>
+                <Dialog
+                  open={editBox?.id === box.id}
+                  onOpenChange={(open: boolean) => {
+                    if (open) {
+                      setEditBox(box)
+                      setEditLabel(box.label)
+                      setEditGreeting(box.greeting ?? '')
+                      setEditNotify(box.notify)
+                      setEditPassword('')
+                      setEditPasswordTouched(false)
+                    } else {
+                      setEditBox(null)
+                      setEditPasswordTouched(false)
+                    }
+                  }}
+                >
                   <Tooltip>
-                    <TooltipTrigger render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Edit box" />}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </DialogTrigger>} />
+                    <TooltipTrigger
+                      render={
+                        <DialogTrigger
+                          render={<Button variant="ghost" size="icon-sm" aria-label="Edit box" />}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </DialogTrigger>
+                      }
+                    />
                     <TooltipContent>Edit box</TooltipContent>
                   </Tooltip>
                   <DialogContent>
@@ -451,7 +485,8 @@ export default function DashboardPage() {
                           maxLength={500}
                         />
                         <p className="text-xs text-muted-foreground">
-                          This message is shown to people who open your drop link. Leave blank to use the default.
+                          This message is shown to people who open your drop link. Leave blank to
+                          use the default.
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -462,9 +497,16 @@ export default function DashboardPage() {
                           <Input
                             id="edit-password"
                             type="password"
-                            placeholder={editBox?.hasPassword ? 'Leave blank to keep current' : 'Require a password to send messages'}
+                            placeholder={
+                              editBox?.hasPassword
+                                ? 'Leave blank to keep current'
+                                : 'Require a password to send messages'
+                            }
                             value={editPassword}
-                            onChange={(e) => { setEditPassword(e.target.value); setEditPasswordTouched(true) }}
+                            onChange={(e) => {
+                              setEditPassword(e.target.value)
+                              setEditPasswordTouched(true)
+                            }}
                             maxLength={128}
                           />
                           {editBox?.hasPassword && (
@@ -507,7 +549,13 @@ export default function DashboardPage() {
                         Delete box
                       </Button>
                       <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => { setEditBox(null); setEditPasswordTouched(false) }}>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setEditBox(null)
+                            setEditPasswordTouched(false)
+                          }}
+                        >
                           Cancel
                         </Button>
                         <Button onClick={updateBox}>Save</Button>
@@ -552,15 +600,16 @@ export default function DashboardPage() {
           <DialogHeader>
             <DialogTitle>Delete box</DialogTitle>
             <DialogDescription>
-              This will permanently delete <strong>{deleteConfirmBox?.label}</strong> and all
-              {' '}{deleteConfirmBox?._count.messages ?? 0} message
-              {(deleteConfirmBox?._count.messages ?? 0) !== 1 ? 's' : ''} associated with it.
-              This action cannot be undone.
+              This will permanently delete <strong>{deleteConfirmBox?.label}</strong> and all{' '}
+              {deleteConfirmBox?._count.messages ?? 0} message
+              {(deleteConfirmBox?._count.messages ?? 0) !== 1 ? 's' : ''} associated with it. This
+              action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="delete-confirm">
-              Type <span className="font-mono font-semibold text-destructive">DELETE</span> to confirm
+              Type <span className="font-mono font-semibold text-destructive">DELETE</span> to
+              confirm
             </Label>
             <Input
               id="delete-confirm"

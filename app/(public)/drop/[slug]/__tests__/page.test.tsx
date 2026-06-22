@@ -8,8 +8,12 @@ const mockUseParams = vi.fn()
 vi.mock('next/navigation', () => ({
   useParams: () => mockUseParams(),
   useRouter: () => ({
-    push: vi.fn(), replace: vi.fn(), back: vi.fn(),
-    forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
   }),
 }))
 
@@ -43,7 +47,8 @@ describe('DropPage', () => {
     mockUseParams.mockReturnValue({ slug: 'test-slug' })
 
     const turnstileScript = document.createElement('script')
-    turnstileScript.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad'
+    turnstileScript.src =
+      'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad'
     document.head.appendChild(turnstileScript)
 
     vi.stubGlobal('turnstile', {
@@ -164,7 +169,9 @@ describe('DropPage', () => {
     render(React.createElement(DropPage))
     await waitFor(() => expect(screen.getByText('Secured')).toBeInTheDocument())
 
-    fireEvent.change(screen.getByPlaceholderText(/enter password/i), { target: { value: 'badpass' } })
+    fireEvent.change(screen.getByPlaceholderText(/enter password/i), {
+      target: { value: 'badpass' },
+    })
     fireEvent.change(screen.getByTestId('text-editor'), { target: { value: 'secret' } })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -178,14 +185,19 @@ describe('DropPage', () => {
     mockFetch([
       boxWithPassword,
       csrfOk,
-      { json: () => ({ success: false, code: 'INVALID_PASSWORD', error: 'Wrong password' }), ok: true },
+      {
+        json: () => ({ success: false, code: 'INVALID_PASSWORD', error: 'Wrong password' }),
+        ok: true,
+      },
       csrfOk,
       sendOk,
     ])
     render(React.createElement(DropPage))
     await waitFor(() => expect(screen.getByText('Secured')).toBeInTheDocument())
 
-    fireEvent.change(screen.getByPlaceholderText(/enter password/i), { target: { value: 'badpass' } })
+    fireEvent.change(screen.getByPlaceholderText(/enter password/i), {
+      target: { value: 'badpass' },
+    })
     fireEvent.change(screen.getByTestId('text-editor'), { target: { value: 'secret' } })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))
 
@@ -195,7 +207,9 @@ describe('DropPage', () => {
     expect(mockCrypto.sealMessage).toHaveBeenCalledTimes(1)
 
     // Fix password and submit again — should reuse cached payload
-    fireEvent.change(screen.getByPlaceholderText(/enter password/i), { target: { value: 'correctpass' } })
+    fireEvent.change(screen.getByPlaceholderText(/enter password/i), {
+      target: { value: 'correctpass' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))
 
     await waitFor(() => {
@@ -248,7 +262,9 @@ describe('DropPage', () => {
   // --- fetch failure ---
   it('shows error when box fetch fails with network error', async () => {
     mockFetch({
-      json: () => { throw new Error('Network failure') },
+      json: () => {
+        throw new Error('Network failure')
+      },
       ok: false,
       status: 500,
     })

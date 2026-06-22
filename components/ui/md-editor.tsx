@@ -6,13 +6,7 @@ import MDEditor from '@uiw/react-md-editor'
 import type { TextEditorProps } from './text-editor-types'
 import { cn } from '@/lib/utils'
 
-export function MdEditor({
-  id,
-  value,
-  onChange,
-  maxLength,
-  className,
-}: TextEditorProps) {
+export function MdEditor({ id, value, onChange, maxLength, className }: TextEditorProps) {
   const { resolvedTheme } = useTheme()
   const [charCount, setCharCount] = useState(value.length)
   const [isMobile, setIsMobile] = useState(false)
@@ -55,9 +49,7 @@ export function MdEditor({
         <p
           className={cn(
             'mt-1 text-right text-xs',
-            charCount > maxLength
-              ? 'font-medium text-destructive'
-              : 'text-muted-foreground',
+            charCount > maxLength ? 'font-medium text-destructive' : 'text-muted-foreground',
           )}
         >
           {charCount.toLocaleString()}&thinsp;/&thinsp;

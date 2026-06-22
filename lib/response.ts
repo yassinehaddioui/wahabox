@@ -20,7 +20,13 @@ export function success<T>(data: T, status = 200): NextResponse<SuccessResponse<
 export function error(err: unknown): NextResponse<ErrorResponse> {
   if (err instanceof MfaRequiredError) {
     return NextResponse.json(
-      { success: false as const, error: err.message, code: err.code, mfaToken: err.mfaToken, methods: err.methods },
+      {
+        success: false as const,
+        error: err.message,
+        code: err.code,
+        mfaToken: err.mfaToken,
+        methods: err.methods,
+      },
       { status: err.statusCode },
     )
   }

@@ -18,10 +18,7 @@ function signWith(data: string, secret: string): string {
 }
 
 /** Craft a token in the `encoded.signature` format without touching Prisma. */
-function craftToken(
-  payload: Record<string, unknown>,
-  secret: string = SECRET,
-): string {
+function craftToken(payload: Record<string, unknown>, secret: string = SECRET): string {
   const encoded = Buffer.from(JSON.stringify(payload)).toString('base64')
   return `${encoded}.${signWith(encoded, secret)}`
 }

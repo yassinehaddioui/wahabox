@@ -4,10 +4,7 @@ import { getAuthUser } from '@/lib/auth'
 import { NotFoundError } from '@/lib/errors'
 import prisma from '@/lib/prisma'
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthUser(request)
     const { id } = await params

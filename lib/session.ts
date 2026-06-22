@@ -82,8 +82,7 @@ export async function validateSession(token: string): Promise<SessionData | unde
   return session
 }
 
-export async function destroySession(): Promise<void> {
-}
+export async function destroySession(): Promise<void> {}
 
 export async function setSessionCookie(token: string): Promise<void> {
   const cookieStore = await cookies()
@@ -100,4 +99,3 @@ export async function clearSessionCookie(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.delete(SESSION_COOKIE)
 }
-

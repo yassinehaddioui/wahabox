@@ -43,7 +43,7 @@ export default function LoginPage() {
   const hasSiteKey = typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
   const [hasProof, setHasProof] = useState(() => {
     if (typeof document === 'undefined') return false
-    return document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
+    return document.cookie.split(';').some((c) => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
   })
 
   const [mfa, setMfa] = useState<MfaState>({
@@ -84,7 +84,10 @@ export default function LoginPage() {
     return null
   }
 
-  async function finishLogin(mk: Uint8Array, loginData: { encPrivPw: string; pwNonce: string; publicKey: string }) {
+  async function finishLogin(
+    mk: Uint8Array,
+    loginData: { encPrivPw: string; pwNonce: string; publicKey: string },
+  ) {
     const { crypto } = await import('@/lib/crypto')
     await crypto.ready
 
@@ -161,7 +164,10 @@ export default function LoginPage() {
       const message = err instanceof Error ? err.message : 'Login failed'
       setError(message)
     } finally {
-      if (!hasProof && document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))) {
+      if (
+        !hasProof &&
+        document.cookie.split(';').some((c) => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
+      ) {
         setHasProof(true)
       }
       setLoading(false)
@@ -234,7 +240,10 @@ export default function LoginPage() {
     } catch (err) {
       setMfa((prev) => ({
         ...prev,
-        error: { ...prev.error, [method]: err instanceof Error ? err.message : 'Verification failed' },
+        error: {
+          ...prev.error,
+          [method]: err instanceof Error ? err.message : 'Verification failed',
+        },
       }))
     } finally {
       setMfa((prev) => ({
@@ -280,7 +289,10 @@ export default function LoginPage() {
     } catch (err) {
       setMfa((prev) => ({
         ...prev,
-        error: { ...prev.error, [method]: err instanceof Error ? err.message : 'Verification failed' },
+        error: {
+          ...prev.error,
+          [method]: err instanceof Error ? err.message : 'Verification failed',
+        },
       }))
     } finally {
       setMfa((prev) => ({
@@ -339,7 +351,10 @@ export default function LoginPage() {
     } catch (err) {
       setMfa((prev) => ({
         ...prev,
-        error: { ...prev.error, [method]: err instanceof Error ? err.message : 'Passkey verification failed' },
+        error: {
+          ...prev.error,
+          [method]: err instanceof Error ? err.message : 'Passkey verification failed',
+        },
       }))
     } finally {
       setMfa((prev) => ({
@@ -396,7 +411,12 @@ export default function LoginPage() {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setStep('mfa')}>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setStep('mfa')}
+              >
                 Back
               </Button>
               <Button type="submit" disabled={recoveryLoading} className="flex-1">
@@ -416,9 +436,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md bg-canvas-soft">
         <CardHeader>
           <CardTitle>Verify Your Identity</CardTitle>
-          <CardDescription>
-            Your account requires additional verification.
-          </CardDescription>
+          <CardDescription>Your account requires additional verification.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           {mfa.methods.includes('email') && (
@@ -514,15 +532,27 @@ export default function LoginPage() {
               onError={() => setTurnstileToken(null)}
             />
           )}
-          <Button type="submit" disabled={loading || (!hasProof && !turnstileToken)} className="w-full">
+          <Button
+            type="submit"
+            disabled={loading || (!hasProof && !turnstileToken)}
+            className="w-full"
+          >
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
         <div className="flex justify-between text-sm">
-          <Button variant="link" size="sm" render={<Link href="/signup" className="text-muted-foreground" />}>
+          <Button
+            variant="link"
+            size="sm"
+            render={<Link href="/signup" className="text-muted-foreground" />}
+          >
             Create an account
           </Button>
-          <Button variant="link" size="sm" render={<Link href="/recover" className="text-muted-foreground" />}>
+          <Button
+            variant="link"
+            size="sm"
+            render={<Link href="/recover" className="text-muted-foreground" />}
+          >
             Recover account
           </Button>
         </div>
@@ -580,10 +610,7 @@ function MfaMethodBlock({
             className="font-mono text-lg tracking-widest text-center"
             autoComplete="one-time-code"
           />
-          <Button
-            onClick={() => onVerify(code)}
-            disabled={loading || code.length !== 6}
-          >
+          <Button onClick={() => onVerify(code)} disabled={loading || code.length !== 6}>
             {loading && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
             Verify
           </Button>
@@ -604,11 +631,7 @@ function MfaMethodBlock({
           {cooldown && cooldown > 0 ? (
             <span className="text-muted-foreground">Resend in {cooldown}s</span>
           ) : (
-            <button
-              type="button"
-              onClick={onResend}
-              className="text-primary hover:underline"
-            >
+            <button type="button" onClick={onResend} className="text-primary hover:underline">
               Resend code
             </button>
           )}

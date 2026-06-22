@@ -16,13 +16,13 @@
 
 ## Coverage Targets
 
-| Metric | Target | Rationale |
-|--------|--------|-----------|
-| `lib/` functions | 90%+ | Security-critical, mostly pure |
-| `app/api/` routes | 85%+ | Core business logic |
-| `components/` (custom) | 70%+ | UI behavior |
-| `app/` pages | 60%+ | Heavy mock setup, lower ROI |
-| Overall | 80%+ | Enforced via vitest coverage thresholds |
+| Metric                 | Target | Rationale                               |
+| ---------------------- | ------ | --------------------------------------- |
+| `lib/` functions       | 90%+   | Security-critical, mostly pure          |
+| `app/api/` routes      | 85%+   | Core business logic                     |
+| `components/` (custom) | 70%+   | UI behavior                             |
+| `app/` pages           | 60%+   | Heavy mock setup, lower ROI             |
+| Overall                | 80%+   | Enforced via vitest coverage thresholds |
 
 ## Total Estimate: ~453 unit/integration tests + 5 E2E specs
 
@@ -79,16 +79,16 @@ happy-dom
 
 No mocks needed. Highest ROI.
 
-| File | Tests | Priority |
-|------|-------|----------|
-| `lib/__tests__/errors.test.ts` | ~10 | High |
-| `lib/__tests__/utils.test.ts` | ~5 | High |
-| `lib/__tests__/validation.test.ts` | ~30 | High |
-| `lib/__tests__/env.test.ts` | ~5 | Medium |
-| `lib/__tests__/pow.test.ts` | ~8 | High |
-| `lib/__tests__/totp.test.ts` | ~15 | High |
-| `lib/__tests__/email-crypto.test.ts` | ~8 | High |
-| `lib/__tests__/session-pure.test.ts` | ~8 | High |
+| File                                 | Tests | Priority |
+| ------------------------------------ | ----- | -------- |
+| `lib/__tests__/errors.test.ts`       | ~10   | High     |
+| `lib/__tests__/utils.test.ts`        | ~5    | High     |
+| `lib/__tests__/validation.test.ts`   | ~30   | High     |
+| `lib/__tests__/env.test.ts`          | ~5    | Medium   |
+| `lib/__tests__/pow.test.ts`          | ~8    | High     |
+| `lib/__tests__/totp.test.ts`         | ~15   | High     |
+| `lib/__tests__/email-crypto.test.ts` | ~8    | High     |
+| `lib/__tests__/session-pure.test.ts` | ~8    | High     |
 
 ### What each file covers
 
@@ -105,17 +105,17 @@ No mocks needed. Highest ROI.
 
 ## Phase 3: Light Mock Unit Tests (~68 tests)
 
-| File | Tests | Key mocks |
-|------|-------|-----------|
-| `lib/__tests__/response.test.ts` | ~10 | NextResponse |
-| `lib/__tests__/csrf.test.ts` | ~12 | Redis mock |
-| `lib/__tests__/auth.test.ts` | ~6 | `vi.mock('@/lib/session')` |
-| `lib/__tests__/turnstile.test.ts` | ~8 | `vi.stubGlobal('fetch')` |
-| `lib/__tests__/session-db.test.ts` | ~8 | Prisma mock |
-| `lib/__tests__/notifications.test.ts` | ~8 | Prisma + email + email-crypto mock |
-| `lib/__tests__/use-csrf.test.ts` | ~6 | fetch + happy-dom |
-| `lib/__tests__/session-provider.test.tsx` | ~4 | RTL |
-| `lib/__tests__/middleware.test.ts` | ~6 | NextRequest/NextResponse |
+| File                                      | Tests | Key mocks                          |
+| ----------------------------------------- | ----- | ---------------------------------- |
+| `lib/__tests__/response.test.ts`          | ~10   | NextResponse                       |
+| `lib/__tests__/csrf.test.ts`              | ~12   | Redis mock                         |
+| `lib/__tests__/auth.test.ts`              | ~6    | `vi.mock('@/lib/session')`         |
+| `lib/__tests__/turnstile.test.ts`         | ~8    | `vi.stubGlobal('fetch')`           |
+| `lib/__tests__/session-db.test.ts`        | ~8    | Prisma mock                        |
+| `lib/__tests__/notifications.test.ts`     | ~8    | Prisma + email + email-crypto mock |
+| `lib/__tests__/use-csrf.test.ts`          | ~6    | fetch + happy-dom                  |
+| `lib/__tests__/session-provider.test.tsx` | ~4    | RTL                                |
+| `lib/__tests__/middleware.test.ts`        | ~6    | NextRequest/NextResponse           |
 
 ### What each file covers
 
@@ -159,41 +159,41 @@ Mock `@/lib/prisma`, `@/lib/redis` (or `@/lib/rate-limit`, `@/lib/csrf`), `@/lib
 
 ### Per-route test estimates
 
-| Route | Key test cases | Est. tests |
-|-------|---------------|------------|
-| `/api/auth/signup` | Happy path, duplicate user (P2002), CSRF fail, Turnstile fail, rate-limit | ~10 |
-| `/api/auth/login` | Success, wrong verifier, unknown user (dummy timing), MFA gate, lockout, Turnstile after 2 fails | ~15 |
-| `/api/auth/salts` | Known user returns salts, unknown user returns dummy salt, rate-limit | ~6 |
-| `/api/auth/logout` | Best-effort even when unauthed, increments tokenVersion | ~4 |
-| `/api/auth/recovery-start` | Known user → sealed challenge, unknown user → dummy path, Redis store | ~8 |
-| `/api/auth/recovery-complete` | Challenge match, mismatch, expired token, tokenVersion bump | ~8 |
-| `/api/auth/mfa/send-email` | 60s cooldown, dev-mode tolerance, missing email | ~6 |
-| `/api/auth/mfa/verify` | POST email/totp/passkey, attempt caps, all-verified → session; PUT passkey assertion | ~15 |
-| `/api/auth/mfa/recover` | Valid recovery code, invalid, 3-attempt cap | ~6 |
-| `/api/auth/regen-recovery` | Auth required, CSRF, updates fields | ~4 |
-| `/api/boxes` | GET never returns passwordHash, POST creates with slug, CSRF | ~10 |
-| `/api/boxes/[id]` | Ownership check, rotate slug, password null, redacted response | ~8 |
-| `/api/boxes/[id]/messages` | Ownership check, ordering, ciphertext format | ~5 |
-| `/api/messages/[id]` | PATCH marks read, DELETE with ownership, cross-user → 404 | ~6 |
-| `/api/drop/[slug]` | GET redacts, expired/inactive → 404; POST check ordering (rate-limit → box → password → CSRF → Turnstile → PoW → quotas), honeypot | ~20 |
-| `/api/account/password` | GET requires auth, POST verifier check, tokenVersion bump, cookie clear | ~8 |
-| `/api/account/email` | GET masks, PUT encrypts + sends verify, POST cooldown, DELETE clears, PATCH toggle | ~15 |
-| `/api/account/email/verify` | Valid token, expired token, replay (consume-once) | ~5 |
-| `/api/account/mfa` | GET flags, POST TOTP setup/confirm/disable, email requires verified email | ~12 |
-| `/api/account/mfa/recovery` | Requires TOTP, returns plain codes once | ~4 |
-| `/api/account/mfa/passkeys` | GET list, POST setup/confirm, DELETE with ownership | ~8 |
-| `/api/csrf` | Allow-list tags, regex fallback, missing tag | ~5 |
+| Route                         | Key test cases                                                                                                                     | Est. tests |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `/api/auth/signup`            | Happy path, duplicate user (P2002), CSRF fail, Turnstile fail, rate-limit                                                          | ~10        |
+| `/api/auth/login`             | Success, wrong verifier, unknown user (dummy timing), MFA gate, lockout, Turnstile after 2 fails                                   | ~15        |
+| `/api/auth/salts`             | Known user returns salts, unknown user returns dummy salt, rate-limit                                                              | ~6         |
+| `/api/auth/logout`            | Best-effort even when unauthed, increments tokenVersion                                                                            | ~4         |
+| `/api/auth/recovery-start`    | Known user → sealed challenge, unknown user → dummy path, Redis store                                                              | ~8         |
+| `/api/auth/recovery-complete` | Challenge match, mismatch, expired token, tokenVersion bump                                                                        | ~8         |
+| `/api/auth/mfa/send-email`    | 60s cooldown, dev-mode tolerance, missing email                                                                                    | ~6         |
+| `/api/auth/mfa/verify`        | POST email/totp/passkey, attempt caps, all-verified → session; PUT passkey assertion                                               | ~15        |
+| `/api/auth/mfa/recover`       | Valid recovery code, invalid, 3-attempt cap                                                                                        | ~6         |
+| `/api/auth/regen-recovery`    | Auth required, CSRF, updates fields                                                                                                | ~4         |
+| `/api/boxes`                  | GET never returns passwordHash, POST creates with slug, CSRF                                                                       | ~10        |
+| `/api/boxes/[id]`             | Ownership check, rotate slug, password null, redacted response                                                                     | ~8         |
+| `/api/boxes/[id]/messages`    | Ownership check, ordering, ciphertext format                                                                                       | ~5         |
+| `/api/messages/[id]`          | PATCH marks read, DELETE with ownership, cross-user → 404                                                                          | ~6         |
+| `/api/drop/[slug]`            | GET redacts, expired/inactive → 404; POST check ordering (rate-limit → box → password → CSRF → Turnstile → PoW → quotas), honeypot | ~20        |
+| `/api/account/password`       | GET requires auth, POST verifier check, tokenVersion bump, cookie clear                                                            | ~8         |
+| `/api/account/email`          | GET masks, PUT encrypts + sends verify, POST cooldown, DELETE clears, PATCH toggle                                                 | ~15        |
+| `/api/account/email/verify`   | Valid token, expired token, replay (consume-once)                                                                                  | ~5         |
+| `/api/account/mfa`            | GET flags, POST TOTP setup/confirm/disable, email requires verified email                                                          | ~12        |
+| `/api/account/mfa/recovery`   | Requires TOTP, returns plain codes once                                                                                            | ~4         |
+| `/api/account/mfa/passkeys`   | GET list, POST setup/confirm, DELETE with ownership                                                                                | ~8         |
+| `/api/csrf`                   | Allow-list tags, regex fallback, missing tag                                                                                       | ~5         |
 
 ---
 
 ## Phase 5: Component Tests (~20 tests)
 
-| File | Tests |
-|------|-------|
-| `components/__tests__/app-sidebar.test.tsx` | ~5 |
-| `components/__tests__/turnstile-widget.test.tsx` | ~6 |
-| `components/__tests__/md-editor.test.tsx` | ~4 |
-| `components/__tests__/markdown-editor.test.tsx` | ~5 |
+| File                                             | Tests |
+| ------------------------------------------------ | ----- |
+| `components/__tests__/app-sidebar.test.tsx`      | ~5    |
+| `components/__tests__/turnstile-widget.test.tsx` | ~6    |
+| `components/__tests__/md-editor.test.tsx`        | ~4    |
+| `components/__tests__/markdown-editor.test.tsx`  | ~5    |
 
 ### What each file covers
 
@@ -212,18 +212,18 @@ Mock `@/lib/prisma`, `@/lib/redis` (or `@/lib/rate-limit`, `@/lib/csrf`), `@/lib
 
 ### Implementation order (simplest first)
 
-| Page | Est. tests |
-|------|------------|
-| `(public)/page.tsx` (smoke) | ~2 |
-| `(auth)/layout.tsx` (auth gate) | ~3 |
-| `verify-email/page.tsx` | ~4 |
-| `signup/page.tsx` | ~10 |
-| `recover/page.tsx` | ~8 |
-| `drop/[slug]/page.tsx` | ~12 |
-| `dashboard/page.tsx` | ~12 |
-| `dashboard/[id]/page.tsx` | ~8 |
-| `login/page.tsx` | ~15 |
-| `settings/page.tsx` | ~20 |
+| Page                            | Est. tests |
+| ------------------------------- | ---------- |
+| `(public)/page.tsx` (smoke)     | ~2         |
+| `(auth)/layout.tsx` (auth gate) | ~3         |
+| `verify-email/page.tsx`         | ~4         |
+| `signup/page.tsx`               | ~10        |
+| `recover/page.tsx`              | ~8         |
+| `drop/[slug]/page.tsx`          | ~12        |
+| `dashboard/page.tsx`            | ~12        |
+| `dashboard/[id]/page.tsx`       | ~8         |
+| `login/page.tsx`                | ~15        |
+| `settings/page.tsx`             | ~20        |
 
 ### What each page covers
 
@@ -248,27 +248,27 @@ Mock `@/lib/prisma`, `@/lib/redis` (or `@/lib/rate-limit`, `@/lib/csrf`), `@/lib
 
 ### Critical E2E flows
 
-| Test file | Flow | Steps |
-|-----------|------|-------|
-| `test/e2e/auth.spec.ts` | Signup → Login → Logout | Sign up with new user, verify redirect to dashboard, logout, verify redirect to login |
-| `test/e2e/messaging.spec.ts` | Create box → Drop message → Decrypt | Login, create PO box, open drop URL in incognito context, submit encrypted message, verify message appears in dashboard, decrypt with private key |
-| `test/e2e/mfa.spec.ts` | MFA enrollment + recovery | Login, enable TOTP MFA, save recovery codes, logout, login with MFA, use recovery code fallback |
-| `test/e2e/password-change.spec.ts` | Password change invalidation | Login, change password, verify old session cookie is rejected, login with new password |
-| `test/e2e/recovery.spec.ts` | Account recovery | Signup with recovery code, logout, use recovery flow to regain access, verify new password works |
+| Test file                          | Flow                                | Steps                                                                                                                                             |
+| ---------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test/e2e/auth.spec.ts`            | Signup → Login → Logout             | Sign up with new user, verify redirect to dashboard, logout, verify redirect to login                                                             |
+| `test/e2e/messaging.spec.ts`       | Create box → Drop message → Decrypt | Login, create PO box, open drop URL in incognito context, submit encrypted message, verify message appears in dashboard, decrypt with private key |
+| `test/e2e/mfa.spec.ts`             | MFA enrollment + recovery           | Login, enable TOTP MFA, save recovery codes, logout, login with MFA, use recovery code fallback                                                   |
+| `test/e2e/password-change.spec.ts` | Password change invalidation        | Login, change password, verify old session cookie is rejected, login with new password                                                            |
+| `test/e2e/recovery.spec.ts`        | Account recovery                    | Signup with recovery code, logout, use recovery flow to regain access, verify new password works                                                  |
 
 ---
 
 ## Execution Strategy
 
-| Step | What | Est. tests | Depends on |
-|------|------|-----------|------------|
-| 1 | Phase 1: Infrastructure | 0 | — |
-| 2 | Phase 2: Pure unit tests | ~89 | Phase 1 |
-| 3 | Phase 3: Light mock tests | ~68 | Phase 1 |
-| 4 | Phase 4: API route tests | ~182 | Phase 1 + helpers |
-| 5 | Phase 5: Component tests | ~20 | Phase 1 |
-| 6 | Phase 6: Page tests | ~94 | Phase 1 + 5 (RTL patterns) |
-| 7 | Phase 7: Playwright E2E | ~5 specs | App running + Docker services |
+| Step | What                      | Est. tests | Depends on                    |
+| ---- | ------------------------- | ---------- | ----------------------------- |
+| 1    | Phase 1: Infrastructure   | 0          | —                             |
+| 2    | Phase 2: Pure unit tests  | ~89        | Phase 1                       |
+| 3    | Phase 3: Light mock tests | ~68        | Phase 1                       |
+| 4    | Phase 4: API route tests  | ~182       | Phase 1 + helpers             |
+| 5    | Phase 5: Component tests  | ~20        | Phase 1                       |
+| 6    | Phase 6: Page tests       | ~94        | Phase 1 + 5 (RTL patterns)    |
+| 7    | Phase 7: Playwright E2E   | ~5 specs   | App running + Docker services |
 
 Phases 2-6 can be parallelized after Phase 1 is complete. Phase 4 (API routes) is the highest-value work — it covers the security-critical server logic. Implement in the order above, verifying each phase passes before moving to the next.
 
@@ -276,12 +276,12 @@ Phases 2-6 can be parallelized after Phase 1 is complete. Phase 4 (API routes) i
 
 ## Testability Tier Reference
 
-| Tier | Files | Approach |
-|------|-------|----------|
-| **A — pure unit, no mocks** | `crypto.ts` (done), `errors.ts`, `utils.ts`, `validation.ts`, `pow.ts` (`verifyPow`), `totp.ts`, `email-crypto.ts`, `env.ts` | Vitest only, real primitives |
-| **B — unit with light mocks** | `response.ts`, `session-provider.tsx`, `use-csrf.ts`, `turnstile.ts`, `auth.ts`, `session.ts`, `csrf.ts`, `middleware.ts` | `vi.mock`, `vi.stubGlobal`, `vi.useFakeTimers` |
-| **C — needs Redis mock** | `redis.ts`, `rate-limit.ts`, `pow.ts` (store/consume), `webauthn.ts` | In-memory Redis mock |
-| **D — integration only** | `prisma.ts`, `email.ts` (SES), `notifications.ts` | Mocked libraries |
+| Tier                          | Files                                                                                                                        | Approach                                       |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **A — pure unit, no mocks**   | `crypto.ts` (done), `errors.ts`, `utils.ts`, `validation.ts`, `pow.ts` (`verifyPow`), `totp.ts`, `email-crypto.ts`, `env.ts` | Vitest only, real primitives                   |
+| **B — unit with light mocks** | `response.ts`, `session-provider.tsx`, `use-csrf.ts`, `turnstile.ts`, `auth.ts`, `session.ts`, `csrf.ts`, `middleware.ts`    | `vi.mock`, `vi.stubGlobal`, `vi.useFakeTimers` |
+| **C — needs Redis mock**      | `redis.ts`, `rate-limit.ts`, `pow.ts` (store/consume), `webauthn.ts`                                                         | In-memory Redis mock                           |
+| **D — integration only**      | `prisma.ts`, `email.ts` (SES), `notifications.ts`                                                                            | Mocked libraries                               |
 
 ---
 

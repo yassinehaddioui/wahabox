@@ -8,7 +8,11 @@ import { UnauthorizedError } from '@/lib/errors'
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
-vi.mock('@/lib/rate-limit', () => ({ checkIpRate: vi.fn(), checkUserRate: vi.fn(), checkGlobalRate: vi.fn() }))
+vi.mock('@/lib/rate-limit', () => ({
+  checkIpRate: vi.fn(),
+  checkUserRate: vi.fn(),
+  checkGlobalRate: vi.fn(),
+}))
 vi.mock('@/lib/email', () => ({ sendVerificationEmail: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
@@ -20,7 +24,10 @@ function mockAuth(): void {
 }
 
 describe('GET /api/account/email', () => {
-  beforeEach(() => { resetPrismaMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 401 when not authenticated', async () => {
     vi.mocked(getAuthUser).mockRejectedValue(new UnauthorizedError())
@@ -30,7 +37,9 @@ describe('GET /api/account/email', () => {
 
   it('returns hasEmail false when no email is set', async () => {
     mockAuth()
-    prismaMock.user.findUnique.mockResolvedValue(createUser({ emailEncrypted: null, emailNonce: null }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({ emailEncrypted: null, emailNonce: null }),
+    )
     const res = await GET(createNextRequest('http://localhost/api/account/email'))
     const body = await res.json()
     expect(body.data.hasEmail).toBe(false)
@@ -41,7 +50,11 @@ describe('GET /api/account/email', () => {
     const { encryptEmail } = await import('@/lib/email-crypto')
     const { encrypted, nonce } = encryptEmail('alice@example.com')
     prismaMock.user.findUnique.mockResolvedValue(
-      createUser({ emailEncrypted: Buffer.from(encrypted), emailNonce: Buffer.from(nonce), emailVerified: true }),
+      createUser({
+        emailEncrypted: Buffer.from(encrypted),
+        emailNonce: Buffer.from(nonce),
+        emailVerified: true,
+      }),
     )
     const res = await GET(createNextRequest('http://localhost/api/account/email'))
     const body = await res.json()
@@ -64,11 +77,20 @@ describe('GET /api/account/email', () => {
 })
 
 describe('PUT /api/account/email', () => {
-  beforeEach(() => { resetPrismaMock(); resetRedisMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    resetRedisMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 401 when not authenticated', async () => {
     vi.mocked(getAuthUser).mockRejectedValue(new UnauthorizedError())
-    const res = await PUT(createNextRequest('http://localhost/api/account/email', { method: 'PUT', body: { email: 'a@b.com', csrfToken: 't' } }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'PUT',
+        body: { email: 'a@b.com', csrfToken: 't' },
+      }),
+    )
     expect(res.status).toBe(401)
   })
 
@@ -77,14 +99,24 @@ describe('PUT /api/account/email', () => {
     vi.mocked(checkIpRate).mockResolvedValue(false)
     vi.mocked(checkUserRate).mockResolvedValue(false)
     vi.mocked(checkGlobalRate).mockResolvedValue(false)
-    const res = await PUT(createNextRequest('http://localhost/api/account/email', { method: 'PUT', body: { email: 'bad', csrfToken: 't' } }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'PUT',
+        body: { email: 'bad', csrfToken: 't' },
+      }),
+    )
     expect(res.status).toBe(400)
   })
 
   it('returns 429 when IP rate limited', async () => {
     mockAuth()
     vi.mocked(checkIpRate).mockResolvedValue(true)
-    const res = await PUT(createNextRequest('http://localhost/api/account/email', { method: 'PUT', body: { email: 'a@b.com', csrfToken: 't' } }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'PUT',
+        body: { email: 'a@b.com', csrfToken: 't' },
+      }),
+    )
     expect(res.status).toBe(429)
   })
 
@@ -94,7 +126,12 @@ describe('PUT /api/account/email', () => {
     vi.mocked(checkUserRate).mockResolvedValue(false)
     vi.mocked(checkGlobalRate).mockResolvedValue(false)
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(false)
-    const res = await PUT(createNextRequest('http://localhost/api/account/email', { method: 'PUT', body: { email: 'a@b.com', csrfToken: 'bad' } }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'PUT',
+        body: { email: 'a@b.com', csrfToken: 'bad' },
+      }),
+    )
     expect(res.status).toBe(400)
   })
 
@@ -105,7 +142,12 @@ describe('PUT /api/account/email', () => {
     vi.mocked(checkGlobalRate).mockResolvedValue(false)
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.user.update.mockResolvedValue({})
-    const res = await PUT(createNextRequest('http://localhost/api/account/email', { method: 'PUT', body: { email: 'alice@example.com', csrfToken: 'valid' } }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'PUT',
+        body: { email: 'alice@example.com', csrfToken: 'valid' },
+      }),
+    )
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.success).toBe(true)
@@ -115,7 +157,11 @@ describe('PUT /api/account/email', () => {
 })
 
 describe('POST /api/account/email', () => {
-  beforeEach(() => { resetPrismaMock(); resetRedisMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    resetRedisMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 400 when no email is set', async () => {
     mockAuth()
@@ -123,8 +169,15 @@ describe('POST /api/account/email', () => {
     vi.mocked(checkUserRate).mockResolvedValue(false)
     vi.mocked(checkGlobalRate).mockResolvedValue(false)
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    prismaMock.user.findUnique.mockResolvedValue(createUser({ emailEncrypted: null, emailNonce: null }))
-    const res = await POST(createNextRequest('http://localhost/api/account/email', { method: 'POST', body: { csrfToken: 't' } }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({ emailEncrypted: null, emailNonce: null }),
+    )
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'POST',
+        body: { csrfToken: 't' },
+      }),
+    )
     expect(res.status).toBe(400)
   })
 
@@ -137,27 +190,49 @@ describe('POST /api/account/email', () => {
     const { encryptEmail } = await import('@/lib/email-crypto')
     const { encrypted, nonce } = encryptEmail('alice@example.com')
     prismaMock.user.findUnique.mockResolvedValue(
-      createUser({ emailEncrypted: Buffer.from(encrypted), emailNonce: Buffer.from(nonce), username: 'testuser' }),
+      createUser({
+        emailEncrypted: Buffer.from(encrypted),
+        emailNonce: Buffer.from(nonce),
+        username: 'testuser',
+      }),
     )
-    const res = await POST(createNextRequest('http://localhost/api/account/email', { method: 'POST', body: { csrfToken: 't' } }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'POST',
+        body: { csrfToken: 't' },
+      }),
+    )
     expect(res.status).toBe(200)
   })
 })
 
 describe('DELETE /api/account/email', () => {
-  beforeEach(() => { resetPrismaMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 400 for invalid CSRF', async () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(false)
-    const res = await DELETE(createNextRequest('http://localhost/api/account/email', { method: 'DELETE', body: { csrfToken: 'bad' } }))
+    const res = await DELETE(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'DELETE',
+        body: { csrfToken: 'bad' },
+      }),
+    )
     expect(res.status).toBe(400)
   })
 
   it('clears email fields from db', async () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    const res = await DELETE(createNextRequest('http://localhost/api/account/email', { method: 'DELETE', body: { csrfToken: 'valid' } }))
+    const res = await DELETE(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'DELETE',
+        body: { csrfToken: 'valid' },
+      }),
+    )
     expect(res.status).toBe(200)
     expect(prismaMock.user.update).toHaveBeenCalledWith({
       where: { id: 'user-1' },
@@ -167,23 +242,37 @@ describe('DELETE /api/account/email', () => {
 })
 
 describe('PATCH /api/account/email', () => {
-  beforeEach(() => { resetPrismaMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 400 for invalid CSRF', async () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(false)
-    const res = await PATCH(createNextRequest('http://localhost/api/account/email', { method: 'PATCH', body: { notificationsEnabled: false, csrfToken: 'bad' } }))
+    const res = await PATCH(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'PATCH',
+        body: { notificationsEnabled: false, csrfToken: 'bad' },
+      }),
+    )
     expect(res.status).toBe(400)
   })
 
   it('toggles notifications', async () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
-    const res = await PATCH(createNextRequest('http://localhost/api/account/email', { method: 'PATCH', body: { notificationsEnabled: false, csrfToken: 'valid' } }))
+    const res = await PATCH(
+      createNextRequest('http://localhost/api/account/email', {
+        method: 'PATCH',
+        body: { notificationsEnabled: false, csrfToken: 'valid' },
+      }),
+    )
     const body = await res.json()
     expect(body.data.notificationsEnabled).toBe(false)
     expect(prismaMock.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' }, data: { notificationsEnabled: false },
+      where: { id: 'user-1' },
+      data: { notificationsEnabled: false },
     })
   })
 })

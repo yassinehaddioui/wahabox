@@ -6,20 +6,35 @@ import { createNextRequest } from '@/test/helpers/request'
 import crypto from 'crypto'
 
 describe('POST /api/account/email/verify', () => {
-  beforeEach(() => { resetPrismaMock(); resetRedisMock() })
+  beforeEach(() => {
+    resetPrismaMock()
+    resetRedisMock()
+  })
 
   it('returns 400 for missing token', async () => {
-    const res = await POST(createNextRequest('http://localhost/api/account/email/verify', { method: 'POST', body: {} }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/email/verify', { method: 'POST', body: {} }),
+    )
     expect(res.status).toBe(400)
   })
 
   it('returns 400 for non-string token', async () => {
-    const res = await POST(createNextRequest('http://localhost/api/account/email/verify', { method: 'POST', body: { token: 123 } }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/email/verify', {
+        method: 'POST',
+        body: { token: 123 },
+      }),
+    )
     expect(res.status).toBe(400)
   })
 
   it('returns 400 for expired or invalid token', async () => {
-    const res = await POST(createNextRequest('http://localhost/api/account/email/verify', { method: 'POST', body: { token: 'nonexistent' } }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/email/verify', {
+        method: 'POST',
+        body: { token: 'nonexistent' },
+      }),
+    )
     expect(res.status).toBe(400)
   })
 
@@ -28,10 +43,16 @@ describe('POST /api/account/email/verify', () => {
     const hash = crypto.createHash('sha256').update(token).digest('hex')
     await redisMock.set(`verify:${hash}`, 'user-1', 'EX', 3600)
 
-    const res = await POST(createNextRequest('http://localhost/api/account/email/verify', { method: 'POST', body: { token } }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/email/verify', {
+        method: 'POST',
+        body: { token },
+      }),
+    )
     expect(res.status).toBe(200)
     expect(prismaMock.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' }, data: { emailVerified: true },
+      where: { id: 'user-1' },
+      data: { emailVerified: true },
     })
   })
 
@@ -40,10 +61,20 @@ describe('POST /api/account/email/verify', () => {
     const hash = crypto.createHash('sha256').update(token).digest('hex')
     await redisMock.set(`verify:${hash}`, 'user-1', 'EX', 3600)
 
-    const res1 = await POST(createNextRequest('http://localhost/api/account/email/verify', { method: 'POST', body: { token } }))
+    const res1 = await POST(
+      createNextRequest('http://localhost/api/account/email/verify', {
+        method: 'POST',
+        body: { token },
+      }),
+    )
     expect(res1.status).toBe(200)
 
-    const res2 = await POST(createNextRequest('http://localhost/api/account/email/verify', { method: 'POST', body: { token } }))
+    const res2 = await POST(
+      createNextRequest('http://localhost/api/account/email/verify', {
+        method: 'POST',
+        body: { token },
+      }),
+    )
     expect(res2.status).toBe(400)
   })
 })

@@ -36,7 +36,9 @@ describe('MdEditor', () => {
 
   it('shows character counter when maxLength is set', () => {
     render(<MdEditor value="hello" onChange={vi.fn()} maxLength={100} />)
-    expect(screen.getByText((content) => content.includes('5') && content.includes('100'))).toBeInTheDocument()
+    expect(
+      screen.getByText((content) => content.includes('5') && content.includes('100')),
+    ).toBeInTheDocument()
   })
 
   it('updates character count as user types', () => {
@@ -49,7 +51,9 @@ describe('MdEditor', () => {
   it('prevents onChange when value exceeds maxLength', () => {
     const onChange = vi.fn()
     render(<MdEditor value="short" onChange={onChange} maxLength={5} />)
-    fireEvent.change(screen.getByTestId('md-editor-textarea'), { target: { value: 'too long value' } })
+    fireEvent.change(screen.getByTestId('md-editor-textarea'), {
+      target: { value: 'too long value' },
+    })
     expect(onChange).not.toHaveBeenCalled()
   })
 

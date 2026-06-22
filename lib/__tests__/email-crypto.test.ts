@@ -3,14 +3,12 @@ import { encryptEmail, decryptEmail, clearEmailKey } from '@/lib/email-crypto'
 
 // Test-safe secrets — never use real SERVER_MASTER_SECRET values.
 // Base64 of a 47-byte UTF-8 string (exceeds the 32-byte minimum).
-const TEST_SECRET = Buffer.from(
-  'test-master-secret-32-bytes-long-for-unit-tests',
-  'utf8',
-).toString('base64')
-const ALT_SECRET = Buffer.from(
-  'alt-master-secret-32-bytes-long-for-unit-tests',
-  'utf8',
-).toString('base64')
+const TEST_SECRET = Buffer.from('test-master-secret-32-bytes-long-for-unit-tests', 'utf8').toString(
+  'base64',
+)
+const ALT_SECRET = Buffer.from('alt-master-secret-32-bytes-long-for-unit-tests', 'utf8').toString(
+  'base64',
+)
 
 describe('email-crypto', () => {
   beforeEach(() => {

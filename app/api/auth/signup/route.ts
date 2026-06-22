@@ -17,9 +17,10 @@ export async function POST(request: NextRequest) {
   let proofToken: string | null = null
 
   try {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? request.headers.get('x-real-ip')
-      ?? 'unknown'
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
     if (await checkIpRate(`signup:${ip}`, WINDOW)) {
       throw new RateLimitError('Too many signups. Try again later.')
@@ -53,10 +54,10 @@ export async function POST(request: NextRequest) {
           encPrivPw: b64(body.encPrivPw),
           pwKdfSalt: b64(body.pwKdfSalt),
           pwNonce: b64(body.pwNonce),
-	          encPrivRec: b64(body.encPrivRec),
-	          recKdfSalt: b64(body.recKdfSalt),
-	          recNonce: b64(body.recNonce),
-	          recoveryCodeCreatedAt: new Date(),
+          encPrivRec: b64(body.encPrivRec),
+          recKdfSalt: b64(body.recKdfSalt),
+          recNonce: b64(body.recNonce),
+          recoveryCodeCreatedAt: new Date(),
         },
       })
     } catch (err: unknown) {

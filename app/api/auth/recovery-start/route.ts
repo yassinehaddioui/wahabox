@@ -14,10 +14,7 @@ function b64(u: Uint8Array): string {
 }
 
 function dummyTimingPath(username: string) {
-  const dummyInput = Buffer.concat([
-    Buffer.from(username, 'utf-8'),
-    crypto.randomBytes(16),
-  ])
+  const dummyInput = Buffer.concat([Buffer.from(username, 'utf-8'), crypto.randomBytes(16)])
   crypto.createHash('sha256').update(dummyInput).digest()
 }
 
@@ -28,9 +25,10 @@ export async function POST(request: NextRequest) {
     const csrfValid = await verifyAndConsumeCsrfToken('recovery-start', body.csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? request.headers.get('x-real-ip')
-      ?? 'unknown'
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
     const limits = await checkAuthRateLimit(body.username, ip)
     if (limits.isLocked) {

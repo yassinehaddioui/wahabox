@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Wahabox
 
-## Getting Started
+[![License: MIT](https://img.shields.io/github/license/yassinehaddioui/wahabox)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/yassinehaddioui/wahabox)](https://github.com/yassinehaddioui/wahabox/releases)
+[![CI](https://img.shields.io/badge/CI-Not%20Yet%20Configured-lightgrey)](#)
 
-First, run the development server:
+A zero-knowledge, end-to-end encrypted Virtual PO Box. Create PO boxes with secret shareable links. Anyone with the link can submit an encrypted message (sealed with the box owner's X25519 public key). Only the owner can decrypt messages — the server never has access to plaintext messages or private keys.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+For a full overview, see [docs/project-overview.md](docs/project-overview.md).
+
+## Features
+
+- Zero-knowledge architecture — private keys never leave the browser
+- End-to-end encryption via X25519 sealed boxes (libsodium)
+- Password-protected PO boxes with Argon2id key derivation
+- Secret shareable submission links (HMAC-signed URLs)
+- WebAuthn/passkeys and TOTP for account authentication
+- Cloudflare Turnstile CAPTCHA on submission forms
+- Optional email notifications (server-encrypted at rest)
+- Rate limiting via Redis
+- Self-hostable with Docker
+
+## Architecture
+
+```
+User -- Cloudflare (TLS) -- Reverse Proxy -- Next.js -- PostgreSQL
+                                            |            Redis
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The browser performs all cryptographic operations (key generation, encryption, decryption) using `libsodium-wrappers-sumo`. The Next.js server handles routing, sessions, and persistence but never touches plaintext messages or private keys. PostgreSQL stores encrypted payloads and metadata; Redis handles rate limiting, session caching, and CSRF tokens.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+For the full architecture diagram and data-flow details, see [docs/project-overview.md](docs/project-overview.md#architecture).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tech Stack
 
-## Learn More
+| Layer              | Technology                            |
+| ------------------ | ------------------------------------- |
+| Framework          | Next.js 16 (App Router)               |
+| UI                 | React 19, Tailwind CSS v4, shadcn/ui  |
+| Language           | TypeScript 5 (strict)                 |
+| Database           | PostgreSQL 17 with Prisma 7           |
+| Cache / Rate-limit | Redis 7                               |
+| Client crypto      | libsodium-wrappers-sumo               |
+| Server crypto      | Node crypto (HKDF, ChaCha20-Poly1305) |
+| Email              | AWS SES                               |
+| CAPTCHA            | Cloudflare Turnstile                  |
+| Validation         | Zod v4                                |
+| Testing            | Vitest 4                              |
+| Deployment         | Docker + nginx                        |
 
-To learn more about Next.js, take a look at the following resources:
+## Quick Start
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Docker and Docker Compose
+- pnpm (v9+)
 
-## Deploy on Vercel
+### 1. Clone and configure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+git clone https://github.com/yassinehaddioui/wahabox.git
+cd wahabox
+cp .env.example .env
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Edit `.env` and set your secrets:
+
+```bash
+openssl rand -base64 32   # -> SERVER_MASTER_SECRET
+openssl rand -hex 32      # -> SESSION_SECRET
+```
+
+### 2. Start the dev stack
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+```
+
+This starts PostgreSQL 17, Redis 7, a Caddy reverse proxy with auto-TLS, and the Next.js dev server. The app is available at `https://localhost`.
+
+### 3. Apply database migrations
+
+```bash
+docker compose -f docker-compose.dev.yml exec app pnpm prisma migrate deploy
+```
+
+### 4. Verify
+
+```bash
+pnpm test
+```
+
+## Self-Hosting
+
+For production deployment instructions — including multi-stage Docker builds, nginx reverse proxy configuration, DNS setup, and Cloudflare TLS termination — see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Documentation
+
+- [Project Overview](docs/project-overview.md) — architecture, data model, security invariants
+- [Deployment Guide](DEPLOYMENT.md) — self-hosting and production setup
+- [Security Policy](SECURITY.md) — responsible disclosure and security practices
+- [Changelog](CHANGELOG.md) — release history and version notes
+
+## Contributing
+
+Contributions are welcome. Before submitting a pull request, please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on development workflow, testing requirements, and the code of conduct.
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

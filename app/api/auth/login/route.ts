@@ -23,10 +23,7 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
 
 function dummyTimingPath(username: string) {
   const dummySalt = crypto.randomBytes(16)
-  const dummyInput = Buffer.concat([
-    Buffer.from(username, 'utf-8'),
-    dummySalt,
-  ])
+  const dummyInput = Buffer.concat([Buffer.from(username, 'utf-8'), dummySalt])
   const dummyKey = crypto.createHash('sha256').update(dummyInput).digest()
   const dummyVerifier = crypto.randomBytes(HASH_BYTES)
   const dummyCompare = Buffer.alloc(HASH_BYTES)
@@ -44,9 +41,10 @@ export async function POST(request: NextRequest) {
     const csrfValid = await verifyAndConsumeCsrfToken('login', body.csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? request.headers.get('x-real-ip')
-      ?? 'unknown'
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
     const limits = await checkAuthRateLimit(body.username, ip)
     if (limits.isLocked) {
@@ -116,17 +114,22 @@ export async function POST(request: NextRequest) {
     if (methods.length > 0) {
       const mfaToken = crypto.randomBytes(32).toString('hex')
       const redis = await getRedis()
-      await redis.set(`mfa:${mfaToken}`, JSON.stringify({
-        userId: user.id,
-        methods,
-        verified: [] as string[],
-        emailCodeHash: null,
-        emailSentAt: null,
-        emailAttempts: 0,
-        totpAttempts: 0,
-        verificationAttempts: 0,
-        createdAt: Date.now(),
-      }), 'EX', 300)
+      await redis.set(
+        `mfa:${mfaToken}`,
+        JSON.stringify({
+          userId: user.id,
+          methods,
+          verified: [] as string[],
+          emailCodeHash: null,
+          emailSentAt: null,
+          emailAttempts: 0,
+          totpAttempts: 0,
+          verificationAttempts: 0,
+          createdAt: Date.now(),
+        }),
+        'EX',
+        300,
+      )
 
       throw new MfaRequiredError('MFA required', mfaToken, methods)
     }

@@ -44,10 +44,7 @@ export async function POST(request: NextRequest) {
       throw new BadRequestError('No verified email on file')
     }
 
-    const email = decryptEmail(
-      new Uint8Array(user.emailEncrypted),
-      new Uint8Array(user.emailNonce),
-    )
+    const email = decryptEmail(new Uint8Array(user.emailEncrypted), new Uint8Array(user.emailNonce))
 
     const code = generateMfaCode()
     const codeHash = crypto.createHash('sha256').update(code).digest('hex')
@@ -63,11 +60,16 @@ export async function POST(request: NextRequest) {
         console.log(`[mfa] [dev] Email send skipped, code ${code} is still valid for verification`)
         console.error('[mfa] Failed to send email code:', err)
       } else {
-        await redis.set(`mfa:${body.mfaToken}`, JSON.stringify({
-          ...session,
-          emailCodeHash: null,
-          emailSentAt: null,
-        }), 'EX', 300)
+        await redis.set(
+          `mfa:${body.mfaToken}`,
+          JSON.stringify({
+            ...session,
+            emailCodeHash: null,
+            emailSentAt: null,
+          }),
+          'EX',
+          300,
+        )
         throw new Error('Failed to send verification email')
       }
     }

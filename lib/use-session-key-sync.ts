@@ -26,8 +26,7 @@ export function useSessionKeySync() {
 
     function onStorage(event: StorageEvent) {
       if (
-        (event.key === PRIVATE_KEY_STORAGE_KEY ||
-          event.key === PUBLIC_KEY_STORAGE_KEY) &&
+        (event.key === PRIVATE_KEY_STORAGE_KEY || event.key === PUBLIC_KEY_STORAGE_KEY) &&
         event.newValue === null
       ) {
         clearSessionKeys()

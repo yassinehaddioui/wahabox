@@ -36,7 +36,10 @@ async function solvePow(challenge: string, difficulty: number): Promise<string> 
     const bitsNeeded = Math.ceil(difficulty / 4)
     let valid = true
     for (let i = 0; i < bitsNeeded; i++) {
-      if (bytes[i] !== 0) { valid = false; break }
+      if (bytes[i] !== 0) {
+        valid = false
+        break
+      }
     }
     if (valid) return String(nonce)
     nonce++
@@ -57,9 +60,13 @@ export default function DropPage() {
   const hasSiteKey = typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
   const [hasProof, setHasProof] = useState(() => {
     if (typeof document === 'undefined') return false
-    return document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
+    return document.cookie.split(';').some((c) => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
   })
-  const cachedPayloadRef = useRef<{ ciphertext: string; csrfToken: string | null; turnstileToken: string | null } | null>(null)
+  const cachedPayloadRef = useRef<{
+    ciphertext: string
+    csrfToken: string | null
+    turnstileToken: string | null
+  } | null>(null)
   const honeypotRef = useRef<HTMLInputElement>(null)
   const turnstileRef = useRef<HTMLDivElement>(null)
   const turnstileWidgetId = useRef<string | null>(null)
@@ -192,7 +199,10 @@ export default function DropPage() {
       cachedPayloadRef.current = null
       setError(err instanceof Error ? err.message : 'Failed to send message')
     } finally {
-      if (!hasProof && document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))) {
+      if (
+        !hasProof &&
+        document.cookie.split(';').some((c) => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
+      ) {
         setHasProof(true)
       }
       setSending(false)
@@ -219,9 +229,7 @@ export default function DropPage() {
       <Card className="w-full max-w-4xl bg-canvas-soft">
         <CardHeader className="text-center">
           <CardTitle>Message Sent!</CardTitle>
-          <CardDescription>
-            Your message has been delivered securely.
-          </CardDescription>
+          <CardDescription>Your message has been delivered securely.</CardDescription>
         </CardHeader>
         <CardContent className="text-center">
           <Button onClick={() => window.location.reload()} variant="outline">
@@ -237,7 +245,8 @@ export default function DropPage() {
       <CardHeader>
         <CardTitle>{box!.label}</CardTitle>
         <CardDescription>
-          {box!.greeting || "Send an encrypted message to this PO Box. Your message is encrypted in your browser before being sent."}
+          {box!.greeting ||
+            'Send an encrypted message to this PO Box. Your message is encrypted in your browser before being sent.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -248,19 +257,17 @@ export default function DropPage() {
                 type="password"
                 placeholder="Enter password to send a message"
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); setPasswordError('') }}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setPasswordError('')
+                }}
                 className={passwordError ? 'border-destructive' : ''}
               />
               {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
             </div>
           )}
           <div className="space-y-2">
-              <TextEditor
-                id="message"
-                value={message}
-                onChange={setMessage}
-                maxLength={50000}
-              />
+            <TextEditor id="message" value={message} onChange={setMessage} maxLength={50000} />
           </div>
           {!hasProof && <div ref={turnstileRef} className="flex justify-center" />}
           <input
@@ -273,7 +280,11 @@ export default function DropPage() {
             aria-hidden="true"
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={sending || (box!.hasPassword && !password)} className="w-full">
+          <Button
+            type="submit"
+            disabled={sending || (box!.hasPassword && !password)}
+            className="w-full"
+          >
             {sending ? 'Encrypting & Sending...' : 'Send Message'}
           </Button>
         </form>

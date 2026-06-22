@@ -53,7 +53,10 @@ describe('pow module', () => {
 
     it('returns false for a nonce with insufficient leading zero bits', () => {
       // Confirm the fixture: 8 leading zero bits is less than the required 16.
-      const hash = crypto.createHash('sha256').update(challenge + insufficientNonce).digest()
+      const hash = crypto
+        .createHash('sha256')
+        .update(challenge + insufficientNonce)
+        .digest()
       expect(hash[0]).toBe(0) // first byte zero
       expect(hash[1]).not.toBe(0) // second byte nonzero → only 8 bits
 

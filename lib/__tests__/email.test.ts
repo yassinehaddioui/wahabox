@@ -42,9 +42,7 @@ describe('dev-mode logging', () => {
 
     await sendMfaCodeEmail('user@test.com', 'alice', '123456')
 
-    expect(logSpy).toHaveBeenCalledWith(
-      '[email] MFA code for user@test.com: 123456',
-    )
+    expect(logSpy).toHaveBeenCalledWith('[email] MFA code for user@test.com: 123456')
     logSpy.mockRestore()
   })
 })
@@ -56,9 +54,11 @@ describe('sendVerificationEmail', () => {
     await sendVerificationEmail('user@test.com', 'alice', 'token-abc')
 
     expect(mockSend).toHaveBeenCalledTimes(1)
-    const cmd = vi.mocked(
-      (await import('@aws-sdk/client-sesv2')).SendEmailCommand,
-    ).mock.calls[0][0] as { Destination: { ToAddresses: string[] }; Content: { Simple: { Subject: { Data: string } } } }
+    const cmd = vi.mocked((await import('@aws-sdk/client-sesv2')).SendEmailCommand).mock
+      .calls[0][0] as {
+      Destination: { ToAddresses: string[] }
+      Content: { Simple: { Subject: { Data: string } } }
+    }
     expect(cmd.Destination?.ToAddresses).toEqual(['user@test.com'])
     expect(cmd.Content?.Simple?.Subject?.Data).toBe('Verify your email for Wahabox')
   })
@@ -113,7 +113,9 @@ describe('sendRecoveryKeyRegeneratedNotification', () => {
     }
     expect(cmd.Destination?.ToAddresses).toEqual(['user@test.com'])
     expect(cmd.Content?.Simple?.Subject?.Data).toBe('Your Wahabox recovery key was changed')
-    expect(cmd.Content?.Simple?.Body?.Text?.Data).toContain('A new recovery key was generated for your account')
+    expect(cmd.Content?.Simple?.Body?.Text?.Data).toContain(
+      'A new recovery key was generated for your account',
+    )
     expect(cmd.Content?.Simple?.Body?.Text?.Data).not.toContain('recovery-key')
   })
 

@@ -9,8 +9,12 @@ const mockBack = vi.fn()
 vi.mock('next/navigation', () => ({
   useParams: () => mockUseParams(),
   useRouter: () => ({
-    back: mockBack, push: vi.fn(), replace: vi.fn(),
-    forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn(),
+    back: mockBack,
+    push: vi.fn(),
+    replace: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
   }),
 }))
 
@@ -52,7 +56,8 @@ const mockMessage = (overrides = {}) => ({
 })
 
 const mockReadMessage = () => mockMessage({ id: 'msg-2', readAt: '2024-06-15T12:00:00.000Z' })
-const mockDecryptedMessage = () => mockMessage({ id: 'msg-3', readAt: '2024-06-15T12:00:00.000Z', plaintext: 'Hello' })
+const mockDecryptedMessage = () =>
+  mockMessage({ id: 'msg-3', readAt: '2024-06-15T12:00:00.000Z', plaintext: 'Hello' })
 
 describe('MessagesPage', () => {
   let createObjectURL: ReturnType<typeof vi.fn>
@@ -65,10 +70,18 @@ describe('MessagesPage', () => {
     localStorageStore = {}
     vi.stubGlobal('localStorage', {
       getItem: vi.fn((key: string) => localStorageStore[key] ?? null),
-      setItem: vi.fn((key: string, val: string) => { localStorageStore[key] = val }),
-      removeItem: vi.fn((key: string) => { delete localStorageStore[key] }),
-      clear: vi.fn(() => { localStorageStore = {} }),
-      get length() { return Object.keys(localStorageStore).length },
+      setItem: vi.fn((key: string, val: string) => {
+        localStorageStore[key] = val
+      }),
+      removeItem: vi.fn((key: string) => {
+        delete localStorageStore[key]
+      }),
+      clear: vi.fn(() => {
+        localStorageStore = {}
+      }),
+      get length() {
+        return Object.keys(localStorageStore).length
+      },
       key: vi.fn((i: number) => Object.keys(localStorageStore)[i] ?? null),
     })
 
@@ -139,10 +152,7 @@ describe('MessagesPage', () => {
 
   // --- decrypt -> marks as read ---
   it('marks a message as read when decrypted for the first time', async () => {
-    const fetchStub = mockFetch([
-      twoMessages,
-      { json: () => ({ success: true }), ok: true },
-    ])
+    const fetchStub = mockFetch([twoMessages, { json: () => ({ success: true }), ok: true }])
     render(React.createElement(MessagesPage))
     await waitFor(() => {
       expect(screen.getByText('2 messages')).toBeInTheDocument()
@@ -179,10 +189,7 @@ describe('MessagesPage', () => {
 
   // --- delete confirmation ---
   it('opens delete confirmation dialog and deletes the message', async () => {
-    const fetchStub = mockFetch([
-      twoMessages,
-      { json: () => ({ success: true }), ok: true },
-    ])
+    const fetchStub = mockFetch([twoMessages, { json: () => ({ success: true }), ok: true }])
     render(React.createElement(MessagesPage))
     await waitFor(() => {
       expect(screen.getByText('2 messages')).toBeInTheDocument()
@@ -263,7 +270,9 @@ describe('MessagesPage', () => {
   it('shows toast on fetch failure', async () => {
     const { toast } = await import('sonner')
     mockFetch({
-      json: () => { throw new Error('Network error') },
+      json: () => {
+        throw new Error('Network error')
+      },
       ok: false,
     })
     render(React.createElement(MessagesPage))
@@ -275,7 +284,9 @@ describe('MessagesPage', () => {
   // --- decrypt failure ---
   it('shows toast when decryption fails', async () => {
     const { toast } = await import('sonner')
-    mockCrypto.openMessage.mockImplementationOnce(() => { throw new Error('Decrypt fail') })
+    mockCrypto.openMessage.mockImplementationOnce(() => {
+      throw new Error('Decrypt fail')
+    })
 
     mockFetch(twoMessages)
     render(React.createElement(MessagesPage))

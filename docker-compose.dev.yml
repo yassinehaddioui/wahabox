@@ -8,11 +8,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: wahabox
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,11 +20,11 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_dev_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,8 +32,8 @@ services:
   caddy:
     image: caddy:2-alpine
     ports:
-      - "443:443"
-      - "80:80"
+      - '443:443'
+      - '80:80'
     volumes:
       - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
       - caddy_dev_data:/data
@@ -45,11 +45,11 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     expose:
-      - "3000"
+      - '3000'
     env_file: .env.local
     environment:
-      CI: "true"
-      PNPM_CONFIRM_MODULES_PURGE: "false"
+      CI: 'true'
+      PNPM_CONFIRM_MODULES_PURGE: 'false'
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/wahabox?schema=public
       REDIS_URL: redis://redis:6379
       SERVER_MASTER_SECRET: ${SERVER_MASTER_SECRET:-dev-master-secret-not-for-production}

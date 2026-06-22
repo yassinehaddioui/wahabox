@@ -14,10 +14,7 @@ describe('mockFetch', () => {
   })
 
   it('returns sequential responses from an array', async () => {
-    mockFetch([
-      { json: () => ({ step: 1 }) },
-      { json: () => ({ step: 2 }) },
-    ])
+    mockFetch([{ json: () => ({ step: 1 }) }, { json: () => ({ step: 2 }) }])
     const first = await (await fetch('https://example.com')).json()
     const second = await (await fetch('https://example.com')).json()
     expect(first).toEqual({ step: 1 })

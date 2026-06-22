@@ -6,7 +6,14 @@ import { mockFetch, resetMockFetch } from '@/test/helpers/mock-fetch'
 
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn(), forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }))
 
 const mockCrypto = vi.hoisted(() => ({
@@ -34,9 +41,15 @@ function resetCryptoMocks() {
   mockCrypto.openSealed.mockImplementation(() => new Uint8Array(32))
   mockCrypto.deriveRecoveryKey.mockImplementation(() => new Uint8Array(32))
   mockCrypto.deriveMasterKey.mockImplementation(() => new Uint8Array(64))
-  mockCrypto.splitMasterKey.mockImplementation(() => ({ authKey: new Uint8Array(32), kekPw: new Uint8Array(32) }))
+  mockCrypto.splitMasterKey.mockImplementation(() => ({
+    authKey: new Uint8Array(32),
+    kekPw: new Uint8Array(32),
+  }))
   mockCrypto.computeAuthVerifier.mockImplementation(() => new Uint8Array(32))
-  mockCrypto.wrapPrivateKey.mockImplementation(() => ({ ciphertext: new Uint8Array(32), nonce: new Uint8Array(24) }))
+  mockCrypto.wrapPrivateKey.mockImplementation(() => ({
+    ciphertext: new Uint8Array(32),
+    nonce: new Uint8Array(24),
+  }))
   mockCrypto.randomBytes.mockImplementation((n: number) => new Uint8Array(n))
 }
 
@@ -59,10 +72,25 @@ describe('RecoverPage', () => {
   })
 
   it('shows error when recovery code is invalid (unwrapPrivateKey throws)', async () => {
-    mockCrypto.unwrapPrivateKey.mockImplementation(() => { throw new Error('Decryption failed') })
+    mockCrypto.unwrapPrivateKey.mockImplementation(() => {
+      throw new Error('Decryption failed')
+    })
     mockFetch([
       { json: () => ({ success: true, data: { csrfToken: 'csrf' } }), ok: true },
-      { json: () => ({ success: true, data: { encPrivRec: 'enc', recKdfSalt: 'salt', recNonce: 'nonce', publicKey: 'pub', sealedChallenge: 'sealed', recoveryToken: 'tok' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            encPrivRec: 'enc',
+            recKdfSalt: 'salt',
+            recNonce: 'nonce',
+            publicKey: 'pub',
+            sealedChallenge: 'sealed',
+            recoveryToken: 'tok',
+          },
+        }),
+        ok: true,
+      },
     ])
     render(React.createElement(RecoverPage))
 
@@ -78,15 +106,32 @@ describe('RecoverPage', () => {
   })
 
   it('shows error when sealed challenge cannot be opened (wrong code)', async () => {
-    mockCrypto.openSealed.mockImplementation(() => { throw new Error() })
+    mockCrypto.openSealed.mockImplementation(() => {
+      throw new Error()
+    })
     mockFetch([
       { json: () => ({ success: true, data: { csrfToken: 'csrf' } }), ok: true },
-      { json: () => ({ success: true, data: { encPrivRec: 'enc', recKdfSalt: 'salt', recNonce: 'nonce', publicKey: 'pub', sealedChallenge: 'sealed', recoveryToken: 'tok' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            encPrivRec: 'enc',
+            recKdfSalt: 'salt',
+            recNonce: 'nonce',
+            publicKey: 'pub',
+            sealedChallenge: 'sealed',
+            recoveryToken: 'tok',
+          },
+        }),
+        ok: true,
+      },
     ])
     render(React.createElement(RecoverPage))
 
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alice' } })
-    fireEvent.change(screen.getByLabelText('Recovery Code'), { target: { value: 'ABCD-EFGH-IJKL-MNOP' } })
+    fireEvent.change(screen.getByLabelText('Recovery Code'), {
+      target: { value: 'ABCD-EFGH-IJKL-MNOP' },
+    })
     fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpassword123' } })
     fireEvent.click(screen.getByRole('button', { name: /recover account/i }))
 
@@ -100,14 +145,29 @@ describe('RecoverPage', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     mockFetch([
       { json: () => ({ success: true, data: { csrfToken: 'csrf' } }), ok: true },
-      { json: () => ({ success: true, data: { encPrivRec: 'enc', recKdfSalt: 'salt', recNonce: 'nonce', publicKey: 'pub', sealedChallenge: 'sealed', recoveryToken: 'tok' } }), ok: true },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            encPrivRec: 'enc',
+            recKdfSalt: 'salt',
+            recNonce: 'nonce',
+            publicKey: 'pub',
+            sealedChallenge: 'sealed',
+            recoveryToken: 'tok',
+          },
+        }),
+        ok: true,
+      },
       { json: () => ({ success: true, data: { csrfToken: 'csrf2' } }), ok: true },
       { json: () => ({ success: true }), ok: true },
     ])
     render(React.createElement(RecoverPage))
 
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alice' } })
-    fireEvent.change(screen.getByLabelText('Recovery Code'), { target: { value: 'ABCD-EFGH-IJKL-MNOP' } })
+    fireEvent.change(screen.getByLabelText('Recovery Code'), {
+      target: { value: 'ABCD-EFGH-IJKL-MNOP' },
+    })
     fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpassword123' } })
     fireEvent.click(screen.getByRole('button', { name: /recover account/i }))
 
@@ -115,19 +175,27 @@ describe('RecoverPage', () => {
       expect(screen.getByText('Password Updated!')).toBeInTheDocument()
     })
 
-    act(() => { vi.advanceTimersByTime(2000) })
+    act(() => {
+      vi.advanceTimersByTime(2000)
+    })
     expect(mockPush).toHaveBeenCalledWith('/login')
     vi.useRealTimers()
   })
 
   it('handles fetch error during recovery', async () => {
     mockFetch([
-      { json: () => { throw new Error('Network error') } },
+      {
+        json: () => {
+          throw new Error('Network error')
+        },
+      },
     ])
     render(React.createElement(RecoverPage))
 
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alice' } })
-    fireEvent.change(screen.getByLabelText('Recovery Code'), { target: { value: 'ABCD-EFGH-IJKL-MNOP' } })
+    fireEvent.change(screen.getByLabelText('Recovery Code'), {
+      target: { value: 'ABCD-EFGH-IJKL-MNOP' },
+    })
     fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpassword123' } })
     fireEvent.click(screen.getByRole('button', { name: /recover account/i }))
 
@@ -145,7 +213,9 @@ describe('RecoverPage', () => {
     render(React.createElement(RecoverPage))
 
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'unknown' } })
-    fireEvent.change(screen.getByLabelText('Recovery Code'), { target: { value: 'ABCD-EFGH-IJKL-MNOP' } })
+    fireEvent.change(screen.getByLabelText('Recovery Code'), {
+      target: { value: 'ABCD-EFGH-IJKL-MNOP' },
+    })
     fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'newpassword123' } })
     fireEvent.click(screen.getByRole('button', { name: /recover account/i }))
 

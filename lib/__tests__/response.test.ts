@@ -32,7 +32,9 @@ describe('error', () => {
     const res = error(new BadRequestError('Invalid input'))
     expect(res.status).toBe(400)
     expect(await res.json()).toEqual({
-      success: false, error: 'Invalid input', code: 'BAD_REQUEST',
+      success: false,
+      error: 'Invalid input',
+      code: 'BAD_REQUEST',
     })
   })
 
@@ -40,7 +42,9 @@ describe('error', () => {
     const res = error(new UnauthorizedError())
     expect(res.status).toBe(401)
     expect(await res.json()).toEqual({
-      success: false, error: 'Unauthorized', code: 'UNAUTHORIZED',
+      success: false,
+      error: 'Unauthorized',
+      code: 'UNAUTHORIZED',
     })
   })
 
@@ -48,7 +52,9 @@ describe('error', () => {
     const res = error(new NotFoundError())
     expect(res.status).toBe(404)
     expect(await res.json()).toEqual({
-      success: false, error: 'Not found', code: 'NOT_FOUND',
+      success: false,
+      error: 'Not found',
+      code: 'NOT_FOUND',
     })
   })
 
@@ -56,7 +62,9 @@ describe('error', () => {
     const res = error(new ConflictError())
     expect(res.status).toBe(409)
     expect(await res.json()).toEqual({
-      success: false, error: 'Conflict', code: 'CONFLICT',
+      success: false,
+      error: 'Conflict',
+      code: 'CONFLICT',
     })
   })
 
@@ -64,7 +72,9 @@ describe('error', () => {
     const res = error(new RateLimitError())
     expect(res.status).toBe(429)
     expect(await res.json()).toEqual({
-      success: false, error: 'Too many requests', code: 'RATE_LIMITED',
+      success: false,
+      error: 'Too many requests',
+      code: 'RATE_LIMITED',
     })
   })
 
@@ -72,7 +82,9 @@ describe('error', () => {
     const res = error(new InvalidPasswordError())
     expect(res.status).toBe(401)
     expect(await res.json()).toEqual({
-      success: false, error: 'Invalid password', code: 'INVALID_PASSWORD',
+      success: false,
+      error: 'Invalid password',
+      code: 'INVALID_PASSWORD',
     })
   })
 
@@ -80,7 +92,9 @@ describe('error', () => {
     const res = error(new ApiError('custom', 418, 'TEAPOT'))
     expect(res.status).toBe(418)
     expect(await res.json()).toEqual({
-      success: false, error: 'custom', code: 'TEAPOT',
+      success: false,
+      error: 'custom',
+      code: 'TEAPOT',
     })
   })
 
@@ -88,8 +102,11 @@ describe('error', () => {
     const res = error(new MfaRequiredError('MFA required', 'tok-1', ['totp', 'sms']))
     expect(res.status).toBe(401)
     expect(await res.json()).toEqual({
-      success: false, error: 'MFA required', code: 'MFA_REQUIRED',
-      mfaToken: 'tok-1', methods: ['totp', 'sms'],
+      success: false,
+      error: 'MFA required',
+      code: 'MFA_REQUIRED',
+      mfaToken: 'tok-1',
+      methods: ['totp', 'sms'],
     })
   })
 
@@ -98,7 +115,8 @@ describe('error', () => {
     const res = error(new Error('something broke'))
     expect(res.status).toBe(500)
     expect(await res.json()).toEqual({
-      success: false, error: 'Internal server error',
+      success: false,
+      error: 'Internal server error',
     })
     expect(spy).toHaveBeenCalledWith('[internal]', expect.any(Error))
     spy.mockRestore()

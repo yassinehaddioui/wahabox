@@ -61,39 +61,41 @@ export interface PrismaMock {
  * `vi.mock` factory executes. The same object reference is returned by the
  * factory and exported below — tests mutate one shared instance.
  */
-const prismaMock = vi.hoisted((): PrismaMock => ({
-  user: {
-    findUnique: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-  },
-  poBox: {
-    findUnique: vi.fn(),
-    findFirst: vi.fn(),
-    findMany: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-  },
-  message: {
-    findFirst: vi.fn(),
-    findMany: vi.fn(),
-    create: vi.fn(),
-    count: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    groupBy: vi.fn(),
-  },
-  passkeyCredential: {
-    findFirst: vi.fn(),
-    findMany: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    deleteMany: vi.fn(),
-    count: vi.fn(),
-  },
-}))
+const prismaMock = vi.hoisted(
+  (): PrismaMock => ({
+    user: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    poBox: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    message: {
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      count: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      groupBy: vi.fn(),
+    },
+    passkeyCredential: {
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+      count: vi.fn(),
+    },
+  }),
+)
 
 // Mock @/lib/prisma — every `import prisma from '@/lib/prisma'` receives this.
 vi.mock('@/lib/prisma', () => ({

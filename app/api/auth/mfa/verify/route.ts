@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       session.totpAttempts++
       const secret = new TextDecoder().decode(new Uint8Array(user.totpSecret))
 
-      if (!await verifyTotp(secret, body.code)) {
+      if (!(await verifyTotp(secret, body.code))) {
         await redis.set(`mfa:${body.mfaToken}`, JSON.stringify(session), 'EX', 300)
         throw new UnauthorizedError('Invalid code')
       }
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { mfaToken, assertion } = await request.json() as { mfaToken?: string; assertion?: any }
+    const { mfaToken, assertion } = (await request.json()) as { mfaToken?: string; assertion?: any }
 
     if (!mfaToken || !assertion) {
       throw new BadRequestError('mfaToken and assertion are required')
@@ -177,11 +177,15 @@ export async function PUT(request: NextRequest) {
     for (const cred of credentials) {
       if (cred.credentialId) {
         try {
-          const result = await verifyAuthResponse(session.userId, {
-            credentialId: new Uint8Array(cred.credentialId),
-            publicKey: new Uint8Array(cred.publicKey),
-            counter: cred.counter,
-          }, assertion)
+          const result = await verifyAuthResponse(
+            session.userId,
+            {
+              credentialId: new Uint8Array(cred.credentialId),
+              publicKey: new Uint8Array(cred.publicKey),
+              counter: cred.counter,
+            },
+            assertion,
+          )
 
           if (result.verified) {
             await prisma.passkeyCredential.update({
@@ -196,7 +200,13 @@ export async function PUT(request: NextRequest) {
             if (allVerified) {
               const user = await prisma.user.findUnique({
                 where: { id: session.userId },
-                select: { id: true, username: true, encPrivPw: true, pwNonce: true, publicKey: true },
+                select: {
+                  id: true,
+                  username: true,
+                  encPrivPw: true,
+                  pwNonce: true,
+                  publicKey: true,
+                },
               })
 
               if (!user) throw new UnauthorizedError('User not found')

@@ -6,7 +6,14 @@ import { resetRedisMock, redisMock } from '@/test/helpers/redis-mock'
 import { createUser, createPasskeyCredential } from '@/test/helpers/fixtures'
 import { POST, PUT } from './route'
 
-const { mockDecryptEmail, mockVerifyTotp, mockGenerateAuthOptions, mockVerifyAuthResponse, mockCreateSession, mockSetSessionCookie } = vi.hoisted(() => ({
+const {
+  mockDecryptEmail,
+  mockVerifyTotp,
+  mockGenerateAuthOptions,
+  mockVerifyAuthResponse,
+  mockCreateSession,
+  mockSetSessionCookie,
+} = vi.hoisted(() => ({
   mockDecryptEmail: vi.fn(),
   mockVerifyTotp: vi.fn(),
   mockGenerateAuthOptions: vi.fn(),
@@ -56,14 +63,23 @@ describe('POST /api/auth/mfa/verify', () => {
   describe('email method', () => {
     it('verifies email code and returns mfaComplete when email is the only method', async () => {
       const { prismaMock } = await import('@/test/helpers/prisma-mock')
-      prismaMock.user.findUnique.mockResolvedValue(createUser({ id: USER_ID, encPrivPw: Buffer.alloc(48, 0x11), pwNonce: Buffer.alloc(24, 0x33), publicKey: Buffer.alloc(32, 0xcc) }))
+      prismaMock.user.findUnique.mockResolvedValue(
+        createUser({
+          id: USER_ID,
+          encPrivPw: Buffer.alloc(48, 0x11),
+          pwNonce: Buffer.alloc(24, 0x33),
+          publicKey: Buffer.alloc(32, 0xcc),
+        }),
+      )
 
       await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['email'])), 'EX', 300)
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'email', code: EMAIL_CODE },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'email', code: EMAIL_CODE },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(200)
@@ -80,10 +96,12 @@ describe('POST /api/auth/mfa/verify', () => {
     it('returns 401 for wrong email code', async () => {
       await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['email'])), 'EX', 300)
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'email', code: '000000' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'email', code: '000000' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(401)
@@ -98,10 +116,12 @@ describe('POST /api/auth/mfa/verify', () => {
         300,
       )
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'email', code: '000000' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'email', code: '000000' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(401)
@@ -121,10 +141,12 @@ describe('POST /api/auth/mfa/verify', () => {
         300,
       )
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'email', code: '123456' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'email', code: '123456' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(400)
@@ -139,10 +161,12 @@ describe('POST /api/auth/mfa/verify', () => {
         300,
       )
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'email', code: EMAIL_CODE },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'email', code: EMAIL_CODE },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(200)
@@ -157,21 +181,24 @@ describe('POST /api/auth/mfa/verify', () => {
     it('verifies TOTP code and returns mfaComplete when totp is the only method', async () => {
       const { prismaMock } = await import('@/test/helpers/prisma-mock')
       mockVerifyTotp.mockResolvedValue(true)
-      prismaMock.user.findUnique
-        .mockResolvedValueOnce(createUser({
+      prismaMock.user.findUnique.mockResolvedValueOnce(
+        createUser({
           id: USER_ID,
           totpSecret: Buffer.from('JBSWY3DPEHPK3PXP'),
           encPrivPw: Buffer.alloc(48, 0x11),
           pwNonce: Buffer.alloc(24, 0x33),
           publicKey: Buffer.alloc(32, 0xcc),
-        }))
+        }),
+      )
 
       await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['totp'])), 'EX', 300)
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'totp', code: '123456' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'totp', code: '123456' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(200)
@@ -184,17 +211,21 @@ describe('POST /api/auth/mfa/verify', () => {
     it('returns 401 for wrong TOTP code', async () => {
       const { prismaMock } = await import('@/test/helpers/prisma-mock')
       mockVerifyTotp.mockResolvedValue(false)
-      prismaMock.user.findUnique.mockResolvedValue(createUser({
-        id: USER_ID,
-        totpSecret: Buffer.from('JBSWY3DPEHPK3PXP'),
-      }))
+      prismaMock.user.findUnique.mockResolvedValue(
+        createUser({
+          id: USER_ID,
+          totpSecret: Buffer.from('JBSWY3DPEHPK3PXP'),
+        }),
+      )
 
       await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['totp'])), 'EX', 300)
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'totp', code: '000000' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'totp', code: '000000' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(401)
@@ -207,10 +238,12 @@ describe('POST /api/auth/mfa/verify', () => {
 
       await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['totp'])), 'EX', 300)
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'totp', code: '123456' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'totp', code: '123456' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(400)
@@ -228,10 +261,12 @@ describe('POST /api/auth/mfa/verify', () => {
 
       await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['passkey'])), 'EX', 300)
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'passkey' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'passkey' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(200)
@@ -245,10 +280,12 @@ describe('POST /api/auth/mfa/verify', () => {
 
       await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['passkey'])), 'EX', 300)
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'passkey' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'passkey' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(400)
@@ -258,10 +295,12 @@ describe('POST /api/auth/mfa/verify', () => {
 
   describe('common checks', () => {
     it('returns 401 when MFA session is expired', async () => {
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'expired-token', method: 'email', code: '123456' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'expired-token', method: 'email', code: '123456' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(401)
@@ -271,10 +310,12 @@ describe('POST /api/auth/mfa/verify', () => {
     it('returns 400 when method is not in session methods', async () => {
       await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['email'])), 'EX', 300)
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'totp', code: '123456' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'totp', code: '123456' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(400)
@@ -289,10 +330,12 @@ describe('POST /api/auth/mfa/verify', () => {
         300,
       )
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'email', code: EMAIL_CODE },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'email', code: EMAIL_CODE },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(400)
@@ -307,10 +350,12 @@ describe('POST /api/auth/mfa/verify', () => {
         300,
       )
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'email', code: EMAIL_CODE },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'email', code: EMAIL_CODE },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(401)
@@ -320,10 +365,12 @@ describe('POST /api/auth/mfa/verify', () => {
     it('returns 400 when code is missing for email method', async () => {
       await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['email'])), 'EX', 300)
 
-      const res = await POST(createNextRequest('http://localhost/api/auth/mfa/verify', {
-        method: 'POST',
-        body: { mfaToken: 'valid-token', method: 'email' },
-      }))
+      const res = await POST(
+        createNextRequest('http://localhost/api/auth/mfa/verify', {
+          method: 'POST',
+          body: { mfaToken: 'valid-token', method: 'email' },
+        }),
+      )
       const json = await res.json()
 
       expect(res.status).toBe(400)
@@ -344,19 +391,23 @@ describe('PUT /api/auth/mfa/verify', () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     prismaMock.passkeyCredential.findMany.mockResolvedValue([CRED])
     prismaMock.passkeyCredential.update.mockResolvedValue({ ...CRED, counter: 5 })
-    prismaMock.user.findUnique.mockResolvedValue(createUser({
-      id: USER_ID,
-      encPrivPw: Buffer.alloc(48, 0x11),
-      pwNonce: Buffer.alloc(24, 0x33),
-      publicKey: Buffer.alloc(32, 0xcc),
-    }))
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({
+        id: USER_ID,
+        encPrivPw: Buffer.alloc(48, 0x11),
+        pwNonce: Buffer.alloc(24, 0x33),
+        publicKey: Buffer.alloc(32, 0xcc),
+      }),
+    )
 
     await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['passkey'])), 'EX', 300)
 
-    const res = await PUT(createNextRequest('http://localhost/api/auth/mfa/verify', {
-      method: 'PUT',
-      body: { mfaToken: 'valid-token', assertion: ASSERTION },
-    }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/auth/mfa/verify', {
+        method: 'PUT',
+        body: { mfaToken: 'valid-token', assertion: ASSERTION },
+      }),
+    )
     const json = await res.json()
 
     expect(res.status).toBe(200)
@@ -385,10 +436,12 @@ describe('PUT /api/auth/mfa/verify', () => {
       300,
     )
 
-    const res = await PUT(createNextRequest('http://localhost/api/auth/mfa/verify', {
-      method: 'PUT',
-      body: { mfaToken: 'valid-token', assertion: ASSERTION },
-    }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/auth/mfa/verify', {
+        method: 'PUT',
+        body: { mfaToken: 'valid-token', assertion: ASSERTION },
+      }),
+    )
     const json = await res.json()
 
     expect(res.status).toBe(200)
@@ -406,10 +459,12 @@ describe('PUT /api/auth/mfa/verify', () => {
       300,
     )
 
-    const res = await PUT(createNextRequest('http://localhost/api/auth/mfa/verify', {
-      method: 'PUT',
-      body: { mfaToken: 'valid-token', assertion: ASSERTION },
-    }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/auth/mfa/verify', {
+        method: 'PUT',
+        body: { mfaToken: 'valid-token', assertion: ASSERTION },
+      }),
+    )
     const json = await res.json()
 
     expect(res.status).toBe(400)
@@ -417,10 +472,12 @@ describe('PUT /api/auth/mfa/verify', () => {
   })
 
   it('returns 401 when MFA session expired', async () => {
-    const res = await PUT(createNextRequest('http://localhost/api/auth/mfa/verify', {
-      method: 'PUT',
-      body: { mfaToken: 'expired-token', assertion: ASSERTION },
-    }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/auth/mfa/verify', {
+        method: 'PUT',
+        body: { mfaToken: 'expired-token', assertion: ASSERTION },
+      }),
+    )
     const json = await res.json()
 
     expect(res.status).toBe(401)
@@ -428,10 +485,12 @@ describe('PUT /api/auth/mfa/verify', () => {
   })
 
   it('returns 400 when mfaToken or assertion missing', async () => {
-    const res = await PUT(createNextRequest('http://localhost/api/auth/mfa/verify', {
-      method: 'PUT',
-      body: { mfaToken: 'token' },
-    }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/auth/mfa/verify', {
+        method: 'PUT',
+        body: { mfaToken: 'token' },
+      }),
+    )
     const json = await res.json()
 
     expect(res.status).toBe(400)
@@ -445,10 +504,12 @@ describe('PUT /api/auth/mfa/verify', () => {
 
     await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['passkey'])), 'EX', 300)
 
-    const res = await PUT(createNextRequest('http://localhost/api/auth/mfa/verify', {
-      method: 'PUT',
-      body: { mfaToken: 'valid-token', assertion: ASSERTION },
-    }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/auth/mfa/verify', {
+        method: 'PUT',
+        body: { mfaToken: 'valid-token', assertion: ASSERTION },
+      }),
+    )
     const json = await res.json()
 
     expect(res.status).toBe(401)
@@ -463,10 +524,12 @@ describe('PUT /api/auth/mfa/verify', () => {
 
     await redisMock.set('mfa:valid-token', JSON.stringify(makeSession(['passkey'])), 'EX', 300)
 
-    const res = await PUT(createNextRequest('http://localhost/api/auth/mfa/verify', {
-      method: 'PUT',
-      body: { mfaToken: 'valid-token', assertion: ASSERTION },
-    }))
+    const res = await PUT(
+      createNextRequest('http://localhost/api/auth/mfa/verify', {
+        method: 'PUT',
+        body: { mfaToken: 'valid-token', assertion: ASSERTION },
+      }),
+    )
     const json = await res.json()
 
     expect(json.data?.passwordHash).toBeUndefined()

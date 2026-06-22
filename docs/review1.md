@@ -12,8 +12,8 @@
 Wahabox is a zero-knowledge, E2E-encrypted PO box app. The client-side crypto
 (`lib/crypto.ts`), the server-blind message model, the authorization scoping on
 box/message routes, and the email-at-rest encryption are all implemented
-correctly and faithfully to the spec. The core promise — *the server never sees
-message plaintext or private keys* — holds.
+correctly and faithfully to the spec. The core promise — _the server never sees
+message plaintext or private keys_ — holds.
 
 However, the **account recovery flow has a critical authentication bypass**, and
 several brute-force / anti-enumeration defenses described in the implementation
@@ -29,7 +29,7 @@ document are weaker than intended or fail open.
 
 The endpoint accepts a `username` plus attacker-suppliable `newAuthVerifier` /
 `newEncPrivPw` / salts and **blindly overwrites** the user's password
-credentials. The recovery code is only ever checked *client-side*
+credentials. The recovery code is only ever checked _client-side_
 (`app/(public)/recover/page.tsx:51` unwraps `encPrivRec`); the server receives no
 proof. Compare with `app/api/account/password/route.ts:90`, which correctly
 verifies `currentAuthVerifier` before mutating.
@@ -41,7 +41,7 @@ verifies `currentAuthVerifier` before mutating.
   email, read metadata.
 - Permanently lock the legitimate owner out of the password path (DoS).
 
-They *cannot* read existing message plaintext (the X25519 public key is untouched
+They _cannot_ read existing message plaintext (the X25519 public key is untouched
 and they cannot produce the real private key), so message confidentiality holds —
 but this is a full takeover of the management surface plus data destruction.
 
@@ -60,8 +60,8 @@ Bind that proof to a short-lived server-issued token.
 **File:** `app/api/auth/salts/route.ts:12-14,33,44`
 
 `dummySalt()` returns fresh `crypto.randomBytes` on every call. An existing user
-returns the *same* `pwKdfSalt`/`authSalt` on repeated requests; a nonexistent
-user returns *different* salts each time. Requesting twice and diffing reliably
+returns the _same_ `pwKdfSalt`/`authSalt` on repeated requests; a nonexistent
+user returns _different_ salts each time. Requesting twice and diffing reliably
 enumerates usernames — directly defeating the Phase 4 anti-enumeration goal.
 
 Dummy salts must be deterministic per-username (e.g.
@@ -73,7 +73,7 @@ status/messages.
 
 **File:** `app/api/auth/recovery-start/route.ts:59`
 
-`recovery-start` calls `clearFailures(username)` for any *existing* user without
+`recovery-start` calls `clearFailures(username)` for any _existing_ user without
 proving recovery-code knowledge. Since the exponential-backoff lockout triggers
 only at `failCount >= 3` (`lib/rate-limit.ts:94`), an attacker can interleave
 2 failed logins → `recovery-start` (resets counter) → repeat, so lockout/backoff
@@ -155,7 +155,7 @@ server-bound and require Turnstile config in production.
 **File:** `lib/validation.ts:66`
 
 `ciphertext` has no max length; the 100 KB check
-(`app/api/drop/[slug]/route.ts:148`) runs *after* `request.json()` buffers the
+(`app/api/drop/[slug]/route.ts:148`) runs _after_ `request.json()` buffers the
 whole body → memory DoS. Add a string-length bound in the schema.
 
 ### I7 — Session weaknesses

@@ -9,7 +9,7 @@ import { notifyRecoveryRegenerated } from '@/lib/notifications'
 export async function PUT(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
-    const { encPrivRec, recKdfSalt, recNonce, csrfToken } = await request.json() as {
+    const { encPrivRec, recKdfSalt, recNonce, csrfToken } = (await request.json()) as {
       encPrivRec: string
       recKdfSalt: string
       recNonce: string

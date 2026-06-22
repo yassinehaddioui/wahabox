@@ -69,9 +69,9 @@ describe('crypto module', () => {
     const mk2 = crypto.deriveMasterKey('password-b', salt16())
     const { kekPw: wrongKek } = crypto.splitMasterKey(mk2)
 
-    expect(() =>
-      crypto.unwrapPrivateKey(wrapped.ciphertext, wrapped.nonce, wrongKek),
-    ).toThrow('Decryption failed')
+    expect(() => crypto.unwrapPrivateKey(wrapped.ciphertext, wrapped.nonce, wrongKek)).toThrow(
+      'Decryption failed',
+    )
   })
 
   it('wraps same key under both KEK_pw and KEK_rec and unwraps with either', () => {
@@ -86,11 +86,7 @@ describe('crypto module', () => {
     const wrappedRec = crypto.wrapPrivateKey(kp.privateKey, kekRec)
 
     const fromPw = crypto.unwrapPrivateKey(wrappedPw.ciphertext, wrappedPw.nonce, kekPw)
-    const fromRec = crypto.unwrapPrivateKey(
-      wrappedRec.ciphertext,
-      wrappedRec.nonce,
-      kekRec,
-    )
+    const fromRec = crypto.unwrapPrivateKey(wrappedRec.ciphertext, wrappedRec.nonce, kekRec)
 
     expect(fromPw).toEqual(kp.privateKey)
     expect(fromRec).toEqual(kp.privateKey)

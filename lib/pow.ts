@@ -23,7 +23,10 @@ export async function storeChallenge(challenge: string): Promise<void> {
 }
 
 export function verifyPow(challenge: string, nonce: string): boolean {
-  const hash = crypto.createHash('sha256').update(challenge + nonce).digest()
+  const hash = crypto
+    .createHash('sha256')
+    .update(challenge + nonce)
+    .digest()
   const difficulty = DEFAULT_DIFFICULTY
   const fullBytes = Math.floor(difficulty / 8)
   const remainder = difficulty % 8
@@ -32,7 +35,7 @@ export function verifyPow(challenge: string, nonce: string): boolean {
     if (hash[i] !== 0) return false
   }
 
-  if (remainder > 0 && (hash[fullBytes] >> (8 - remainder)) !== 0) {
+  if (remainder > 0 && hash[fullBytes] >> (8 - remainder) !== 0) {
     return false
   }
 

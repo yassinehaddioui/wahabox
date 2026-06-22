@@ -41,8 +41,9 @@ describe('cn — conditional and falsy values', () => {
   })
 
   it('handles a mix of truthy, falsy, and nullish values', () => {
-    expect(cn('base', false && 'no', true && 'yes', null, undefined, '', 'end'))
-      .toBe('base yes end')
+    expect(cn('base', false && 'no', true && 'yes', null, undefined, '', 'end')).toBe(
+      'base yes end',
+    )
   })
 
   it('handles nested arrays with falsy entries', () => {

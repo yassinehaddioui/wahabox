@@ -9,7 +9,10 @@ vi.mock('next/headers', () => ({
 
 const mockRedirect = vi.fn()
 vi.mock('next/navigation', () => ({
-  redirect: (...args: any[]) => { mockRedirect(...args); throw new Error('NEXT_REDIRECT') },
+  redirect: (...args: any[]) => {
+    mockRedirect(...args)
+    throw new Error('NEXT_REDIRECT')
+  },
 }))
 
 const mockGetSession = vi.fn()
@@ -32,7 +35,9 @@ vi.mock('@/components/session-key-sync', () => ({
 
 vi.mock('@/lib/session-provider', () => ({
   SessionProvider: ({ value, children }: any) => (
-    <div data-testid="session-provider" data-username={value?.username}>{children}</div>
+    <div data-testid="session-provider" data-username={value?.username}>
+      {children}
+    </div>
   ),
 }))
 

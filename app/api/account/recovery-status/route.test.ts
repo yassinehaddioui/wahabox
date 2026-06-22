@@ -14,7 +14,10 @@ function mockAuth(): void {
 }
 
 describe('GET /api/account/recovery-status', () => {
-  beforeEach(() => { resetPrismaMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 401 when not authenticated', async () => {
     vi.mocked(getAuthUser).mockRejectedValue(new UnauthorizedError())
@@ -39,7 +42,12 @@ describe('GET /api/account/recovery-status', () => {
   it('returns no recovery key when recovery fields are null', async () => {
     mockAuth()
     prismaMock.user.findUnique.mockResolvedValue(
-      createUser({ encPrivRec: null, recKdfSalt: null, recNonce: null, recoveryCodeCreatedAt: null }),
+      createUser({
+        encPrivRec: null,
+        recKdfSalt: null,
+        recNonce: null,
+        recoveryCodeCreatedAt: null,
+      }),
     )
     const res = await GET(createNextRequest('http://localhost/api/account/recovery-status'))
     const body = await res.json()

@@ -16,18 +16,25 @@ function mockAuth(): void {
 }
 
 describe('POST /api/account/mfa/recovery', () => {
-  beforeEach(() => { resetPrismaMock(); vi.clearAllMocks() })
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
 
   it('returns 401 when not authenticated', async () => {
     vi.mocked(getAuthUser).mockRejectedValue(new UnauthorizedError())
-    const res = await POST(createNextRequest('http://localhost/api/account/mfa/recovery', { method: 'POST' }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/mfa/recovery', { method: 'POST' }),
+    )
     expect(res.status).toBe(401)
   })
 
   it('returns 400 when TOTP is not enabled', async () => {
     mockAuth()
     prismaMock.user.findUnique.mockResolvedValue(createUser({ mfaTotp: false }))
-    const res = await POST(createNextRequest('http://localhost/api/account/mfa/recovery', { method: 'POST' }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/mfa/recovery', { method: 'POST' }),
+    )
     expect(res.status).toBe(400)
   })
 
@@ -35,7 +42,9 @@ describe('POST /api/account/mfa/recovery', () => {
     mockAuth()
     prismaMock.user.findUnique.mockResolvedValue(createUser({ mfaTotp: true }))
     vi.mocked(generateRecoveryCodes).mockReturnValue({ plain: ['CODE1'], hashed: ['hash1'] })
-    const res = await POST(createNextRequest('http://localhost/api/account/mfa/recovery', { method: 'POST' }))
+    const res = await POST(
+      createNextRequest('http://localhost/api/account/mfa/recovery', { method: 'POST' }),
+    )
     const body = await res.json()
     expect(body.data.recoveryCodes).toEqual(['CODE1'])
   })

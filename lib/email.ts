@@ -32,58 +32,59 @@ export async function sendVerificationEmail(
 
   const client = getSes()
 
-  await client.send(new SendEmailCommand({
-    FromEmailAddress: getFromAddress(),
-    Destination: { ToAddresses: [to] },
-    Content: {
-      Simple: {
-        Subject: { Data: 'Verify your email for Wahabox' },
-        Body: {
-          Text: {
-            Data: [
-              `Hello ${username},`,
-              '',
-              'Please verify your email address for Wahabox by clicking the link below:',
-              '',
-              link,
-              '',
-              'This link expires in 60 minutes.',
-              '',
-              'If you did not request this, you can safely ignore this email.',
-            ].join('\n'),
+  await client.send(
+    new SendEmailCommand({
+      FromEmailAddress: getFromAddress(),
+      Destination: { ToAddresses: [to] },
+      Content: {
+        Simple: {
+          Subject: { Data: 'Verify your email for Wahabox' },
+          Body: {
+            Text: {
+              Data: [
+                `Hello ${username},`,
+                '',
+                'Please verify your email address for Wahabox by clicking the link below:',
+                '',
+                link,
+                '',
+                'This link expires in 60 minutes.',
+                '',
+                'If you did not request this, you can safely ignore this email.',
+              ].join('\n'),
+            },
           },
         },
       },
-    },
-  }))
+    }),
+  )
 }
 
-export async function sendNewMessageNotification(
-  to: string,
-  boxLabel: string,
-): Promise<void> {
+export async function sendNewMessageNotification(to: string, boxLabel: string): Promise<void> {
   const loginLink = `${ENV.APP_URL}/login`
   const client = getSes()
 
-  await client.send(new SendEmailCommand({
-    FromEmailAddress: getFromAddress(),
-    Destination: { ToAddresses: [to] },
-    Content: {
-      Simple: {
-        Subject: { Data: 'New message in your PO Box' },
-        Body: {
-          Text: {
-            Data: [
-              `You have a new message in your PO Box "${boxLabel}".`,
-              '',
-              'Sign in to read it:',
-              loginLink,
-            ].join('\n'),
+  await client.send(
+    new SendEmailCommand({
+      FromEmailAddress: getFromAddress(),
+      Destination: { ToAddresses: [to] },
+      Content: {
+        Simple: {
+          Subject: { Data: 'New message in your PO Box' },
+          Body: {
+            Text: {
+              Data: [
+                `You have a new message in your PO Box "${boxLabel}".`,
+                '',
+                'Sign in to read it:',
+                loginLink,
+              ].join('\n'),
+            },
           },
         },
       },
-    },
-  }))
+    }),
+  )
 }
 
 export async function checkNotificationRateLimit(userId: string): Promise<boolean> {
@@ -97,39 +98,37 @@ export async function checkNotificationRateLimit(userId: string): Promise<boolea
   }, false)
 }
 
-export async function sendMfaCodeEmail(
-  to: string,
-  username: string,
-  code: string,
-): Promise<void> {
+export async function sendMfaCodeEmail(to: string, username: string, code: string): Promise<void> {
   if (process.env.APP_MODE === 'development') {
     console.log(`[email] MFA code for ${to}: ${code}`)
   }
 
   const client = getSes()
 
-  await client.send(new SendEmailCommand({
-    FromEmailAddress: getFromAddress(),
-    Destination: { ToAddresses: [to] },
-    Content: {
-      Simple: {
-        Subject: { Data: 'Your Wahabox verification code' },
-        Body: {
-          Text: {
-            Data: [
-              `Hello ${username},`,
-              '',
-              `Your verification code is: ${code}`,
-              '',
-              'This code expires in 5 minutes.',
-              '',
-              'If you did not attempt to sign in, your password may be compromised. Change it immediately.',
-            ].join('\n'),
+  await client.send(
+    new SendEmailCommand({
+      FromEmailAddress: getFromAddress(),
+      Destination: { ToAddresses: [to] },
+      Content: {
+        Simple: {
+          Subject: { Data: 'Your Wahabox verification code' },
+          Body: {
+            Text: {
+              Data: [
+                `Hello ${username},`,
+                '',
+                `Your verification code is: ${code}`,
+                '',
+                'This code expires in 5 minutes.',
+                '',
+                'If you did not attempt to sign in, your password may be compromised. Change it immediately.',
+              ].join('\n'),
+            },
           },
         },
       },
-    },
-  }))
+    }),
+  )
 }
 
 export async function sendRecoveryKeyRegeneratedNotification(
@@ -146,25 +145,27 @@ export async function sendRecoveryKeyRegeneratedNotification(
 
   const client = getSes()
 
-  await client.send(new SendEmailCommand({
-    FromEmailAddress: getFromAddress(),
-    Destination: { ToAddresses: [to] },
-    Content: {
-      Simple: {
-        Subject: { Data: 'Your Wahabox recovery key was changed' },
-        Body: {
-          Text: {
-            Data: [
-              `Hello ${username},`,
-              '',
-              `A new recovery key was generated for your account at ${formattedTimestamp}.`,
-              'If you did not make this change, sign in immediately and secure your account.',
-              '',
-              loginLink,
-            ].join('\n'),
+  await client.send(
+    new SendEmailCommand({
+      FromEmailAddress: getFromAddress(),
+      Destination: { ToAddresses: [to] },
+      Content: {
+        Simple: {
+          Subject: { Data: 'Your Wahabox recovery key was changed' },
+          Body: {
+            Text: {
+              Data: [
+                `Hello ${username},`,
+                '',
+                `A new recovery key was generated for your account at ${formattedTimestamp}.`,
+                'If you did not make this change, sign in immediately and secure your account.',
+                '',
+                loginLink,
+              ].join('\n'),
+            },
           },
         },
       },
-    },
-  }))
+    }),
+  )
 }

@@ -13,6 +13,7 @@
 **Approach:** recovery-start issues a random 32-byte challenge sealed with `crypto_box_seal` using the user's `publicKey`. The plaintext challenge is stored in Redis (5 min TTL, keyed by opaque `recoveryToken`). recovery-complete requires `recoveryToken` + `decryptedChallenge`; verifies via `crypto.timingSafeEqual` against Redis, then deletes the key (one-time use). Only then overwrites credentials.
 
 **Files:**
+
 - `app/api/auth/recovery-start/route.ts` — generates sealed challenge, stores in Redis, returns `publicKey` + `sealedChallenge` + `recoveryToken`
 - `app/api/auth/recovery-complete/route.ts` — verifies challenge proof via `crypto.timingSafeEqual` + Redis `GETDEL`, increments `tokenVersion` on success
 - `lib/validation.ts` — added `recoveryToken` + `decryptedChallenge` to `recoveryCompleteSchema`
@@ -24,6 +25,7 @@
 ## H1 — Username enumeration ✅
 
 **Files:**
+
 - `app/api/auth/salts/route.ts` — `dummySalt()` now uses `HMAC(SERVER_MASTER_SECRET, username)` for deterministic per-username fake salts
 - `app/api/auth/signup/route.ts` — "Username already taken" → "Registration failed" (generic message)
 - `app/api/auth/recovery-start/route.ts` — "User not found" → "Not found" (generic message)
@@ -39,6 +41,7 @@
 ## H3 — Redis fail-open ✅
 
 **Files:**
+
 - `lib/redis.ts` — replaced permanent `enabled = false` with auto-reconnect after 30s timeout. Process lifetime disable removed.
 - `lib/csrf.ts` — `verifyAndConsumeCsrfToken` fallback changed from `true` to `false` when Redis is down
 
@@ -53,6 +56,7 @@
 ## I1 — CSRF token binding ✅
 
 **Files:**
+
 - `lib/csrf.ts` — `generateCsrfToken(tag, bindId?)` and `verifyAndConsumeCsrfToken(tag, token, bindId?)` accept optional `bindId` parameter, included in HMAC payload
 - `app/api/csrf/route.ts` — reads session cookie and passes it as `bindId`
 - `app/api/account/password/route.ts` — passes session cookie value to CSRF verify
@@ -81,6 +85,7 @@
 ## I5 — Server-bound PoW + Turnstile enforcement ✅
 
 **Files:**
+
 - `lib/pow.ts` — `verifyPow()` now uses hardcoded `DEFAULT_DIFFICULTY = 16`, removed `difficulty` parameter
 - `lib/validation.ts` — removed `difficulty` field from `submitMessageSchema`
 - `app/api/drop/[slug]/route.ts` — removed `body.difficulty` check from PoW verification
@@ -99,6 +104,7 @@
 **Approach:** `tokenVersion` field added to User model, incremented on password change, recovery, and logout. Session token includes `tokenVersion`. `validateSession()` checks token version against DB on every request.
 
 **Files:**
+
 - `prisma/schema.prisma` — added `tokenVersion Int @default(0)` to User
 - `lib/session.ts` — `createSession` now async (fetches tokenVersion from DB), `getSession` uses `crypto.timingSafeEqual` (formerly `!==`), added `validateSession` which checks DB token version, removed dead `validateToken` stub
 - `lib/auth.ts` — uses `validateSession` instead of `getSession` for auth checks
@@ -114,6 +120,7 @@
 ## I8 — CSRF coverage ✅
 
 **Files:**
+
 - `app/api/messages/[id]/route.ts` — added CSRF verification to PATCH ('message-read' tag) and DELETE ('message-delete' tag) with session binding
 - `app/api/account/email/route.ts` — added CSRF verification to PUT ('email-set'), POST ('email-resend'), DELETE ('email-delete'), and PATCH ('email-notifications') with session binding
 

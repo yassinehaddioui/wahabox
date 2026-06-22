@@ -4,7 +4,9 @@ import { TOTP } from 'otplib'
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
 
 function base32Encode(buffer: Uint8Array): string {
-  let bits = 0, value = 0, output = ''
+  let bits = 0,
+    value = 0,
+    output = ''
   for (let i = 0; i < buffer.length; i++) {
     value = (value << 8) | buffer[i]
     bits += 8
@@ -19,7 +21,8 @@ function base32Encode(buffer: Uint8Array): string {
 
 function base32Decode(input: string): Buffer {
   input = input.toUpperCase().replace(/=+$/, '')
-  let bits = 0, value = 0
+  let bits = 0,
+    value = 0
   const output: number[] = []
   for (let i = 0; i < input.length; i++) {
     const idx = ALPHABET.indexOf(input[i])

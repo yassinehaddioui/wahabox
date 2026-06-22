@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
-    const body = await request.json() as { action?: string; attestation?: any; deviceName?: string }
+    const body = (await request.json()) as {
+      action?: string
+      attestation?: any
+      deviceName?: string
+    }
 
     if (!body.action || body.action === 'setup') {
       const existing = await prisma.passkeyCredential.findMany({

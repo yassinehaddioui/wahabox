@@ -3,7 +3,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, Download, Eye, EyeOff, Trash2 } from 'lucide-react'
@@ -59,9 +66,7 @@ export default function MessagesPage() {
       try {
         const stored = localStorage.getItem(AUTO_DECRYPT_KEY)
         const ids: string[] = stored ? JSON.parse(stored) : []
-        const updated = next
-          ? [...new Set([...ids, id])]
-          : ids.filter((i) => i !== id)
+        const updated = next ? [...new Set([...ids, id])] : ids.filter((i) => i !== id)
         localStorage.setItem(AUTO_DECRYPT_KEY, JSON.stringify(updated))
       } catch {}
       return next
@@ -97,9 +102,7 @@ export default function MessagesPage() {
 
   async function decryptMessage(msg: Message) {
     if (msg.plaintext) {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === msg.id ? { ...m, plaintext: undefined } : m)),
-      )
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, plaintext: undefined } : m)))
       return
     }
 
@@ -123,9 +126,7 @@ export default function MessagesPage() {
 
       const wasUnread = !msg.readAt
 
-      setMessages((prev) =>
-        prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)),
-      )
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)))
 
       if (wasUnread) {
         await fetch(`/api/messages/${msg.id}`, { method: 'PATCH' }).catch(() => {})
@@ -159,15 +160,12 @@ export default function MessagesPage() {
 
       const wasUnread = !msg.readAt
 
-      setMessages((prev) =>
-        prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)),
-      )
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)))
 
       if (wasUnread) {
         await fetch(`/api/messages/${msg.id}`, { method: 'PATCH' }).catch(() => {})
       }
-    } catch {
-    }
+    } catch {}
   }
 
   async function deleteMessage(msgId: string) {
@@ -208,18 +206,12 @@ export default function MessagesPage() {
           {!loading && (
             <p className="text-sm text-muted-foreground">
               {messages.length} message{messages.length !== 1 ? 's' : ''}
-              {unreadCount > 0 && (
-                <span className="ml-1 text-foreground">({unreadCount} new)</span>
-              )}
+              {unreadCount > 0 && <span className="ml-1 text-foreground">({unreadCount} new)</span>}
             </p>
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Switch
-            id="auto-decrypt"
-            checked={autoDecrypt}
-            onCheckedChange={toggleAutoDecrypt}
-          />
+          <Switch id="auto-decrypt" checked={autoDecrypt} onCheckedChange={toggleAutoDecrypt} />
           <Label htmlFor="auto-decrypt" className="text-xs text-muted-foreground cursor-pointer">
             Auto-decrypt
           </Label>
@@ -243,7 +235,7 @@ export default function MessagesPage() {
         </Card>
       ) : (
         messages.map((msg) => (
-          <Card key={msg.id} className={cn(!msg.readAt && "ring-2 ring-amber-400")}>
+          <Card key={msg.id} className={cn(!msg.readAt && 'ring-2 ring-amber-400')}>
             <CardHeader className="bg-muted -mt-(--card-spacing) py-2.5">
               <CardTitle className="text-xs font-mono font-normal text-muted-foreground">
                 {new Date(msg.createdAt).toLocaleString()}
@@ -267,11 +259,7 @@ export default function MessagesPage() {
                     disabled={decrypted.has(msg.id)}
                     aria-label={msg.plaintext ? 'Hide message' : 'Decrypt message'}
                   >
-                    {msg.plaintext ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {msg.plaintext ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                   <Button
                     variant="ghost"
@@ -303,7 +291,12 @@ export default function MessagesPage() {
         ))
       )}
 
-      <Dialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
         <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Delete message</DialogTitle>

@@ -14,22 +14,22 @@ A **zero-knowledge, end-to-end encrypted Virtual PO Box** web app. Users create 
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16.2.9 (App Router) |
-| UI | React 19.2.4, Tailwind CSS v4, shadcn/ui (`base-nova` style on `@base-ui/react`) |
-| Language | TypeScript 5 (strict) |
-| Database | PostgreSQL 17 via Prisma 7 (with `@prisma/adapter-pg`) |
-| Cache/Rate-limit | Redis 7 via `ioredis` |
-| Email | AWS SESv2 (`@aws-sdk/client-sesv2`) |
-| Client crypto | `libsodium-wrappers-sumo` (Argon2id, X25519, secretbox, sealed box) |
-| Server crypto | Node `crypto` (HKDF-SHA256, ChaCha20-Poly1305 for email-at-rest) |
-| Auth | HMAC-signed sessions, WebAuthn/passkeys (`@simplewebauthn`), TOTP (`otplib`), CSRF tokens |
-| Password hashing | `bcryptjs` (cost 12) for box passwords; Argon2id for user master keys (client-side) |
-| Validation | Zod v4 |
-| Deployment | Docker (multi-stage standalone build) + nginx + CloudFlare (TLS termination) |
-| Package manager | pnpm (single-package repo, not a monorepo) |
-| Testing | Vitest 4 (minimal coverage; see `docs/TESTING_PLAN.md`) |
+| Layer            | Technology                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| Framework        | Next.js 16.2.9 (App Router)                                                               |
+| UI               | React 19.2.4, Tailwind CSS v4, shadcn/ui (`base-nova` style on `@base-ui/react`)          |
+| Language         | TypeScript 5 (strict)                                                                     |
+| Database         | PostgreSQL 17 via Prisma 7 (with `@prisma/adapter-pg`)                                    |
+| Cache/Rate-limit | Redis 7 via `ioredis`                                                                     |
+| Email            | AWS SESv2 (`@aws-sdk/client-sesv2`)                                                       |
+| Client crypto    | `libsodium-wrappers-sumo` (Argon2id, X25519, secretbox, sealed box)                       |
+| Server crypto    | Node `crypto` (HKDF-SHA256, ChaCha20-Poly1305 for email-at-rest)                          |
+| Auth             | HMAC-signed sessions, WebAuthn/passkeys (`@simplewebauthn`), TOTP (`otplib`), CSRF tokens |
+| Password hashing | `bcryptjs` (cost 12) for box passwords; Argon2id for user master keys (client-side)       |
+| Validation       | Zod v4                                                                                    |
+| Deployment       | Docker (multi-stage standalone build) + nginx + CloudFlare (TLS termination)              |
+| Package manager  | pnpm (single-package repo, not a monorepo)                                                |
+| Testing          | Vitest 4 (minimal coverage; see `docs/TESTING_PLAN.md`)                                   |
 
 ---
 
@@ -200,46 +200,46 @@ All cross-user relations are `onDelete: Cascade`. All PKs are UUIDs. No column a
 
 ### Crypto & security primitives
 
-| File | Exports | Purpose | Side | Key details |
-|------|---------|---------|------|-------------|
-| `crypto.ts` | `crypto` object, `KeyPair`, `WrappedKey` | Client-side libsodium crypto: Argon2id KDF, X25519 keypairs, secretbox wrap/unwrap, sealed box seal/open, auth verifier, recovery code gen | Client | Argon2id (opslimit=3, memlimit=256MiB), 64B master key → 32B auth + 32B KEK via BLAKE2b |
-| `email-crypto.ts` | `encryptEmail`, `decryptEmail`, `clearEmailKey` | Server-side email encryption (ChaCha20-Poly1305) | Server | HKDF-SHA256 from `SERVER_MASTER_SECRET`, 12B nonce, 16B auth tag, `KEY_VERSION=1`, key cached in module scope |
-| `csrf.ts` | `generateCsrfToken`, `storeCsrfToken`, `verifyAndConsumeCsrfToken` | HMAC-signed single-use CSRF tokens stored in Redis | Server | TTL 180min, `timingSafeEqual` signature check, Redis key `csrf:<sha256(token)>`, optionally bound to session via `bindId` |
-| `session.ts` | `createSession`, `getSession`, `validateSession`, `destroySession`, `setSessionCookie`, `clearSessionCookie` | HMAC-signed stateless sessions with DB `tokenVersion` revocation | Server | Cookie `session` (httpOnly, secure prod, sameSite strict, 24h), `destroySession` is a no-op |
-| `auth.ts` | `getAuthUser`, `AuthUser` | Thin request gate — reads cookie → validates session → returns user or throws `UnauthorizedError` | Server | Used by all protected API routes |
-| `pow.ts` | `generateChallenge`, `storeChallenge`, `verifyPow`, `consumeChallenge` | Proof-of-work challenges (SHA-256, 16-bit difficulty) | Server | Redis key `pow:<challenge>`, TTL 120s, single-use, `consumeChallenge` fails open |
-| `totp.ts` | `generateTotpSecret`, `getTotpUri`, `verifyTotp`, `generateRecoveryCodes`, `verifyRecoveryCode`, `generateMfaCode` | TOTP 2FA + recovery codes + email MFA codes | Server | 8 recovery codes (16 chars, ambiguity-stripped charset), SHA-256 hashed, rejection sampling for modulo bias |
-| `webauthn.ts` | `generateRegOptions`, `verifyRegResponse`, `generateAuthOptions`, `verifyAuthResponse`, `getRpId` | Passkey registration/authentication via SimpleWebAuthn | Server | Redis key `passkey:challenge:<userId>`, TTL 120s, RP_ID from `APP_URL` hostname |
-| `turnstile.ts` | `verifyTurnstile` | Cloudflare Turnstile CAPTCHA verification | Server | Auto-passes in non-prod without keys, fails closed in prod without keys |
+| File              | Exports                                                                                                            | Purpose                                                                                                                                    | Side   | Key details                                                                                                               |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `crypto.ts`       | `crypto` object, `KeyPair`, `WrappedKey`                                                                           | Client-side libsodium crypto: Argon2id KDF, X25519 keypairs, secretbox wrap/unwrap, sealed box seal/open, auth verifier, recovery code gen | Client | Argon2id (opslimit=3, memlimit=256MiB), 64B master key → 32B auth + 32B KEK via BLAKE2b                                   |
+| `email-crypto.ts` | `encryptEmail`, `decryptEmail`, `clearEmailKey`                                                                    | Server-side email encryption (ChaCha20-Poly1305)                                                                                           | Server | HKDF-SHA256 from `SERVER_MASTER_SECRET`, 12B nonce, 16B auth tag, `KEY_VERSION=1`, key cached in module scope             |
+| `csrf.ts`         | `generateCsrfToken`, `storeCsrfToken`, `verifyAndConsumeCsrfToken`                                                 | HMAC-signed single-use CSRF tokens stored in Redis                                                                                         | Server | TTL 180min, `timingSafeEqual` signature check, Redis key `csrf:<sha256(token)>`, optionally bound to session via `bindId` |
+| `session.ts`      | `createSession`, `getSession`, `validateSession`, `destroySession`, `setSessionCookie`, `clearSessionCookie`       | HMAC-signed stateless sessions with DB `tokenVersion` revocation                                                                           | Server | Cookie `session` (httpOnly, secure prod, sameSite strict, 24h), `destroySession` is a no-op                               |
+| `auth.ts`         | `getAuthUser`, `AuthUser`                                                                                          | Thin request gate — reads cookie → validates session → returns user or throws `UnauthorizedError`                                          | Server | Used by all protected API routes                                                                                          |
+| `pow.ts`          | `generateChallenge`, `storeChallenge`, `verifyPow`, `consumeChallenge`                                             | Proof-of-work challenges (SHA-256, 16-bit difficulty)                                                                                      | Server | Redis key `pow:<challenge>`, TTL 120s, single-use, `consumeChallenge` fails open                                          |
+| `totp.ts`         | `generateTotpSecret`, `getTotpUri`, `verifyTotp`, `generateRecoveryCodes`, `verifyRecoveryCode`, `generateMfaCode` | TOTP 2FA + recovery codes + email MFA codes                                                                                                | Server | 8 recovery codes (16 chars, ambiguity-stripped charset), SHA-256 hashed, rejection sampling for modulo bias               |
+| `webauthn.ts`     | `generateRegOptions`, `verifyRegResponse`, `generateAuthOptions`, `verifyAuthResponse`, `getRpId`                  | Passkey registration/authentication via SimpleWebAuthn                                                                                     | Server | Redis key `passkey:challenge:<userId>`, TTL 120s, RP_ID from `APP_URL` hostname                                           |
+| `turnstile.ts`    | `verifyTurnstile`                                                                                                  | Cloudflare Turnstile CAPTCHA verification                                                                                                  | Server | Auto-passes in non-prod without keys, fails closed in prod without keys                                                   |
 
 ### Infrastructure
 
-| File | Exports | Purpose | Key details |
-|------|---------|---------|-------------|
-| `prisma.ts` | `prisma` | Singleton PrismaClient with `PrismaPg` adapter | Cached on `globalThis` in dev for HMR survival |
-| `redis.ts` | `getRedis`, `withRedis`, `closeRedis` | Singleton ioredis client with circuit breaker | 3 retries, 30s disable on error then auto-reconnect, `withRedis(fn, fallback)` for graceful degradation |
-| `env.ts` | `ENV`, `validateEnv` | Centralized env accessors + boot validation | Required: `DATABASE_URL`, `SERVER_MASTER_SECRET`. Prod rejects default `SESSION_SECRET` |
-| `rate-limit.ts` | `checkIpRate`, `checkUserRate`, `checkGlobalRate`, `checkAuthRateLimit`, `recordAuthFailure`, `clearFailures`, `checkDropRateLimit`, `getDropIpCounts`, `recordDropIp` | Redis sliding-window rate limiting + exponential lockout | Auth: 30s/5, Drop: 60s/10, Global: 1s/50. Lockout: 30s * 2^(failures-3) capped 15min. Fails open |
-| `email.ts` | `sendVerificationEmail`, `sendNewMessageNotification`, `sendMfaCodeEmail`, `checkNotificationRateLimit` | AWS SES email sending | Singleton SESv2 client, dev mode logs to console, notification cooldown 5min (Redis `notif:<userId>`) |
-| `notifications.ts` | `notifyNewMessage` | Orchestrates new-message email notification | Checks notify flags + email verified + rate limit, decrypts email, sends. Errors swallowed |
+| File               | Exports                                                                                                                                                                | Purpose                                                  | Key details                                                                                             |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `prisma.ts`        | `prisma`                                                                                                                                                               | Singleton PrismaClient with `PrismaPg` adapter           | Cached on `globalThis` in dev for HMR survival                                                          |
+| `redis.ts`         | `getRedis`, `withRedis`, `closeRedis`                                                                                                                                  | Singleton ioredis client with circuit breaker            | 3 retries, 30s disable on error then auto-reconnect, `withRedis(fn, fallback)` for graceful degradation |
+| `env.ts`           | `ENV`, `validateEnv`                                                                                                                                                   | Centralized env accessors + boot validation              | Required: `DATABASE_URL`, `SERVER_MASTER_SECRET`. Prod rejects default `SESSION_SECRET`                 |
+| `rate-limit.ts`    | `checkIpRate`, `checkUserRate`, `checkGlobalRate`, `checkAuthRateLimit`, `recordAuthFailure`, `clearFailures`, `checkDropRateLimit`, `getDropIpCounts`, `recordDropIp` | Redis sliding-window rate limiting + exponential lockout | Auth: 30s/5, Drop: 60s/10, Global: 1s/50. Lockout: 30s \* 2^(failures-3) capped 15min. Fails open       |
+| `email.ts`         | `sendVerificationEmail`, `sendNewMessageNotification`, `sendMfaCodeEmail`, `checkNotificationRateLimit`                                                                | AWS SES email sending                                    | Singleton SESv2 client, dev mode logs to console, notification cooldown 5min (Redis `notif:<userId>`)   |
+| `notifications.ts` | `notifyNewMessage`                                                                                                                                                     | Orchestrates new-message email notification              | Checks notify flags + email verified + rate limit, decrypts email, sends. Errors swallowed              |
 
 ### API helpers
 
-| File | Exports | Purpose |
-|------|---------|---------|
-| `errors.ts` | `ApiError`, `BadRequestError`, `UnauthorizedError`, `NotFoundError`, `ConflictError`, `RateLimitError`, `MfaRequiredError`, `InvalidPasswordError` | Typed error hierarchy with HTTP status codes |
-| `response.ts` | `success`, `error` | Uniform JSON response envelope: `{success, data}` or `{success, error, code}` |
-| `validation.ts` | 12 Zod schemas + `parseBody` | Input validation for all API routes. Honeypot field for bot detection. Ciphertext max 200K chars |
+| File            | Exports                                                                                                                                            | Purpose                                                                                          |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `errors.ts`     | `ApiError`, `BadRequestError`, `UnauthorizedError`, `NotFoundError`, `ConflictError`, `RateLimitError`, `MfaRequiredError`, `InvalidPasswordError` | Typed error hierarchy with HTTP status codes                                                     |
+| `response.ts`   | `success`, `error`                                                                                                                                 | Uniform JSON response envelope: `{success, data}` or `{success, error, code}`                    |
+| `validation.ts` | 12 Zod schemas + `parseBody`                                                                                                                       | Input validation for all API routes. Honeypot field for bot detection. Ciphertext max 200K chars |
 
 ### Client hooks & utilities
 
-| File | Exports | Purpose |
-|------|---------|---------|
-| `utils.ts` | `cn` | Tailwind class merge helper (`twMerge(clsx(...))`) |
-| `session-provider.tsx` | `SessionProvider`, `useSession` | React context for `{ username }` session state |
-| `use-csrf.ts` | `useCsrfToken` | Hook fetching CSRF tokens from `/api/csrf?tag=` |
-| `session-keys.ts` | `setSessionKeys`, `getSessionKeys`, `clearSessionKeys` | Private key storage in `sessionStorage` + `localStorage` |
-| `use-session-key-sync.ts` | `useSessionKeySync` | Cross-tab key sync via `storage` events; redirects to `/login` on key clear |
+| File                      | Exports                                                | Purpose                                                                     |
+| ------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `utils.ts`                | `cn`                                                   | Tailwind class merge helper (`twMerge(clsx(...))`)                          |
+| `session-provider.tsx`    | `SessionProvider`, `useSession`                        | React context for `{ username }` session state                              |
+| `use-csrf.ts`             | `useCsrfToken`                                         | Hook fetching CSRF tokens from `/api/csrf?tag=`                             |
+| `session-keys.ts`         | `setSessionKeys`, `getSessionKeys`, `clearSessionKeys` | Private key storage in `sessionStorage` + `localStorage`                    |
+| `use-session-key-sync.ts` | `useSessionKeySync`                                    | Cross-tab key sync via `storage` events; redirects to `/login` on key clear |
 
 ---
 
@@ -249,78 +249,78 @@ All routes use the response envelope: `{ success: true, data }` or `{ success: f
 
 ### Auth (public)
 
-| Method | Route | What | Auth | Security |
-|--------|-------|------|------|----------|
-| GET | `/api/csrf?tag=` | Issues single-use CSRF token | None | HMAC-signed, stored hashed in Redis |
-| POST | `/api/auth/salts` | Returns KDF salts for username (dummy salts for unknown users) | None | IP rate-limit, anti-enumeration |
-| POST | `/api/auth/signup` | Creates user with client-generated crypto material | None | CSRF + Turnstile + rate-limit |
-| POST | `/api/auth/login` | Verifies credentials, returns wrapped private key or MFA challenge | None | CSRF + rate-limit + lockout + Turnstile (after 2 fails) + constant-time compare + dummy timing path |
-| POST | `/api/auth/logout` | Bumps `tokenVersion`, clears cookie | Best-effort | No CSRF |
-| POST | `/api/auth/recovery-start` | Returns recovery-wrapped key + sealed challenge | None | CSRF + rate-limit + dummy timing path |
-| POST | `/api/auth/recovery-complete` | Verifies decrypted challenge, sets new password | None | CSRF + rate-limit + `timingSafeEqual` + `tokenVersion` bump |
-| PUT | `/api/auth/regen-recovery` | Replaces account-recovery wrapped key | Required | CSRF, no rate-limit |
+| Method | Route                         | What                                                               | Auth        | Security                                                                                            |
+| ------ | ----------------------------- | ------------------------------------------------------------------ | ----------- | --------------------------------------------------------------------------------------------------- |
+| GET    | `/api/csrf?tag=`              | Issues single-use CSRF token                                       | None        | HMAC-signed, stored hashed in Redis                                                                 |
+| POST   | `/api/auth/salts`             | Returns KDF salts for username (dummy salts for unknown users)     | None        | IP rate-limit, anti-enumeration                                                                     |
+| POST   | `/api/auth/signup`            | Creates user with client-generated crypto material                 | None        | CSRF + Turnstile + rate-limit                                                                       |
+| POST   | `/api/auth/login`             | Verifies credentials, returns wrapped private key or MFA challenge | None        | CSRF + rate-limit + lockout + Turnstile (after 2 fails) + constant-time compare + dummy timing path |
+| POST   | `/api/auth/logout`            | Bumps `tokenVersion`, clears cookie                                | Best-effort | No CSRF                                                                                             |
+| POST   | `/api/auth/recovery-start`    | Returns recovery-wrapped key + sealed challenge                    | None        | CSRF + rate-limit + dummy timing path                                                               |
+| POST   | `/api/auth/recovery-complete` | Verifies decrypted challenge, sets new password                    | None        | CSRF + rate-limit + `timingSafeEqual` + `tokenVersion` bump                                         |
+| PUT    | `/api/auth/regen-recovery`    | Replaces account-recovery wrapped key                              | Required    | CSRF, no rate-limit                                                                                 |
 
 ### MFA (mfaToken-gated)
 
-| Method | Route | What | Security |
-|--------|-------|------|----------|
-| POST | `/api/auth/mfa/send-email` | Generates + emails 6-digit MFA code | 60s cooldown, code stored as SHA-256 hash |
-| POST | `/api/auth/mfa/verify` | Verifies email/totp code; passkey returns auth options | Per-method attempt caps, 10 total attempt cap |
-| PUT | `/api/auth/mfa/verify` | Completes passkey assertion | Updates counter + lastUsedAt |
-| POST | `/api/auth/mfa/recover` | Bypass MFA with recovery code | 3-attempt cap, SHA-256 hash compare |
+| Method | Route                      | What                                                   | Security                                      |
+| ------ | -------------------------- | ------------------------------------------------------ | --------------------------------------------- |
+| POST   | `/api/auth/mfa/send-email` | Generates + emails 6-digit MFA code                    | 60s cooldown, code stored as SHA-256 hash     |
+| POST   | `/api/auth/mfa/verify`     | Verifies email/totp code; passkey returns auth options | Per-method attempt caps, 10 total attempt cap |
+| PUT    | `/api/auth/mfa/verify`     | Completes passkey assertion                            | Updates counter + lastUsedAt                  |
+| POST   | `/api/auth/mfa/recover`    | Bypass MFA with recovery code                          | 3-attempt cap, SHA-256 hash compare           |
 
 ### Account (auth required)
 
-| Method | Route | What | Security |
-|--------|-------|------|----------|
-| GET | `/api/account/password` | Returns salts + wrapped private key for re-derivation | — |
-| POST | `/api/account/password` | Changes password (constant-time verifier check) | CSRF + rate-limit + `tokenVersion` bump |
-| GET | `/api/account/email` | Returns masked email + verified/notifications flags | Email decrypted only for masking |
-| PUT | `/api/account/email` | Sets new email, sends verification | CSRF + rate-limit + 30s cooldown |
-| POST | `/api/account/email` | Resends verification email | CSRF + rate-limit + 30s cooldown |
-| DELETE | `/api/account/email` | Removes email | CSRF |
-| PATCH | `/api/account/email` | Toggles notifications | CSRF |
-| POST | `/api/account/email/verify` | Verifies email by token | Token-gated (Redis hash, single-use) |
-| GET | `/api/account/mfa` | Returns MFA status flags | — |
-| POST | `/api/account/mfa` | Enable/disable/setup/confirm email/totp/passkey MFA | TOTP setup secret in Redis 10min, recovery codes returned once |
-| POST | `/api/account/mfa/recovery` | Regenerates MFA recovery codes | Requires TOTP enabled |
-| GET | `/api/account/mfa/passkeys` | Lists registered passkeys | — |
-| POST | `/api/account/mfa/passkeys` | Register passkey (setup → confirm two-phase) | Challenge single-use |
-| DELETE | `/api/account/mfa/passkeys/[id]` | Remove passkey (auto-disables flag if last one) | Ownership check |
+| Method | Route                            | What                                                  | Security                                                       |
+| ------ | -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |
+| GET    | `/api/account/password`          | Returns salts + wrapped private key for re-derivation | —                                                              |
+| POST   | `/api/account/password`          | Changes password (constant-time verifier check)       | CSRF + rate-limit + `tokenVersion` bump                        |
+| GET    | `/api/account/email`             | Returns masked email + verified/notifications flags   | Email decrypted only for masking                               |
+| PUT    | `/api/account/email`             | Sets new email, sends verification                    | CSRF + rate-limit + 30s cooldown                               |
+| POST   | `/api/account/email`             | Resends verification email                            | CSRF + rate-limit + 30s cooldown                               |
+| DELETE | `/api/account/email`             | Removes email                                         | CSRF                                                           |
+| PATCH  | `/api/account/email`             | Toggles notifications                                 | CSRF                                                           |
+| POST   | `/api/account/email/verify`      | Verifies email by token                               | Token-gated (Redis hash, single-use)                           |
+| GET    | `/api/account/mfa`               | Returns MFA status flags                              | —                                                              |
+| POST   | `/api/account/mfa`               | Enable/disable/setup/confirm email/totp/passkey MFA   | TOTP setup secret in Redis 10min, recovery codes returned once |
+| POST   | `/api/account/mfa/recovery`      | Regenerates MFA recovery codes                        | Requires TOTP enabled                                          |
+| GET    | `/api/account/mfa/passkeys`      | Lists registered passkeys                             | —                                                              |
+| POST   | `/api/account/mfa/passkeys`      | Register passkey (setup → confirm two-phase)          | Challenge single-use                                           |
+| DELETE | `/api/account/mfa/passkeys/[id]` | Remove passkey (auto-disables flag if last one)       | Ownership check                                                |
 
 ### Boxes & messages (auth required, ownership enforced)
 
-| Method | Route | What | Security |
-|--------|-------|------|----------|
-| GET | `/api/boxes` | Lists owner's boxes with message count + unread flag | `passwordHash` never returned |
-| POST | `/api/boxes` | Creates box with random slug; optional bcrypt password | CSRF (`create-box`) |
-| PATCH | `/api/boxes/[id]` | Updates fields, rotates slug, sets/removes password | CSRF (`edit-box`) + ownership |
-| GET | `/api/boxes/[id]/messages` | Lists messages (ciphertext base64) | Ownership |
-| PATCH | `/api/messages/[id]` | Marks message read | Ownership |
-| DELETE | `/api/messages/[id]` | Deletes message | Ownership |
+| Method | Route                      | What                                                   | Security                      |
+| ------ | -------------------------- | ------------------------------------------------------ | ----------------------------- |
+| GET    | `/api/boxes`               | Lists owner's boxes with message count + unread flag   | `passwordHash` never returned |
+| POST   | `/api/boxes`               | Creates box with random slug; optional bcrypt password | CSRF (`create-box`)           |
+| PATCH  | `/api/boxes/[id]`          | Updates fields, rotates slug, sets/removes password    | CSRF (`edit-box`) + ownership |
+| GET    | `/api/boxes/[id]/messages` | Lists messages (ciphertext base64)                     | Ownership                     |
+| PATCH  | `/api/messages/[id]`       | Marks message read                                     | Ownership                     |
+| DELETE | `/api/messages/[id]`       | Deletes message                                        | Ownership                     |
 
 ### Drop (public)
 
-| Method | Route | What | Security |
-|--------|-------|------|----------|
-| GET | `/api/drop/[slug]` | Returns box label/greeting/publicKey/hasPassword | 404 if missing/inactive/expired/full |
-| POST | `/api/drop/[slug]` | Anonymous encrypted message submission | Rate-limit → box validity → password → CSRF (bound to slug) → Turnstile → PoW (optional) → quotas (box: 20/hr 100/day; IP: 30/hr 200/day) → size cap 100KB → insert. Fire-and-forget notification + IP recording |
+| Method | Route              | What                                             | Security                                                                                                                                                                                                         |
+| ------ | ------------------ | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/drop/[slug]` | Returns box label/greeting/publicKey/hasPassword | 404 if missing/inactive/expired/full                                                                                                                                                                             |
+| POST   | `/api/drop/[slug]` | Anonymous encrypted message submission           | Rate-limit → box validity → password → CSRF (bound to slug) → Turnstile → PoW (optional) → quotas (box: 20/hr 100/day; IP: 30/hr 200/day) → size cap 100KB → insert. Fire-and-forget notification + IP recording |
 
 ---
 
 ## Pages
 
-| Route | Type | What |
-|-------|------|------|
-| `/ | Server | Landing page (static marketing) |
-| `/signup` | Client | Multi-step: form → keygen → recovery code → confirm → done |
-| `/login` | Client | Login + MFA flow (email/totp/passkey) + recovery fallback |
-| `/recover` | Client | Account recovery via recovery code + sealed challenge |
-| `/verify-email` | Client | Token verification from URL param |
-| `/drop/[slug]` | Client | Anonymous encrypted message submission form |
-| `/dashboard` | Client | Box list (polls 30s), create/edit/rotate/delete, auto-decrypt toggle |
-| `/dashboard/[id]` | Client | Message viewer, decrypt on click, auto-decrypt, mark read, delete |
-| `/settings` | Client | Email management, password change (crypto re-wrap), MFA setup, passkeys |
+| Route             | Type   | What                                                                    |
+| ----------------- | ------ | ----------------------------------------------------------------------- |
+| `/                | Server | Landing page (static marketing)                                         |
+| `/signup`         | Client | Multi-step: form → keygen → recovery code → confirm → done              |
+| `/login`          | Client | Login + MFA flow (email/totp/passkey) + recovery fallback               |
+| `/recover`        | Client | Account recovery via recovery code + sealed challenge                   |
+| `/verify-email`   | Client | Token verification from URL param                                       |
+| `/drop/[slug]`    | Client | Anonymous encrypted message submission form                             |
+| `/dashboard`      | Client | Box list (polls 30s), create/edit/rotate/delete, auto-decrypt toggle    |
+| `/dashboard/[id]` | Client | Message viewer, decrypt on click, auto-decrypt, mark read, delete       |
+| `/settings`       | Client | Email management, password change (crypto re-wrap), MFA setup, passkeys |
 
 ---
 
@@ -328,14 +328,14 @@ All routes use the response envelope: `{ success: true, data }` or `{ success: f
 
 ### Custom (worth testing)
 
-| Component | What |
-|-----------|------|
-| `app-sidebar.tsx` | Nav sidebar with logout (clears keys, POSTs logout, redirects) |
-| `turnstile-widget.tsx` | Cloudflare Turnstile script injection + widget lifecycle |
-| `session-key-sync.tsx` | Invisible component syncing private key across tabs |
-| `ui/markdown-editor.tsx` | Lightweight MD editor with toolbar (insertAtCursor) |
-| `ui/md-editor.tsx` | Rich MD editor wrapping `@uiw/react-md-editor` with char counter |
-| `ui/markdown.tsx` | Server-side MD renderer (`react-markdown` + `remark-gfm`) |
+| Component                | What                                                             |
+| ------------------------ | ---------------------------------------------------------------- |
+| `app-sidebar.tsx`        | Nav sidebar with logout (clears keys, POSTs logout, redirects)   |
+| `turnstile-widget.tsx`   | Cloudflare Turnstile script injection + widget lifecycle         |
+| `session-key-sync.tsx`   | Invisible component syncing private key across tabs              |
+| `ui/markdown-editor.tsx` | Lightweight MD editor with toolbar (insertAtCursor)              |
+| `ui/md-editor.tsx`       | Rich MD editor wrapping `@uiw/react-md-editor` with char counter |
+| `ui/markdown.tsx`        | Server-side MD renderer (`react-markdown` + `remark-gfm`)        |
 
 ### shadcn/ui primitives (no testing needed)
 
@@ -345,21 +345,21 @@ All routes use the response envelope: `{ success: true, data }` or `{ success: f
 
 ## Environment Variables
 
-| Variable | Required | Default | Used in |
-|----------|----------|---------|---------|
-| `DATABASE_URL` | Yes | — | Prisma |
-| `SERVER_MASTER_SECRET` | Yes | — | Email encryption (base64, min 32 bytes) |
-| `SESSION_SECRET` | Prod: yes | `dev-session-secret-change-in-production` | Session/CSRF HMAC signing |
-| `REDIS_URL` | No | `redis://localhost:6379` | ioredis |
-| `APP_URL` | No | `http://localhost:3000` | WebAuthn RP ID, email links |
-| `APP_MODE` | No | `development` | Dev mode bypasses SES sending |
-| `NODE_ENV` | — | — | CSP enforcement, standalone build |
-| `AWS_REGION` | No | `us-east-1` | SES client |
-| `SES_FROM_ADDRESS` | Prod: yes | — | SES sender address |
-| `TURNSTILE_SITE_KEY` | No | — | Turnstile (both keys required together) |
-| `TURNSTILE_SECRET_KEY` | No | — | Turnstile (both keys required together) |
-| `HOST_PORT` | No | `3000` | Docker host port (override if port 3000 is taken) |
-| `POSTGRES_PASSWORD` | No | `postgres` | Docker Compose |
+| Variable               | Required  | Default                                   | Used in                                           |
+| ---------------------- | --------- | ----------------------------------------- | ------------------------------------------------- |
+| `DATABASE_URL`         | Yes       | —                                         | Prisma                                            |
+| `SERVER_MASTER_SECRET` | Yes       | —                                         | Email encryption (base64, min 32 bytes)           |
+| `SESSION_SECRET`       | Prod: yes | `dev-session-secret-change-in-production` | Session/CSRF HMAC signing                         |
+| `REDIS_URL`            | No        | `redis://localhost:6379`                  | ioredis                                           |
+| `APP_URL`              | No        | `http://localhost:3000`                   | WebAuthn RP ID, email links                       |
+| `APP_MODE`             | No        | `development`                             | Dev mode bypasses SES sending                     |
+| `NODE_ENV`             | —         | —                                         | CSP enforcement, standalone build                 |
+| `AWS_REGION`           | No        | `us-east-1`                               | SES client                                        |
+| `SES_FROM_ADDRESS`     | Prod: yes | —                                         | SES sender address                                |
+| `TURNSTILE_SITE_KEY`   | No        | —                                         | Turnstile (both keys required together)           |
+| `TURNSTILE_SECRET_KEY` | No        | —                                         | Turnstile (both keys required together)           |
+| `HOST_PORT`            | No        | `3000`                                    | Docker host port (override if port 3000 is taken) |
+| `POSTGRES_PASSWORD`    | No        | `postgres`                                | Docker Compose                                    |
 
 Env validation runs at boot via `instrumentation.ts` → `validateEnv()`.
 
@@ -367,21 +367,21 @@ Env validation runs at boot via `instrumentation.ts` → `validateEnv()`.
 
 ## Redis Key Reference
 
-| Pattern | TTL | Purpose |
-|---------|-----|---------|
-| `csrf:<sha256(token)>` | 180min | Single-use CSRF tokens |
-| `rl:ip:<key>` / `rl:user:<username>` / `rl:global` | sliding | Rate-limit sorted sets |
-| `fail:user:<username>` / `fail:ip:<ip>` | 900s | Auth failure counters |
-| `fail:last:<username>` | 900s | Lockout timestamp |
-| `drop:count:hour:<ip>` / `drop:count:day:<ip>` | 3660s / 86460s | Drop IP quotas |
-| `pow:<challenge>` | 120s | Proof-of-work challenges |
-| `passkey:challenge:<userId>` | 120s | WebAuthn challenges |
-| `mfa:<mfaToken>` | 300s | MFA sessions (userId, methods, verified[], attempt counters) |
-| `recovery:challenge:<token>` | 300s | Account recovery challenges |
-| `mfa:setup:<userId>` | 600s | TOTP setup secrets |
-| `verify:<sha256(token)>` | 3600s | Email verification tokens |
-| `email-resend-cooldown:<userId>` | 30s | Email resend cooldown |
-| `notif:<userId>` | 300s | Notification rate limit |
+| Pattern                                            | TTL            | Purpose                                                      |
+| -------------------------------------------------- | -------------- | ------------------------------------------------------------ |
+| `csrf:<sha256(token)>`                             | 180min         | Single-use CSRF tokens                                       |
+| `rl:ip:<key>` / `rl:user:<username>` / `rl:global` | sliding        | Rate-limit sorted sets                                       |
+| `fail:user:<username>` / `fail:ip:<ip>`            | 900s           | Auth failure counters                                        |
+| `fail:last:<username>`                             | 900s           | Lockout timestamp                                            |
+| `drop:count:hour:<ip>` / `drop:count:day:<ip>`     | 3660s / 86460s | Drop IP quotas                                               |
+| `pow:<challenge>`                                  | 120s           | Proof-of-work challenges                                     |
+| `passkey:challenge:<userId>`                       | 120s           | WebAuthn challenges                                          |
+| `mfa:<mfaToken>`                                   | 300s           | MFA sessions (userId, methods, verified[], attempt counters) |
+| `recovery:challenge:<token>`                       | 300s           | Account recovery challenges                                  |
+| `mfa:setup:<userId>`                               | 600s           | TOTP setup secrets                                           |
+| `verify:<sha256(token)>`                           | 3600s          | Email verification tokens                                    |
+| `email-resend-cooldown:<userId>`                   | 30s            | Email resend cooldown                                        |
+| `notif:<userId>`                                   | 300s           | Notification rate limit                                      |
 
 ---
 
@@ -405,12 +405,12 @@ Env validation runs at boot via `instrumentation.ts` → `validateEnv()`.
 
 ### Fail-open vs fail-closed
 
-| System | Redis down behavior |
-|--------|-------------------|
-| Rate limiting | **Fails open** (requests allowed) — via `withRedis(fn, fallback)` |
-| CSRF verification | **Fails closed** (verification returns false) |
-| PoW challenge consumption | **Fails open** (challenge accepted) |
-| Notifications | **Fails open** (notification skipped) |
+| System                    | Redis down behavior                                               |
+| ------------------------- | ----------------------------------------------------------------- |
+| Rate limiting             | **Fails open** (requests allowed) — via `withRedis(fn, fallback)` |
+| CSRF verification         | **Fails closed** (verification returns false)                     |
+| PoW challenge consumption | **Fails open** (challenge accepted)                               |
+| Notifications             | **Fails open** (notification skipped)                             |
 
 ### Known security gaps (post-review1 fixes)
 
@@ -461,14 +461,14 @@ Run existing tests: `pnpm vitest run`
 
 ## Existing Documentation
 
-| File | Content |
-|------|---------|
-| `docs/TESTING_PLAN.md` | 7-phase test coverage improvement plan (~453 tests + E2E) |
+| File                                               | Content                                                                 |
+| -------------------------------------------------- | ----------------------------------------------------------------------- |
+| `docs/TESTING_PLAN.md`                             | 7-phase test coverage improvement plan (~453 tests + E2E)               |
 | `docs/Virtual PO Box — Implementation Document.md` | Complete build spec (14 phases, crypto algorithms, security invariants) |
-| `docs/review1.md` | Security audit (2026-06-21) — found 1 critical, 4 high, 8 improvements |
-| `docs/review1-progress.md` | Fix log for review1 — all items implemented |
-| `DEPLOYMENT.md` | Dev + production deployment guide |
-| `README.md` | Default create-next-app readme (not customized) |
+| `docs/review1.md`                                  | Security audit (2026-06-21) — found 1 critical, 4 high, 8 improvements  |
+| `docs/review1-progress.md`                         | Fix log for review1 — all items implemented                             |
+| `DEPLOYMENT.md`                                    | Dev + production deployment guide                                       |
+| `README.md`                                        | Default create-next-app readme (not customized)                         |
 
 ---
 

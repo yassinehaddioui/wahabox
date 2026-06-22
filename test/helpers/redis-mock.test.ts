@@ -38,12 +38,9 @@ describe('redis-mock', () => {
 
   it('withRedis returns fallback on error', async () => {
     const { withRedis } = await import('@/lib/redis')
-    const result = await withRedis(
-      async () => {
-        throw new Error('boom')
-      },
-      'fallback',
-    )
+    const result = await withRedis(async () => {
+      throw new Error('boom')
+    }, 'fallback')
     expect(result).toBe('fallback')
   })
 

@@ -18,7 +18,19 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { CheckCircle, XCircle, Loader2, Shield, Smartphone, Key, Copy, Trash2, KeyRound, RefreshCw, LogOut } from 'lucide-react'
+import {
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Shield,
+  Smartphone,
+  Key,
+  Copy,
+  Trash2,
+  KeyRound,
+  RefreshCw,
+  LogOut,
+} from 'lucide-react'
 import { clearSessionKeys, getSessionKeys } from '@/lib/session-keys'
 
 const RESEND_COOLDOWN_S = 30
@@ -134,10 +146,18 @@ export default function SettingsPage() {
     }
   }, [])
 
-  useEffect(() => { fetchStatus() }, [fetchStatus])
-  useEffect(() => { fetchMfaStatus() }, [fetchMfaStatus])
-  useEffect(() => { fetchPasskeys() }, [fetchPasskeys])
-  useEffect(() => { fetchRecoveryStatus() }, [fetchRecoveryStatus])
+  useEffect(() => {
+    fetchStatus()
+  }, [fetchStatus])
+  useEffect(() => {
+    fetchMfaStatus()
+  }, [fetchMfaStatus])
+  useEffect(() => {
+    fetchPasskeys()
+  }, [fetchPasskeys])
+  useEffect(() => {
+    fetchRecoveryStatus()
+  }, [fetchRecoveryStatus])
 
   useEffect(() => {
     if (sendCooldown <= 0) return
@@ -241,7 +261,7 @@ export default function SettingsPage() {
       })
       const data = await res.json()
       if (data.success) {
-        setStatus((prev) => prev ? { ...prev, notificationsEnabled: enabled } : prev)
+        setStatus((prev) => (prev ? { ...prev, notificationsEnabled: enabled } : prev))
         toast.success(enabled ? 'Notifications enabled' : 'Notifications disabled')
       } else {
         toast.error(data.error)
@@ -513,9 +533,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Email Notifications</CardTitle>
-          <CardDescription>
-            Receive email notifications when you get a new message.
-          </CardDescription>
+          <CardDescription>Receive email notifications when you get a new message.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
@@ -578,14 +596,23 @@ export default function SettingsPage() {
                 />
                 <Button type="submit" disabled={saving || sendCooldown > 0}>
                   {saving && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-                  {sendCooldown > 0 ? `${status?.hasEmail ? 'Update' : 'Save'} (${sendCooldown}s)` : (status?.hasEmail ? 'Update' : 'Save')}
+                  {sendCooldown > 0
+                    ? `${status?.hasEmail ? 'Update' : 'Save'} (${sendCooldown}s)`
+                    : status?.hasEmail
+                      ? 'Update'
+                      : 'Save'}
                 </Button>
               </form>
 
               {status?.hasEmail && (
                 <div className="flex gap-2">
                   {!status.isVerified && (
-                    <Button variant="outline" onClick={handleResend} disabled={resending || sendCooldown > 0} className="flex-1">
+                    <Button
+                      variant="outline"
+                      onClick={handleResend}
+                      disabled={resending || sendCooldown > 0}
+                      className="flex-1"
+                    >
                       {resending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
                       {sendCooldown > 0 ? `Resend (${sendCooldown}s)` : 'Resend Verification'}
                     </Button>
@@ -668,8 +695,8 @@ export default function SettingsPage() {
             <CardTitle className="text-base">Password Recovery Key</CardTitle>
           </div>
           <CardDescription>
-            If you forget your password, you can use your recovery key to regain access to your account.
-            Generating a new key will invalidate the old one.
+            If you forget your password, you can use your recovery key to regain access to your
+            account. Generating a new key will invalidate the old one.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -684,13 +711,18 @@ export default function SettingsPage() {
                   Last generated{' '}
                   {(() => {
                     if (!recoveryStatus?.createdAt) return 'at account creation'
-                    const days = Math.floor((Date.now() - new Date(recoveryStatus.createdAt).getTime()) / 86400000)
+                    const days = Math.floor(
+                      (Date.now() - new Date(recoveryStatus.createdAt).getTime()) / 86400000,
+                    )
                     return days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`
                   })()}
                   {recoveryStatus?.createdAt && (
                     <>
                       {' · '}
-                      {new Date(recoveryStatus.createdAt).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' })}
+                      {new Date(recoveryStatus.createdAt).toLocaleString(undefined, {
+                        dateStyle: 'long',
+                        timeStyle: 'short',
+                      })}
                     </>
                   )}
                 </p>
@@ -714,9 +746,7 @@ export default function SettingsPage() {
             <Shield className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-base">Multi-Factor Authentication</CardTitle>
           </div>
-          <CardDescription>
-            Add extra layers of security to your account.
-          </CardDescription>
+          <CardDescription>Add extra layers of security to your account.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {mfaLoading ? (
@@ -756,23 +786,23 @@ export default function SettingsPage() {
                   </div>
                   {mfaStatus?.mfaTotp ? (
                     <div className="flex items-center gap-2 shrink-0">
-                      <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Enabled</Badge>
+                      <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        Enabled
+                      </Badge>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleMfaAction('totp', 'disable')}
                         disabled={mfaActionLoading === 'totp:disable'}
                       >
-                        {mfaActionLoading === 'totp:disable' && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                        {mfaActionLoading === 'totp:disable' && (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        )}
                         Disable
                       </Button>
                     </div>
                   ) : totpSetup ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setTotpSetup(null)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => setTotpSetup(null)}>
                       Cancel
                     </Button>
                   ) : (
@@ -782,7 +812,9 @@ export default function SettingsPage() {
                       onClick={() => handleMfaAction('totp', 'setup')}
                       disabled={mfaActionLoading === 'totp:setup'}
                     >
-                      {mfaActionLoading === 'totp:setup' && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                      {mfaActionLoading === 'totp:setup' && (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      )}
                       Setup
                     </Button>
                   )}
@@ -815,20 +847,29 @@ export default function SettingsPage() {
                         onClick={() => handleMfaAction('totp', 'confirm', { code: totpCode })}
                         disabled={totpCode.length !== 6 || mfaActionLoading === 'totp:confirm'}
                       >
-                        {mfaActionLoading === 'totp:confirm' && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                        {mfaActionLoading === 'totp:confirm' && (
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        )}
                         Confirm
                       </Button>
                     </div>
                   </div>
                 )}
-
               </div>
 
               {/* Passkeys */}
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4 text-muted-foreground shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      className="h-4 w-4 text-muted-foreground shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <rect width="20" height="16" x="2" y="4" rx="2" />
                       <circle cx="8" cy="14" r="2" />
                       <path d="M8 14h8" />
@@ -857,9 +898,14 @@ export default function SettingsPage() {
                 {passkeys.length > 0 && (
                   <div className="space-y-2">
                     {passkeys.map((pk) => (
-                      <div key={pk.id} className="flex items-center justify-between rounded-lg border bg-canvas-soft px-3 py-2">
+                      <div
+                        key={pk.id}
+                        className="flex items-center justify-between rounded-lg border bg-canvas-soft px-3 py-2"
+                      >
                         <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{pk.deviceName ?? 'Unknown device'}</p>
+                          <p className="text-sm font-medium truncate">
+                            {pk.deviceName ?? 'Unknown device'}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             {new Date(pk.createdAt).toLocaleDateString()}
                           </p>
@@ -919,7 +965,9 @@ export default function SettingsPage() {
                   disabled={mfaActionLoading === 'recovery'}
                   className="shrink-0"
                 >
-                  {mfaActionLoading === 'recovery' && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                  {mfaActionLoading === 'recovery' && (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  )}
                   {mfaStatus?.hasRecoveryCodes ? 'Regenerate' : 'Generate'}
                 </Button>
               </div>
@@ -933,14 +981,17 @@ export default function SettingsPage() {
           <DialogHeader>
             <DialogTitle>Recovery Codes</DialogTitle>
             <DialogDescription>
-              Save these codes in a secure place. Each code can be used once to bypass MFA.
-              They are only shown now and cannot be retrieved later.
+              Save these codes in a secure place. Each code can be used once to bypass MFA. They are
+              only shown now and cannot be retrieved later.
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border bg-canvas-soft p-4">
             <div className="grid grid-cols-2 gap-2">
               {recoveryCodes?.map((code, i) => (
-                <code key={i} className="font-mono text-sm bg-muted/50 px-2 py-1 rounded text-center">
+                <code
+                  key={i}
+                  className="font-mono text-sm bg-muted/50 px-2 py-1 rounded text-center"
+                >
                   {code}
                 </code>
               ))}
@@ -951,9 +1002,7 @@ export default function SettingsPage() {
               <Copy className="h-4 w-4" />
               Copy All
             </Button>
-            <Button onClick={() => setRecoveryCodes(null)}>
-              I&apos;ve saved my codes
-            </Button>
+            <Button onClick={() => setRecoveryCodes(null)}>I&apos;ve saved my codes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -963,8 +1012,8 @@ export default function SettingsPage() {
           <DialogHeader>
             <DialogTitle>New Recovery Key</DialogTitle>
             <DialogDescription>
-              Save this key in a secure place. You&apos;ll need it to recover your account if you forget your password.
-              It is only shown now and cannot be retrieved later.
+              Save this key in a secure place. You&apos;ll need it to recover your account if you
+              forget your password. It is only shown now and cannot be retrieved later.
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border bg-canvas-soft p-4">
@@ -977,9 +1026,7 @@ export default function SettingsPage() {
               <Copy className="h-4 w-4" />
               Copy
             </Button>
-            <Button onClick={() => setAccountRecoveryCode(null)}>
-              I&apos;ve saved my key
-            </Button>
+            <Button onClick={() => setAccountRecoveryCode(null)}>I&apos;ve saved my key</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1032,14 +1079,13 @@ function MfaSection({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Enabled</Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onDisable}
-            disabled={loading !== null}
-          >
-            {loading?.includes(title.toLowerCase()) && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+          <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+            Enabled
+          </Badge>
+          <Button variant="outline" size="sm" onClick={onDisable} disabled={loading !== null}>
+            {loading?.includes(title.toLowerCase()) && (
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            )}
             Disable
           </Button>
         </div>
@@ -1065,7 +1111,9 @@ function MfaSection({
         disabled={!available || loading !== null}
         className="shrink-0"
       >
-        {loading?.includes(title.toLowerCase()) && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+        {loading?.includes(title.toLowerCase()) && (
+          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+        )}
         Enable
       </Button>
     </div>

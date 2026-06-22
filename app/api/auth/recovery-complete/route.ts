@@ -18,12 +18,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await parseBody(request, recoveryCompleteSchema)
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? request.headers.get('x-real-ip')
-      ?? 'unknown'
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
-    if (await checkIpRate(`recovery-complete:${ip}`, WINDOW) ||
-        await checkUserRate(body.username, WINDOW)) {
+    if (
+      (await checkIpRate(`recovery-complete:${ip}`, WINDOW)) ||
+      (await checkUserRate(body.username, WINDOW))
+    ) {
       throw new RateLimitError('Too many requests')
     }
     if (await checkGlobalRate()) {
