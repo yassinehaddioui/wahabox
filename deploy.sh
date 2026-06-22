@@ -175,6 +175,10 @@ echo "  ✓ Pulled latest changes"
 echo ""
 
 # ── Phase 7: Build and deploy ───────────────────────────────────────
+echo "▸ Building migrate image (to pick up new migrations)..."
+docker compose build migrate
+echo "  ✓ Migrate image built"
+
 echo "▸ Ensuring dependencies are running (postgres, redis, migrate)..."
 docker compose up -d postgres redis migrate
 echo "  ✓ Dependencies ready"
