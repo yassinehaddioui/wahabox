@@ -29,16 +29,16 @@ export async function GET(
       select: {
         id: true,
         ciphertext: true,
-        isRead: true,
+        readAt: true,
         createdAt: true,
       },
     })
 
     return success(
-      messages.map((m: { id: string; ciphertext: Uint8Array; isRead: boolean; createdAt: Date }) => ({
+      messages.map((m: { id: string; ciphertext: Uint8Array; readAt: Date | null; createdAt: Date }) => ({
         id: m.id,
         ciphertext: b64(m.ciphertext),
-        isRead: m.isRead,
+        readAt: m.readAt?.toISOString() ?? null,
         createdAt: m.createdAt.toISOString(),
       })),
     )

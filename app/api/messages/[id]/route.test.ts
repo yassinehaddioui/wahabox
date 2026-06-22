@@ -39,10 +39,10 @@ describe('PATCH /api/messages/[id]', () => {
 
   it('marks message as read', async () => {
     mockAuth()
-    prismaMock.message.findFirst.mockResolvedValue(createMessage({ id: 'm1', isRead: false }))
+    prismaMock.message.findFirst.mockResolvedValue(createMessage({ id: 'm1', readAt: null }))
     const res = await PATCH(createNextRequest('http://localhost/api/messages/m1', { method: 'PATCH' }), createRouteContext({ id: 'm1' }))
     expect((await res.json()).data.id).toBe('m1')
-    expect(prismaMock.message.update).toHaveBeenCalledWith({ where: { id: 'm1' }, data: { isRead: true } })
+    expect(prismaMock.message.update).toHaveBeenCalledWith({ where: { id: 'm1', readAt: null }, data: { readAt: expect.any(Date) } })
   })
 })
 

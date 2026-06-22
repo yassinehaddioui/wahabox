@@ -41,8 +41,8 @@ describe('GET /api/boxes/[id]/messages', () => {
   it('returns messages with base64 ciphertext, ordered desc', async () => {
     mockAuth()
     prismaMock.poBox.findFirst.mockResolvedValue(createPoBox({ id: 'b1' }))
-    const older = createMessage({ id: 'm-1', createdAt: new Date('2025-01-01T00:00:00.000Z'), isRead: false })
-    const newer = createMessage({ id: 'm-2', createdAt: new Date('2025-01-02T00:00:00.000Z'), isRead: true })
+    const older = createMessage({ id: 'm-1', createdAt: new Date('2025-01-01T00:00:00.000Z'), readAt: null })
+    const newer = createMessage({ id: 'm-2', createdAt: new Date('2025-01-02T00:00:00.000Z'), readAt: new Date('2025-01-02T12:00:00.000Z') })
     prismaMock.message.findMany.mockResolvedValue([newer, older])
     const res = await GET(createNextRequest('http://localhost/api/boxes/b1/messages'), createRouteContext({ id: 'b1' }))
     const body = await res.json()

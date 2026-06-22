@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         _count: { select: { messages: true } },
         messages: {
-          where: { isRead: false },
+          where: { readAt: null },
           select: { id: true },
           take: 1,
         },

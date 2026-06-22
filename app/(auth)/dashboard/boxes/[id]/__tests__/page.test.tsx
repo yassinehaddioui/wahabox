@@ -46,13 +46,13 @@ let localStorageStore: Record<string, string> = {}
 const mockMessage = (overrides = {}) => ({
   id: 'msg-1',
   ciphertext: 'base64-cipher',
-  isRead: false,
+  readAt: null,
   createdAt: '2024-06-15T10:30:00.000Z',
   ...overrides,
 })
 
-const mockReadMessage = () => mockMessage({ id: 'msg-2', isRead: true })
-const mockDecryptedMessage = () => mockMessage({ id: 'msg-3', isRead: true, plaintext: 'Hello' })
+const mockReadMessage = () => mockMessage({ id: 'msg-2', readAt: '2024-06-15T12:00:00.000Z' })
+const mockDecryptedMessage = () => mockMessage({ id: 'msg-3', readAt: '2024-06-15T12:00:00.000Z', plaintext: 'Hello' })
 
 describe('MessagesPage', () => {
   let createObjectURL: ReturnType<typeof vi.fn>

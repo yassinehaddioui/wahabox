@@ -57,7 +57,7 @@ export type FixtureMessage = {
   id: string
   poBoxId: string
   ciphertext: Buffer
-  isRead: boolean
+  readAt: Date | null
   createdAt: Date
 }
 
@@ -140,7 +140,7 @@ export function createMessage(overrides: Partial<FixtureMessage> = {}): FixtureM
     id: MESSAGE_ID,
     poBoxId: BOX_ID,
     ciphertext: Buffer.alloc(64, 0x77),
-    isRead: false,
+    readAt: null,
     createdAt: FIXED_DATE,
     ...overrides,
   }

@@ -20,8 +20,8 @@ export async function PATCH(
     }
 
     await prisma.message.update({
-      where: { id },
-      data: { isRead: true },
+      where: { id, readAt: null },
+      data: { readAt: new Date() },
     })
 
     return success({ id })

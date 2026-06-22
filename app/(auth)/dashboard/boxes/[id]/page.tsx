@@ -27,10 +27,9 @@ const AUTO_DECRYPT_KEY = 'wahabox:autoDecrypt'
 type Message = {
   id: string
   ciphertext: string
-  isRead: boolean
+  readAt: string | null
   createdAt: string
   plaintext?: string
-  readAt?: string
 }
 
 export default function MessagesPage() {
@@ -122,10 +121,10 @@ export default function MessagesPage() {
         crypto.fromBase64(keys.privateKey),
       )
 
-      const wasUnread = !msg.isRead
+      const wasUnread = !msg.readAt
 
       setMessages((prev) =>
-        prev.map((m) => (m.id === msg.id ? { ...m, plaintext, readAt: wasUnread ? new Date().toISOString() : m.readAt } : m)),
+        prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)),
       )
 
       if (wasUnread) {
@@ -158,10 +157,10 @@ export default function MessagesPage() {
         crypto.fromBase64(keys.privateKey),
       )
 
-      const wasUnread = !msg.isRead
+      const wasUnread = !msg.readAt
 
       setMessages((prev) =>
-        prev.map((m) => (m.id === msg.id ? { ...m, plaintext, readAt: wasUnread ? new Date().toISOString() : m.readAt } : m)),
+        prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)),
       )
 
       if (wasUnread) {
@@ -196,7 +195,7 @@ export default function MessagesPage() {
     URL.revokeObjectURL(url)
   }
 
-  const unreadCount = messages.filter((m) => !m.isRead).length
+  const unreadCount = messages.filter((m) => !m.readAt).length
 
   return (
     <div className="w-full space-y-6">
@@ -244,19 +243,19 @@ export default function MessagesPage() {
         </Card>
       ) : (
         messages.map((msg) => (
-          <Card key={msg.id} className={cn(!msg.isRead && "ring-1 ring-inset ring-amber-400")}>
-            <CardHeader>
-              <CardTitle className="text-sm font-mono font-normal text-muted-foreground">
+          <Card key={msg.id} className={cn(!msg.readAt && "ring-2 ring-amber-400")}>
+            <CardHeader className="bg-muted -mt-(--card-spacing) py-2.5">
+              <CardTitle className="text-xs font-mono font-normal text-muted-foreground">
                 {new Date(msg.createdAt).toLocaleString()}
               </CardTitle>
               {msg.readAt && (
-                <CardDescription>
+                <CardDescription className="text-xs">
                   Read {new Date(msg.readAt).toLocaleTimeString()}
                 </CardDescription>
               )}
               <CardAction>
                 <div className="flex items-center gap-0.5">
-                  {!msg.isRead && (
+                  {!msg.readAt && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium mr-1">
                       NEW
                     </Badge>
