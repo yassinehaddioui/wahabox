@@ -100,14 +100,19 @@ export async function POST(request: NextRequest) {
         return success({ mfaTotp: true, recoveryCodes: plain })
       }
       if (body.action === 'disable') {
+        const user = await prisma.user.findUnique({
+          where: { id: authUser.id },
+          select: { mfaEmail: true, mfaPasskey: true },
+        })
+        const hasOtherMfa = user?.mfaEmail || user?.mfaPasskey
+
         await prisma.user.update({
           where: { id: authUser.id },
           data: {
             mfaTotp: false,
             totpSecret: null,
             totpCreatedAt: null,
-            mfaRecoveryCodes: null,
-            mfaRecoveryCodesCreatedAt: null,
+            ...(hasOtherMfa ? {} : { mfaRecoveryCodes: null, mfaRecoveryCodesCreatedAt: null }),
           },
         })
         return success({ mfaTotp: false })

@@ -11,11 +11,11 @@ export async function POST(request: NextRequest) {
 
     const record = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { mfaTotp: true },
+      select: { mfaEmail: true, mfaTotp: true, mfaPasskey: true },
     })
 
-    if (!record?.mfaTotp) {
-      throw new BadRequestError('TOTP must be enabled to regenerate recovery codes')
+    if (!record?.mfaEmail && !record?.mfaTotp && !record?.mfaPasskey) {
+      throw new BadRequestError('At least one MFA method must be enabled to manage recovery codes')
     }
 
     const { plain, hashed } = generateRecoveryCodes()

@@ -39,7 +39,7 @@ export default function RootLayout({
     <html lang="en" className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable}`}>
       <body>
         <TooltipProvider>
-          {children}
+          <div className="mx-auto w-full max-w-[1200px]">{children}</div>
           <Toaster />
         </TooltipProvider>
       </body>

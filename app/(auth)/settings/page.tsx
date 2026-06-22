@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { CheckCircle, XCircle, Loader2, Shield, Smartphone, Key, Copy, Trash2, KeyRound, RefreshCw } from 'lucide-react'
+import { CheckCircle, XCircle, Loader2, Shield, Smartphone, Key, Copy, Trash2, KeyRound, RefreshCw, LogOut } from 'lucide-react'
 import { clearSessionKeys, getSessionKeys } from '@/lib/session-keys'
 
 const RESEND_COOLDOWN_S = 30
@@ -495,8 +495,14 @@ export default function SettingsPage() {
     toast.success('Recovery key copied')
   }
 
+  async function handleLogout() {
+    clearSessionKeys()
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+  }
+
   return (
-    <div className="w-full max-w-xl space-y-6">
+    <div className="w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-sm text-muted-foreground">
@@ -816,17 +822,6 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                {mfaStatus?.mfaTotp && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRegenRecovery}
-                    disabled={mfaActionLoading === 'recovery'}
-                    className="text-muted-foreground"
-                  >
-                    Regenerate Recovery Codes
-                  </Button>
-                )}
               </div>
 
               {/* Passkeys */}
@@ -902,6 +897,34 @@ export default function SettingsPage() {
               </div>
             </>
           )}
+
+          {(mfaStatus?.mfaEmail || mfaStatus?.mfaTotp || mfaStatus?.mfaPasskey) && (
+            <div className="border-t pt-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Recovery Codes</p>
+                    <p className="text-xs text-muted-foreground">
+                      {mfaStatus?.hasRecoveryCodes
+                        ? 'One-time use codes to bypass MFA when you lose access to your device.'
+                        : 'Generate recovery codes to ensure you can always access your account.'}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRegenRecovery}
+                  disabled={mfaActionLoading === 'recovery'}
+                  className="shrink-0"
+                >
+                  {mfaActionLoading === 'recovery' && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                  {mfaStatus?.hasRecoveryCodes ? 'Regenerate' : 'Generate'}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -960,6 +983,19 @@ export default function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Card>
+        <CardContent className="pt-6">
+          <Button
+            variant="outline"
+            className="w-full text-destructive hover:text-destructive"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Log Out
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }
