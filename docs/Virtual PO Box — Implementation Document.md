@@ -1,8 +1,10 @@
+> **Note:** This is a pre-implementation blueprint from the original build. Several details diverge from the actual implementation. See [`project-overview.md`](./project-overview.md) for the current, accurate specification.
+
 # Virtual PO Box — Implementation Document
 
 This is the complete, build-ready specification. It's broken into small, sequential phases. Each phase has a goal, explicit steps, and a **Definition of Done** you must pass before moving on. Don't skip ahead — later phases assume earlier ones are complete and verified.
 
-**The one rule that governs everything:** the server must never possess anything that can decrypt a *message* or a *private key*. The single exception, made deliberately and explicitly, is the **optional email address**, which is encrypted at rest with a server-held secret so the server can send offline notifications. That email is *server-readable by design*; everything else is *server-blind*.
+**The one rule that governs everything:** the server must never possess anything that can decrypt a _message_ or a _private key_. The single exception, made deliberately and explicitly, is the **optional email address**, which is encrypted at rest with a server-held secret so the server can send offline notifications. That email is _server-readable by design_; everything else is _server-blind_.
 
 ---
 
@@ -24,6 +26,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** A running skeleton with the security baseline wired in before any feature exists.
 
 **Steps:**
+
 1. Pick your stack. Recommended: a backend with first-class libsodium bindings (Node.js + `libsodium-wrappers`, or Python + `pynacl`), PostgreSQL, and Redis for rate-limiting and ephemeral counters.
 2. Set up the frontend to load **libsodium in the browser** (`libsodium-wrappers`). All user-facing crypto happens here.
 3. Enforce **HTTPS/TLS 1.3 in every environment** from day one (use mkcert locally). Never develop crypto features over plain HTTP.
@@ -31,6 +34,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 5. Generate `SERVER_MASTER_SECRET` (`openssl rand -base64 32`) and load it from the environment. Confirm it is **not** committed anywhere.
 
 **Definition of Done:**
+
 - [ ] App boots and serves a page over HTTPS.
 - [ ] libsodium loads and runs in the browser (test with `sodium.crypto_box_keypair()`, then delete the test code).
 - [ ] PostgreSQL and Redis are reachable from the backend.
@@ -88,6 +92,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 | `created_at` | timestamptz | |
 
 **Definition of Done:**
+
 - [ ] All tables migrate cleanly up and down.
 - [ ] `username` and `slug` have unique indexes.
 - [ ] There is **no** column anywhere for a plaintext private key, plaintext password, or message plaintext. Read the schema line by line to confirm.
@@ -100,6 +105,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** One audited, well-tested browser-side module that performs all user crypto. Build and test it in isolation **before** any account feature. Everything later calls into it.
 
 **Functions to implement (exact parameters):**
+
 1. **`deriveMasterKey(password, salt)`** → Argon2id (`crypto_pwhash`), opslimit ≥ 3, memlimit ≥ 256 MiB, algorithm = Argon2id. Returns 64 bytes.
 2. **`splitMasterKey(masterKey)`** → HKDF-split into `auth_key` (32 B) and `KEK_pw` (32 B) using distinct info labels (`"auth"`, `"kek"`).
 3. **`deriveRecoveryKey(recoveryCode, salt)`** → Argon2id over the recovery code → `KEK_rec` (32 B).
@@ -112,6 +118,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 10. **`computeAuthVerifier(authKey, salt)`** → hash `auth_key` for server storage/comparison.
 
 **Definition of Done:**
+
 - [ ] Round-trip tests pass: wrap→unwrap returns the original key; seal→open returns the original message.
 - [ ] `unwrapPrivateKey` **throws** with the wrong KEK (no silent garbage).
 - [ ] The same private key wraps under both `KEK_pw` and `KEK_rec` and unwraps with **either**.
@@ -125,6 +132,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** A user creates an account with username + password and receives a recovery code. The server stores only ciphertext + verifier.
 
 **Steps (all derivation in the browser):**
+
 1. User enters `username` + `password`.
 2. Client generates random `pw_kdf_salt`, `auth_salt`, `rec_kdf_salt`.
 3. `masterKey = deriveMasterKey(password, pw_kdf_salt)` → split into `auth_key`, `KEK_pw`.
@@ -137,6 +145,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 10. Server checks username availability (rate-limited), inserts the row, returns success.
 
 **Definition of Done:**
+
 - [ ] The raw password, recovery code, and plaintext private key **never appear in any network request** (verify in dev tools → Network).
 - [ ] An account cannot be created without confirming the recovery code.
 - [ ] The DB row holds only ciphertext, salts, nonces, verifier, and public key.
@@ -149,6 +158,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** Authenticate by username + password; the client recovers the private key into memory only.
 
 **Steps:**
+
 1. User enters `username` + `password`.
 2. Client requests `pw_kdf_salt` + `auth_salt` for that username. **Anti-enumeration:** if the username doesn't exist, return realistic dummy salts and still run the full path so timing is identical.
 3. Client derives `masterKey` → `auth_key`, `KEK_pw`; computes `auth_verifier`.
@@ -158,6 +168,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 7. On logout/timeout, overwrite the variable and drop the session.
 
 **Definition of Done:**
+
 - [ ] Wrong password fails; right password succeeds.
 - [ ] Timing for "nonexistent user" vs "wrong password" is indistinguishable (measure it).
 - [ ] The private key is never written to `localStorage`/`sessionStorage`/cookies (verify in dev tools).
@@ -170,6 +181,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** A user who forgot their password regains access via the recovery code, keeping all messages. With email optional, this is usually the **only** lifeline.
 
 **Recovery steps:**
+
 1. User enters `username` + `recoveryCode` + a **new password**.
 2. Server returns `enc_priv_rec`, `rec_kdf_salt`, `rec_nonce` (rate-limited + PoW — Phase 11).
 3. Client `KEK_rec = deriveRecoveryKey(...)` → `unwrapPrivateKey` → recovers the private key.
@@ -178,10 +190,12 @@ This only ever protects the optional email. It has nothing to do with messages o
 6. POST new verifier + new wrapped blob to `/auth/recovery/complete`.
 
 **Regeneration steps (while logged in):**
+
 1. With the private key in memory, `generateRecoveryCode()` → new `KEK_rec` → re-wrap → upload new `enc_priv_rec`.
 2. Show the new code once (with confirm step); the old code is now dead.
 
 **Definition of Done:**
+
 - [ ] After recovery, the **same public key** is unchanged → all old drop links and messages still work.
 - [ ] The old password no longer works; the new one does.
 - [ ] Regenerating invalidates the old recovery code.
@@ -194,11 +208,13 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** Authenticated users create and manage boxes.
 
 **Steps:**
+
 1. `POST /boxes` (auth): server generates a **128-bit CSPRNG slug**, Base64URL-encoded, separate from `id`. Stores `label`, `is_active = true`. Returns `https://app/drop/{slug}`.
 2. `GET /boxes`: list the owner's boxes.
 3. `PATCH /boxes/{id}`: rename, toggle `is_active` (kill switch), rotate slug (new slug, old link dies), set `expires_at` / `max_messages`, toggle per-box `notify`.
 
 **Definition of Done:**
+
 - [ ] The slug is unguessable, ≥128 bits, and never equals the internal `id`.
 - [ ] Rotating the slug kills the old link but keeps the box and its messages.
 - [ ] Deactivating a box makes its drop link return 404 (Phase 7).
@@ -211,6 +227,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** Anyone with the link can drop an encrypted message. (Abuse defenses arrive in Phase 11; here, build the core flow.)
 
 **Steps:**
+
 1. `GET /drop/{slug}` (public): returns **only** the box `label` + `public_key`. If the slug is unknown/inactive/expired/over-quota, return a generic 404 with **identical timing** to a valid one (tarpit).
 2. Visitor types a message in the browser.
 3. Client `sealMessage(plaintext, public_key)` → ciphertext.
@@ -218,6 +235,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 5. Trigger the notification check (Phase 10).
 
 **Definition of Done:**
+
 - [ ] The public endpoint exposes nothing but label + public key — no owner identity, no internal IDs.
 - [ ] Plaintext is encrypted **in the browser**; only ciphertext hits the network (verify in dev tools).
 - [ ] Oversized payloads are rejected before storage.
@@ -230,11 +248,13 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** The owner decrypts and reads messages client-side.
 
 **Steps:**
+
 1. `GET /boxes/{id}/messages` (auth): returns ciphertexts + metadata (read state, timestamp).
 2. Client uses the in-memory private key: `openMessage(...)` for each.
 3. `PATCH /messages/{id}` to mark read; `DELETE /messages/{id}` to delete.
 
 **Definition of Done:**
+
 - [ ] Decryption happens only in the browser; the server never sees plaintext.
 - [ ] A logged-out user (no in-memory key) cannot read anything even with the ciphertext.
 - [ ] Owners can only access their own boxes' messages (authorization check).
@@ -247,11 +267,13 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** Let users optionally add an email. It's encrypted at rest with a key derived from `SERVER_MASTER_SECRET` (so a database dump alone is useless), verified before it does anything, and — by explicit design — decryptable by the server so it can send offline notifications.
 
 **How the email key works:**
+
 - At startup, derive a 32-byte symmetric key from `SERVER_MASTER_SECRET` (e.g. HKDF with info label `"email-enc"`). This derived key lives **in process memory only**, never in the DB.
 - To store an email: generate a fresh nonce, `crypto_secretbox(email, nonce, emailKey)`, store `email_encrypted` + `email_nonce` + `email_key_version`.
 - To read it: `crypto_secretbox_open(...)` with the same derived key.
 
 **Steps:**
+
 1. Authenticated user submits an email.
 2. Server encrypts it with the derived key + fresh nonce, stores `email_encrypted`, `email_nonce`, `email_key_version`. Sets `email_verified = false`.
 3. Server generates a single-use, high-entropy verification token; stores **only its hash**; expires in 15–60 min.
@@ -261,11 +283,13 @@ This only ever protects the optional email. It has nothing to do with messages o
 7. The user can remove the email anytime → hard-delete `email_encrypted`, `email_nonce`, `email_key_version`; notifications stop immediately.
 
 **Hardening:**
+
 - `SERVER_MASTER_SECRET` is loaded only from the environment, never logged, never in error traces or crash dumps.
 - The plaintext email exists in memory only transiently during a send and is never logged.
 - `email_key_version` lets you rotate the secret later (or migrate to a KMS) by re-encrypting emails under a new key without ambiguity.
 
 **Definition of Done:**
+
 - [ ] Account creation and all core features work **without** an email.
 - [ ] The email key is derived from the env var, never stored in the DB — verify rows hold only ciphertext, nonce, and version.
 - [ ] A simulated database-only dump yields no readable email (test: try to decrypt a row using only DB contents — must be impossible without the env secret).
@@ -281,17 +305,20 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** Tell verified-email owners "you have a message" — nothing more — decrypting the email server-side only at send time.
 
 **Steps:**
+
 1. On a new message, check: does the owner have a **verified** email, `notifications_enabled`, and the box's `notify` flag on? If not, stop silently.
 2. If yes, decrypt the email **in memory** (with the env-derived key), send the notification, and **immediately discard** the plaintext.
-3. The body says only: *"You have a new message in your PO Box '{label}'."* + a login link. **No** content, length, sender, or precise count.
+3. The body says only: _"You have a new message in your PO Box '{label}'."_ + a login link. **No** content, length, sender, or precise count.
 4. Offer per-box enable/disable and optionally a batched digest (which also leaks less timing metadata).
 
 **Hardening:**
+
 - The plaintext email is held only for the send and is **never written to logs, queues, or error traces.** On failure, log an opaque user ID + error code — never the address.
 - If sends go through a background queue, the payload carries only the **user ID**; the worker decrypts at send time, so the address never sits in the queue.
 - Rate-limit outbound mail per account so a flood of messages can't be weaponized to mailbomb the owner. A digest or "max one notification per X minutes" cap handles this.
 
 **Definition of Done:**
+
 - [ ] No plaintext or message metadata beyond the box label leaves via email.
 - [ ] The email address never appears in any queue payload, log, or error trace (grep them).
 - [ ] Disabling notifications (account-level or per-box) stops them immediately.
@@ -305,6 +332,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** Harden every sensitive endpoint, applied as consistent middleware.
 
 **Authentication endpoints (`/auth/login`, `/auth/recovery/start`):**
+
 1. **Layered rate limits** in Redis: per-username, per-IP, and a global circuit breaker (token bucket / sliding window).
 2. **Exponential backoff + temporary lockout** after consecutive failures on a username.
 3. **Proof-of-work** that escalates with suspicion (cheap when clean, heavy after failures).
@@ -312,6 +340,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 5. High-cost **Argon2id** as the baseline brute-force tax.
 
 **Public drop endpoint (`/drop/{slug}`):**
+
 1. **Mandatory CAPTCHA + client-side PoW** before submission.
 2. **Layered rate limits** (per-IP, per-box, global), with a stricter limit on invalid submissions.
 3. **Per-box quotas** (messages/hour/day, max unread backlog).
@@ -319,6 +348,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 5. **Strict ciphertext size cap**, server-enforced.
 
 **Definition of Done:**
+
 - [ ] Scripted rapid logins get throttled, then locked, then PoW/CAPTCHA-gated.
 - [ ] Flooding a drop link hits rate limits and quotas and is blocked.
 - [ ] Tor users can still use the system (with challenges).
@@ -331,6 +361,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** Lock down the surrounding application.
 
 **Steps:**
+
 1. **TLS 1.3 only**, HSTS with preload, OCSP stapling.
 2. **Strict CSP** — no inline scripts (nonce/hash-based `script-src`), locked `connect-src`, `frame-ancestors 'none'`. This protects the in-memory private key from XSS exfiltration.
 3. **Subresource Integrity** on all scripts; pin the libsodium version and review every update.
@@ -341,6 +372,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 8. **Zeroize** the in-memory private key on logout/timeout.
 
 **Definition of Done:**
+
 - [ ] CSP blocks an injected inline `<script>` (test it).
 - [ ] No sender IP, slug, token, or server secret appears in persistent logs (grep them).
 - [ ] Security headers score well on an external scanner (e.g. securityheaders.com on staging).
@@ -353,7 +385,8 @@ This only ever protects the optional email. It has nothing to do with messages o
 **Goal:** Prove the security claims before launch.
 
 **Steps:**
-1. **Server-blindness audit:** with full DB + server-log access (but **without** `SERVER_MASTER_SECRET`), confirm you cannot decrypt a single message or private key — and cannot read any email. Then confirm that even *with* the secret, messages and private keys remain undecryptable (only emails open up).
+
+1. **Server-blindness audit:** with full DB + server-log access (but **without** `SERVER_MASTER_SECRET`), confirm you cannot decrypt a single message or private key — and cannot read any email. Then confirm that even _with_ the secret, messages and private keys remain undecryptable (only emails open up).
 2. **Network audit:** replay every flow with dev tools open; confirm no plaintext password, recovery code, private key, or message ever transits.
 3. **Brute-force drill:** script attacks against login, recovery, and drop; confirm all defenses fire.
 4. **Recovery drill:** forget password, recover via code, confirm old messages decrypt.
@@ -367,6 +400,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 7. Commission an **independent review / pen-test** before production.
 
 **Definition of Done:**
+
 - [ ] You personally tried and failed to read a message from the server side (even holding `SERVER_MASTER_SECRET`).
 - [ ] A simulated DB-only breach exposes no message contents **and** no readable emails.
 - [ ] All network audits show ciphertext-only for passwords, recovery codes, keys, and messages.
@@ -379,7 +413,7 @@ This only ever protects the optional email. It has nothing to do with messages o
 
 ## The Rules to Re-read Whenever You're Unsure
 
-1. **If the server can read a message or a private key, you've made a mistake.** These exist decrypted only in the user's browser memory. The *only* server-readable user data is the optional email.
+1. **If the server can read a message or a private key, you've made a mistake.** These exist decrypted only in the user's browser memory. The _only_ server-readable user data is the optional email.
 2. **Randomness is always from a CSPRNG** — every key, nonce, salt, slug, and token.
 3. **`SERVER_MASTER_SECRET` lives only in the environment** — never in the DB, logs, traces, or source control. It protects emails against a DB-only breach and nothing more.
 4. **Confirm-before-finish on the recovery code is non-negotiable.** With email optional, it's often the only lifeline.
