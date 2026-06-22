@@ -2,6 +2,8 @@
 
 > **Note:** `CLAUDE.md` is a symlink to `AGENTS.md`. They are the same file.
 
+> **Read first:** [`docs/project-overview.md`](docs/project-overview.md) — comprehensive context for the Wahabox codebase (tech stack, architecture, API reference, database schema, security model, lib module reference). Read this before exploring the codebase.
+
 ## Codebase structure
 
 ### Monorepo Overview
