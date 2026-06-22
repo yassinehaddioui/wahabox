@@ -22,6 +22,12 @@ const fontMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Wahabox",
   description: "Encrypted virtual PO box messaging",
+  icons: {
+    icon: [
+      { url: "/WahaBox-Logo-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/WahaBox-Logo.svg", type: "image/svg+xml" },
+    ],
+  },
 };
 
 export default function RootLayout({

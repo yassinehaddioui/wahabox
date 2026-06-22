@@ -27,8 +27,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    expose:
-      - "3000"
+    ports:
+      # Host port for the app (default 3000). Override via HOST_PORT env var if 3000 is taken on the host.
+      - "${HOST_PORT:-3000}:3000"
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/wahabox?schema=public
       REDIS_URL: redis://redis:6379
@@ -44,20 +45,7 @@ services:
       redis:
         condition: service_healthy
 
-  caddy:
-    image: caddy:2-alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-    environment:
-      DOMAIN: ${DOMAIN:-localhost}
-    depends_on:
-      - app
-
 volumes:
   postgres_data:
   redis_data:
-  caddy_data:
+

@@ -27,7 +27,7 @@ A **zero-knowledge, end-to-end encrypted Virtual PO Box** web app. Users create 
 | Auth | HMAC-signed sessions, WebAuthn/passkeys (`@simplewebauthn`), TOTP (`otplib`), CSRF tokens |
 | Password hashing | `bcryptjs` (cost 12) for box passwords; Argon2id for user master keys (client-side) |
 | Validation | Zod v4 |
-| Deployment | Docker (multi-stage standalone build) + Caddy (auto-TLS) |
+| Deployment | Docker (multi-stage standalone build) + nginx + CloudFlare (TLS termination) |
 | Package manager | pnpm (single-package repo, not a monorepo) |
 | Testing | Vitest 4 (minimal coverage; see `docs/TESTING_PLAN.md`) |
 
@@ -70,7 +70,7 @@ wahabox/
 ├── instrumentation.ts        # Boot-time env validation
 ├── Dockerfile / Dockerfile.dev
 ├── docker-compose.yml / docker-compose.dev.yml
-├── Caddyfile / Caddyfile.dev
+├── Caddyfile.dev (dev only)
 └── Config: package.json, tsconfig.json, next.config.ts, vitest.config.ts,
             eslint.config.mjs, postcss.config.mjs, components.json, prisma.config.ts
 ```
@@ -80,7 +80,9 @@ wahabox/
 ## Architecture
 
 ```
-User ←→ Caddy (TLS termination)
+User ←→ CloudFlare (HTTPS termination)
+              ↓
+     VPS Reverse Proxy (apache2/nginx)
               ↓
          Next.js (app server)
           ↙            ↘
@@ -356,7 +358,7 @@ All routes use the response envelope: `{ success: true, data }` or `{ success: f
 | `SES_FROM_ADDRESS` | Prod: yes | — | SES sender address |
 | `TURNSTILE_SITE_KEY` | No | — | Turnstile (both keys required together) |
 | `TURNSTILE_SECRET_KEY` | No | — | Turnstile (both keys required together) |
-| `DOMAIN` | No | `localhost` | Caddy auto-TLS |
+| `HOST_PORT` | No | `3000` | Docker host port (override if port 3000 is taken) |
 | `POSTGRES_PASSWORD` | No | `postgres` | Docker Compose |
 
 Env validation runs at boot via `instrumentation.ts` → `validateEnv()`.
@@ -440,7 +442,7 @@ Bind-mounts source for HMR. Dev defaults for secrets provided. Postgres/Redis po
 ```bash
 docker compose up -d --build
 # Multi-stage standalone build, non-root user, prisma migrate deploy at startup
-# Caddy auto-TLS via Let's Encrypt
+# App exposed on ${HOST_PORT:-3000}, proxied via CloudFlare + VPS reverse proxy
 ```
 
 `Dockerfile` uses `output: 'standalone'` from `next.config.ts`. Runs as `nextjs:nodejs` (UID/GID 1001). Migrations run automatically on container start.

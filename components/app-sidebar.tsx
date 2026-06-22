@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -39,8 +40,8 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link href="/dashboard" className="px-4 py-2 text-lg font-bold tracking-tight">
-          Wahabox
+        <Link href="/dashboard" className="flex items-center px-4 py-2 text-lg font-bold tracking-tight">
+          <Image src="/WahaBox-Logo.svg" alt="Wahabox" width={0} height={0} className="h-12 w-auto" />
         </Link>
       </SidebarHeader>
       <SidebarContent>
