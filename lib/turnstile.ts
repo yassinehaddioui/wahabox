@@ -18,8 +18,7 @@ function isEnabled(): boolean {
 
 export async function verifyTurnstile(token: string | null, ip: string): Promise<boolean> {
   if (!isEnabled()) {
-    if (process.env.NODE_ENV !== 'production') return true
-    return false
+    return true
   }
 
   if (!token) return false
@@ -86,8 +85,7 @@ export async function checkTurnstile(
   ip: string,
 ): Promise<{ verified: boolean; setProofCookie: string | null }> {
   if (!isEnabled()) {
-    if (process.env.NODE_ENV !== 'production') return { verified: true, setProofCookie: null }
-    return { verified: false, setProofCookie: null }
+    return { verified: true, setProofCookie: null }
   }
 
   if (proofCookie && verifyTurnstileProof(proofCookie)) {

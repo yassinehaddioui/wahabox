@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TurnstileWidget } from '@/components/turnstile-widget'
-import { TURNSTILE_PROOF_COOKIE } from '@/lib/turnstile-constants'
+import { TURNSTILE_PROOF_COOKIE, isTurnstileClientEnabled } from '@/lib/turnstile-constants'
 import { CheckCircle, Loader2 } from 'lucide-react'
 import { setSessionKeys } from '@/lib/session-keys'
 
@@ -40,7 +40,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const masterKeyRef = useRef<Uint8Array | null>(null)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
-  const hasSiteKey = typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  const hasSiteKey = isTurnstileClientEnabled()
   const [hasProof, setHasProof] = useState(() => {
     if (typeof document === 'undefined') return false
     return document.cookie.split(';').some((c) => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
@@ -534,7 +534,7 @@ export default function LoginPage() {
           )}
           <Button
             type="submit"
-            disabled={loading || (!hasProof && !turnstileToken)}
+            disabled={loading || (hasSiteKey && !hasProof && !turnstileToken)}
             className="w-full"
           >
             {loading ? 'Signing in...' : 'Sign In'}

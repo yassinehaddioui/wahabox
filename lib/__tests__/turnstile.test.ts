@@ -23,7 +23,7 @@ afterEach(() => {
 })
 
 describe('verifyTurnstile', () => {
-  it('returns true in dev when keys are not configured (dev bypass)', async () => {
+  it('returns true when keys are not configured (bypass)', async () => {
     for (const key of MANAGED_KEYS) delete process.env[key]
     const { verifyTurnstile } = await import('@/lib/turnstile')
     await expect(verifyTurnstile('some-token', '127.0.0.1')).resolves.toBe(true)
@@ -135,5 +135,12 @@ describe('checkTurnstile', () => {
     const { checkTurnstile } = await import('@/lib/turnstile')
     const result = await checkTurnstile(undefined, 'some-token', '127.0.0.1')
     expect(result).toEqual({ verified: false, setProofCookie: null })
+  })
+
+  it('bypasses when keys are not configured', async () => {
+    for (const key of MANAGED_KEYS) delete process.env[key]
+    const { checkTurnstile } = await import('@/lib/turnstile')
+    const result = await checkTurnstile(undefined, null, '127.0.0.1')
+    expect(result).toEqual({ verified: true, setProofCookie: null })
   })
 })

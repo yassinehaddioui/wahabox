@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { TURNSTILE_PROOF_COOKIE } from '@/lib/turnstile-constants'
+import { TURNSTILE_PROOF_COOKIE, isTurnstileClientEnabled } from '@/lib/turnstile-constants'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,7 +57,7 @@ export default function DropPage() {
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
-  const hasSiteKey = typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  const hasSiteKey = isTurnstileClientEnabled()
   const [hasProof, setHasProof] = useState(() => {
     if (typeof document === 'undefined') return false
     return document.cookie.split(';').some((c) => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
@@ -103,6 +103,7 @@ export default function DropPage() {
   useEffect(() => {
     if (loading) return
     if (hasProof) return
+    if (!hasSiteKey) return
 
     const existingScript = document.querySelector('script[src*="turnstile"]')
     if (existingScript) {
@@ -147,7 +148,6 @@ export default function DropPage() {
 
     try {
       let ciphertext: string
-      let csrfToken: string | null
 
       if (cachedPayloadRef.current) {
         ciphertext = cachedPayloadRef.current.ciphertext
@@ -162,7 +162,7 @@ export default function DropPage() {
 
       const csrfRes = await fetch(`/api/csrf?tag=${encodeURIComponent(slug)}`)
       const csrfData = await csrfRes.json()
-      csrfToken = csrfData.success ? csrfData.data.csrfToken : null
+      const csrfToken = csrfData.success ? csrfData.data.csrfToken : null
 
       cachedPayloadRef.current = { ciphertext, csrfToken, turnstileToken: turnstileToken }
 
@@ -269,7 +269,7 @@ export default function DropPage() {
           <div className="space-y-2">
             <TextEditor id="message" value={message} onChange={setMessage} maxLength={50000} />
           </div>
-          {!hasProof && <div ref={turnstileRef} className="flex justify-center" />}
+          {!hasProof && hasSiteKey && <div ref={turnstileRef} className="flex justify-center" />}
           <input
             ref={honeypotRef}
             type="text"
