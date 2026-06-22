@@ -166,14 +166,12 @@ echo ""
 
 # ── Phase 6: Git update ─────────────────────────────────────────────
 echo "▸ Updating source code..."
-git fetch origin
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "  ✗ Working directory is not clean — commit or stash changes first"
   exit 1
 fi
-git reset --hard "origin/${CURRENT_BRANCH}"
-echo "  ✓ Reset to origin/${CURRENT_BRANCH}"
+git pull --ff-only
+echo "  ✓ Pulled latest changes"
 echo ""
 
 # ── Phase 7: Build and deploy ───────────────────────────────────────
