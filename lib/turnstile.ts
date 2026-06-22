@@ -4,7 +4,7 @@ let turnstileEnabled: boolean | null = null
 
 function isEnabled(): boolean {
   if (turnstileEnabled !== null) return turnstileEnabled
-  const hasKeys = !!process.env.TURNSTILE_SITE_KEY && !!process.env.TURNSTILE_SECRET_KEY
+  const hasKeys = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !!process.env.TURNSTILE_SECRET_KEY
   turnstileEnabled = hasKeys
   if (!hasKeys && process.env.NODE_ENV === 'production') {
     console.error('[turnstile] Turnstile keys are not configured in production')

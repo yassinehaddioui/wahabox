@@ -14,6 +14,14 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy pnpm prisma generate && pnpm build
 
+# ----- migrator -----
+FROM base AS migrator
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
+COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
+CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+
 # ----- runner -----
 FROM base AS runner
 ENV NODE_ENV=production
@@ -25,11 +33,14 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
+
+RUN adapter=$(cd node_modules/.pnpm && ls -d @prisma+adapter-pg@*/node_modules/@prisma/adapter-pg | head -1) \
+  && ln -sfn "../.pnpm/${adapter}" node_modules/@prisma/adapter-pg \
+  && chown -h nextjs:nodejs node_modules/@prisma/adapter-pg
 
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+CMD ["node", "server.js"]

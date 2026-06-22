@@ -1,9 +1,12 @@
 node_modules
 .pnpm-store
 .next
+.codegraph/
 .git
 .gitignore
 *.md
 .DS_Store
 .env*
 !.env.production
+!.env
+

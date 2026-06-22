@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
       'Content-Security-Policy',
       [
         "default-src 'self'",
-        "script-src 'self' https://challenges.cloudflare.com",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
         "style-src 'self' 'unsafe-inline'",
         "connect-src 'self' https://challenges.cloudflare.com",
         "img-src 'self' data: https://api.qrserver.com",

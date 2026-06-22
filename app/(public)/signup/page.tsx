@@ -150,8 +150,14 @@ export default function SignupPage() {
                 autoComplete="off"
                 required
               />
+              <TurnstileWidget
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onVerify={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+              />
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" disabled={loading} className="w-full">
+              <Button type="submit" disabled={loading || !turnstileToken} className="w-full">
                 {loading ? 'Creating account...' : 'Create Account'}
               </Button>
             </form>
@@ -206,11 +212,6 @@ export default function SignupPage() {
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <TurnstileWidget
-            onVerify={(token) => setTurnstileToken(token)}
-            onExpire={() => setTurnstileToken(null)}
-            onError={() => setTurnstileToken(null)}
-          />
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? 'Generating keys...' : 'Create Account'}
           </Button>

@@ -2,8 +2,6 @@
 
 import { useEffect, useRef } from 'react'
 
-const TURNSTILE_SITE_KEY = '1x00000000000000000000AA'
-
 declare global {
   interface Window {
     turnstile?: {
@@ -16,12 +14,13 @@ declare global {
 }
 
 interface TurnstileWidgetProps {
+  siteKey: string
   onVerify: (token: string) => void
   onExpire?: () => void
   onError?: () => void
 }
 
-export function TurnstileWidget({ onVerify, onExpire, onError }: TurnstileWidgetProps) {
+export function TurnstileWidget({ siteKey, onVerify, onExpire, onError }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetId = useRef<string | null>(null)
   const onVerifyRef = useRef(onVerify)
@@ -43,7 +42,7 @@ export function TurnstileWidget({ onVerify, onExpire, onError }: TurnstileWidget
         return
       }
       widgetId.current = window.turnstile.render(container, {
-        sitekey: TURNSTILE_SITE_KEY,
+        sitekey: siteKey,
         callback: (token: string) => onVerifyRef.current(token),
         'expired-callback': () => onExpireRef.current?.(),
         'error-callback': () => onErrorRef.current?.(),
@@ -79,7 +78,7 @@ export function TurnstileWidget({ onVerify, onExpire, onError }: TurnstileWidget
       }
       delete window.onTurnstileLoad
     }
-  }, [])
+  }, [siteKey])
 
   return <div ref={containerRef} className="flex justify-center" />
 }

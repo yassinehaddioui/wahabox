@@ -14,8 +14,6 @@ type BoxInfo = {
   hasPassword: boolean
 }
 
-const TURNSTILE_SITE_KEY = '1x00000000000000000000AA'
-
 declare global {
   interface Window {
     turnstile?: {
@@ -82,7 +80,7 @@ export default function DropPage() {
       return
     }
     turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
-      sitekey: TURNSTILE_SITE_KEY,
+      sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
       callback: (token: string) => setTurnstileToken(token),
       'expired-callback': () => setTurnstileToken(null),
       'error-callback': () => setTurnstileToken(null),

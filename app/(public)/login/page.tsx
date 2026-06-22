@@ -507,6 +507,7 @@ export default function LoginPage() {
           {error && <p className="text-sm text-destructive">{error}</p>}
           {showTurnstile && (
             <TurnstileWidget
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
               onVerify={(token) => setTurnstileToken(token)}
               onExpire={() => setTurnstileToken(null)}
               onError={() => setTurnstileToken(null)}

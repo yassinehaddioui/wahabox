@@ -35,17 +35,17 @@ describe('TurnstileWidget with existing script', () => {
   })
 
   it('renders the container div', () => {
-    render(<TurnstileWidget onVerify={vi.fn()} />)
+    render(<TurnstileWidget siteKey="test-site-key" onVerify={vi.fn()} />)
     expect(document.querySelector('.flex.justify-center')).toBeInTheDocument()
   })
 
   it('calls window.turnstile.render with options when turnstile is available', () => {
-    render(<TurnstileWidget onVerify={vi.fn()} />)
+    render(<TurnstileWidget siteKey="test-site-key" onVerify={vi.fn()} />)
     expect(mockRender).toHaveBeenCalled()
     const [container, options] = mockRender.mock.lastCall
     expect(container).toBeInTheDocument()
     expect(options).toMatchObject({
-      sitekey: '1x00000000000000000000AA',
+      sitekey: 'test-site-key',
       callback: expect.any(Function),
       'expired-callback': expect.any(Function),
       'error-callback': expect.any(Function),
@@ -53,16 +53,16 @@ describe('TurnstileWidget with existing script', () => {
   })
 
   it('does not inject a second script tag when one already exists', () => {
-    render(<TurnstileWidget onVerify={vi.fn()} />)
+    render(<TurnstileWidget siteKey="test-site-key" onVerify={vi.fn()} />)
     const scripts = document.querySelectorAll('script[src*="turnstile"]')
     expect(scripts.length).toBe(1)
   })
 
   it('uses callback refs to always call the latest onVerify', () => {
     const onVerify1 = vi.fn()
-    const { rerender } = render(<TurnstileWidget onVerify={onVerify1} />)
+    const { rerender } = render(<TurnstileWidget siteKey="test-site-key" onVerify={onVerify1} />)
     const onVerify2 = vi.fn()
-    rerender(<TurnstileWidget onVerify={onVerify2} />)
+    rerender(<TurnstileWidget siteKey="test-site-key" onVerify={onVerify2} />)
     mockRender.mock.lastCall[1].callback('test-token')
     expect(onVerify1).not.toHaveBeenCalled()
     expect(onVerify2).toHaveBeenCalledWith('test-token')
@@ -70,14 +70,14 @@ describe('TurnstileWidget with existing script', () => {
 
   it('calls expired-callback when token expires', () => {
     const onExpire = vi.fn()
-    render(<TurnstileWidget onVerify={vi.fn()} onExpire={onExpire} />)
+    render(<TurnstileWidget siteKey="test-site-key" onVerify={vi.fn()} onExpire={onExpire} />)
     mockRender.mock.lastCall[1]['expired-callback']()
     expect(onExpire).toHaveBeenCalled()
   })
 
   it('calls error-callback on error', () => {
     const onError = vi.fn()
-    render(<TurnstileWidget onVerify={vi.fn()} onError={onError} />)
+    render(<TurnstileWidget siteKey="test-site-key" onVerify={vi.fn()} onError={onError} />)
     mockRender.mock.lastCall[1]['error-callback']()
     expect(onError).toHaveBeenCalled()
   })

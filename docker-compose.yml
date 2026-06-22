@@ -23,6 +23,18 @@ services:
       timeout: 5s
       retries: 5
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/wahabox?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   app:
     build:
       context: .
@@ -33,19 +45,23 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/wahabox?schema=public
       REDIS_URL: redis://redis:6379
-      SERVER_MASTER_SECRET: ${SERVER_MASTER_SECRET}
-      SESSION_SECRET: ${SESSION_SECRET}
+      SERVER_MASTER_SECRET: ${SERVER_MASTER_SECRET:?}
+      SESSION_SECRET: ${SESSION_SECRET:?}
       SES_FROM_ADDRESS: ${SES_FROM_ADDRESS}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       APP_URL: ${APP_URL}
+      APP_MODE: ${APP_MODE:-production}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
       NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
   redis_data:
-
