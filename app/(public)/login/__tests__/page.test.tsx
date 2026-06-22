@@ -23,6 +23,13 @@ const mockCrypto = vi.hoisted(() => ({
 
 vi.mock('@/lib/crypto', () => ({ crypto: mockCrypto }))
 vi.mock('@/lib/session-keys', () => ({ setSessionKeys: vi.fn() }))
+vi.mock('@/lib/turnstile-constants', () => ({ TURNSTILE_PROOF_COOKIE: 'turnstile_proof' }))
+vi.mock('@/components/turnstile-widget', () => ({
+  TurnstileWidget: ({ onVerify }: { onVerify: (token: string) => void }) => {
+    React.useEffect(() => { onVerify('mock-turnstile-token') }, [onVerify])
+    return React.createElement('div', { 'data-testid': 'turnstile-widget' })
+  },
+}))
 
 import LoginPage from '@/app/(public)/login/page'
 
@@ -30,6 +37,8 @@ describe('LoginPage', () => {
   afterEach(() => {
     resetMockFetch()
     vi.restoreAllMocks()
+    document.cookie = 'turnstile_proof=; max-age=0'
+    delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
   })
 
   const boxCheck = { json: () => ({ success: false }), ok: true }
@@ -56,6 +65,7 @@ describe('LoginPage', () => {
   })
 
   it('completes login with valid credentials', async () => {
+    document.cookie = 'turnstile_proof=valid-token'
     mockFetch([boxCheck, saltsOk, csrfOk, loginOk])
     render(React.createElement(LoginPage))
 
@@ -71,6 +81,7 @@ describe('LoginPage', () => {
   })
 
   it('shows error on failed login', async () => {
+    document.cookie = 'turnstile_proof=valid-token'
     mockFetch([
       boxCheck,
       saltsOk,
@@ -87,6 +98,60 @@ describe('LoginPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Invalid credentials')).toBeInTheDocument()
+    })
+  })
+
+  it('hides turnstile when proof cookie exists', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '1x00000000000000000000AA'
+    document.cookie = 'turnstile_proof=fake-token'
+    mockFetch(boxCheck)
+    render(React.createElement(LoginPage))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByTestId('turnstile-widget')).not.toBeInTheDocument()
+  })
+
+  it('shows turnstile when no proof cookie exists', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '1x00000000000000000000AA'
+    mockFetch(boxCheck)
+    render(React.createElement(LoginPage))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByTestId('turnstile-widget')).toBeInTheDocument()
+  })
+
+  it('shows turnstile state updates after form submission when cookie is set', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '1x00000000000000000000AA'
+
+    const loginSetsCookie = {
+      json: () => {
+        document.cookie = 'turnstile_proof=token'
+        return { success: true, data: { encPrivPw: 'enc', pwNonce: 'nonce', publicKey: 'pub' } }
+      },
+      ok: true,
+    }
+
+    mockFetch([boxCheck, saltsOk, csrfOk, loginSetsCookie])
+    render(React.createElement(LoginPage))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByTestId('turnstile-widget')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'alice' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('turnstile-widget')).not.toBeInTheDocument()
     })
   })
 })

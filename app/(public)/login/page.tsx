@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TurnstileWidget } from '@/components/turnstile-widget'
+import { TURNSTILE_PROOF_COOKIE } from '@/lib/turnstile-constants'
 import { CheckCircle, Loader2 } from 'lucide-react'
 import { setSessionKeys } from '@/lib/session-keys'
 
@@ -39,8 +40,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const masterKeyRef = useRef<Uint8Array | null>(null)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
-  const [showTurnstile, setShowTurnstile] = useState(false)
-  const failedAttemptsRef = useRef(0)
+  const hasSiteKey = typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  const [hasProof, setHasProof] = useState(() => {
+    if (typeof document === 'undefined') return false
+    return document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))
+  })
 
   const [mfa, setMfa] = useState<MfaState>({
     mfaToken: '',
@@ -152,17 +156,14 @@ export default function LoginPage() {
         throw new Error(loginData.error ?? 'Invalid credentials')
       }
 
-      failedAttemptsRef.current = 0
       await finishLogin(mk, loginData.data)
     } catch (err) {
-      failedAttemptsRef.current++
-      setTurnstileToken(null)
       const message = err instanceof Error ? err.message : 'Login failed'
       setError(message)
-      if (failedAttemptsRef.current >= 1) {
-        setShowTurnstile(true)
-      }
     } finally {
+      if (!hasProof && document.cookie.split(';').some(c => c.trim().startsWith(`${TURNSTILE_PROOF_COOKIE}=`))) {
+        setHasProof(true)
+      }
       setLoading(false)
     }
   }
@@ -505,7 +506,7 @@ export default function LoginPage() {
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          {showTurnstile && (
+          {!hasProof && hasSiteKey && (
             <TurnstileWidget
               siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
               onVerify={(token) => setTurnstileToken(token)}
@@ -513,7 +514,7 @@ export default function LoginPage() {
               onError={() => setTurnstileToken(null)}
             />
           )}
-          <Button type="submit" disabled={loading || (showTurnstile && !turnstileToken)} className="w-full">
+          <Button type="submit" disabled={loading || (!hasProof && !turnstileToken)} className="w-full">
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
