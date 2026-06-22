@@ -55,40 +55,30 @@ For the full architecture diagram and data-flow details, see [docs/project-overv
 - Docker and Docker Compose
 - pnpm (v9+)
 
-### 1. Clone and configure
+## Quick Start
+
+### Self-hosting (one command)
+
+```bash
+git clone https://github.com/yassinehaddioui/wahabox.git
+cd wahabox
+./setup.sh
+```
+
+This generates secrets, starts the production Docker stack (PostgreSQL 17, Redis 7, Next.js), and runs database migrations. The app is available at `http://localhost:3000`.
+
+### Development
+
+For local development with hot reload and debug tooling:
 
 ```bash
 git clone https://github.com/yassinehaddioui/wahabox.git
 cd wahabox
 cp .env.example .env
+./dev.sh up
 ```
 
-Edit `.env` and set your secrets:
-
-```bash
-openssl rand -base64 32   # -> SERVER_MASTER_SECRET
-openssl rand -hex 32      # -> SESSION_SECRET
-```
-
-### 2. Start the dev stack
-
-```bash
-docker compose -f docker-compose.dev.yml up -d
-```
-
-This starts PostgreSQL 17, Redis 7, a Caddy reverse proxy with auto-TLS, and the Next.js dev server. The app is available at `https://localhost`.
-
-### 3. Apply database migrations
-
-```bash
-docker compose -f docker-compose.dev.yml exec app pnpm prisma migrate deploy
-```
-
-### 4. Verify
-
-```bash
-pnpm test
-```
+The dev stack adds Caddy with auto-TLS and bind-mounts for HMR. Available at `https://wahabox.localhost`.
 
 ## Self-Hosting
 
