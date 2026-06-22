@@ -43,6 +43,7 @@ export interface PrismaMock {
     count: PrismaMockFn
     update: PrismaMockFn
     delete: PrismaMockFn
+    groupBy: PrismaMockFn
   }
   passkeyCredential: {
     findFirst: PrismaMockFn
@@ -81,6 +82,7 @@ const prismaMock = vi.hoisted((): PrismaMock => ({
     count: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    groupBy: vi.fn(),
   },
   passkeyCredential: {
     findFirst: vi.fn(),
@@ -115,6 +117,7 @@ const allStubs: readonly PrismaMockFn[] = [
   prismaMock.message.count,
   prismaMock.message.update,
   prismaMock.message.delete,
+  prismaMock.message.groupBy,
   prismaMock.passkeyCredential.findFirst,
   prismaMock.passkeyCredential.findMany,
   prismaMock.passkeyCredential.create,
@@ -143,6 +146,7 @@ function applyDefaultResolves(): void {
   prismaMock.message.count.mockResolvedValue(0)
   prismaMock.message.update.mockResolvedValue({})
   prismaMock.message.delete.mockResolvedValue({})
+  prismaMock.message.groupBy.mockResolvedValue([])
 
   prismaMock.passkeyCredential.findFirst.mockResolvedValue(null)
   prismaMock.passkeyCredential.findMany.mockResolvedValue([])

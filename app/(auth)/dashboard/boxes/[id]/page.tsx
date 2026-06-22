@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, Download, Eye, EyeOff, Trash2 } from 'lucide-react'
@@ -30,6 +30,7 @@ type Message = {
   isRead: boolean
   createdAt: string
   plaintext?: string
+  readAt?: string
 }
 
 export default function MessagesPage() {
@@ -121,11 +122,13 @@ export default function MessagesPage() {
         crypto.fromBase64(keys.privateKey),
       )
 
+      const wasUnread = !msg.isRead
+
       setMessages((prev) =>
-        prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)),
+        prev.map((m) => (m.id === msg.id ? { ...m, plaintext, readAt: wasUnread ? new Date().toISOString() : m.readAt } : m)),
       )
 
-      if (!msg.isRead) {
+      if (wasUnread) {
         await fetch(`/api/messages/${msg.id}`, { method: 'PATCH' }).catch(() => {})
       }
     } catch {
@@ -155,11 +158,13 @@ export default function MessagesPage() {
         crypto.fromBase64(keys.privateKey),
       )
 
+      const wasUnread = !msg.isRead
+
       setMessages((prev) =>
-        prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)),
+        prev.map((m) => (m.id === msg.id ? { ...m, plaintext, readAt: wasUnread ? new Date().toISOString() : m.readAt } : m)),
       )
 
-      if (!msg.isRead) {
+      if (wasUnread) {
         await fetch(`/api/messages/${msg.id}`, { method: 'PATCH' }).catch(() => {})
       }
     } catch {
@@ -239,20 +244,23 @@ export default function MessagesPage() {
         </Card>
       ) : (
         messages.map((msg) => (
-          <Card key={msg.id} className={cn("group", !msg.isRead && "ring-2 ring-inset ring-amber-400")}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-2">
-                  <time className="shrink-0 font-mono text-xs text-muted-foreground">
-                    {new Date(msg.createdAt).toLocaleString()}
-                  </time>
+          <Card key={msg.id} className={cn(!msg.isRead && "ring-1 ring-inset ring-amber-400")}>
+            <CardHeader>
+              <CardTitle className="text-sm font-mono font-normal text-muted-foreground">
+                {new Date(msg.createdAt).toLocaleString()}
+              </CardTitle>
+              {msg.readAt && (
+                <CardDescription>
+                  Read {new Date(msg.readAt).toLocaleTimeString()}
+                </CardDescription>
+              )}
+              <CardAction>
+                <div className="flex items-center gap-0.5">
                   {!msg.isRead && (
-                    <Badge variant="secondary" className="shrink-0">
-                      New
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium mr-1">
+                      NEW
                     </Badge>
                   )}
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
                   <Button
                     variant="ghost"
                     size="icon-sm"
@@ -285,7 +293,7 @@ export default function MessagesPage() {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
+              </CardAction>
             </CardHeader>
             {msg.plaintext && (
               <CardContent className="pt-0">

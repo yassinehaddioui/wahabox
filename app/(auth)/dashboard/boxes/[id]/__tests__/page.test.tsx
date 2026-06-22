@@ -38,7 +38,7 @@ vi.mock('@/components/ui/skeleton', () => ({
   Skeleton: ({ className }: any) => <div className={className} data-testid="skeleton" />,
 }))
 
-import MessagesPage from '@/app/(auth)/dashboard/[id]/page'
+import MessagesPage from '@/app/(auth)/dashboard/boxes/[id]/page'
 
 const AUTO_DECRYPT_KEY = 'wahabox:autoDecrypt'
 let localStorageStore: Record<string, string> = {}
@@ -122,7 +122,7 @@ describe('MessagesPage', () => {
     await waitFor(() => {
       expect(screen.getByText('2 messages')).toBeInTheDocument()
       expect(screen.getByText('(1 new)')).toBeInTheDocument()
-      expect(screen.getByText('New')).toBeInTheDocument()
+      expect(screen.getByText('NEW')).toBeInTheDocument()
     })
   })
 

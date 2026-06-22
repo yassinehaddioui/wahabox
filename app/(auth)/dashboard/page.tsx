@@ -41,6 +41,7 @@ type PoBox = {
   notify: boolean
   hasPassword: boolean
   createdAt: string
+  lastMessageAt: string | null
   _count: { messages: number }
   hasUnread: boolean
 }
@@ -308,7 +309,7 @@ export default function DashboardPage() {
                         <TooltipContent>Password protected</TooltipContent>
                       </Tooltip>
                     )}
-                    <Link href={`/dashboard/${box.id}`} className="hover:underline truncate">
+                    <Link href={`/dashboard/boxes/${box.id}`} className="hover:underline truncate">
                       {box.label}
                     </Link>
                   </span>
@@ -332,6 +333,12 @@ export default function DashboardPage() {
                       onCheckedChange={() => toggleActive(box)}
                     />
                   </div>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+                  <span>Created {new Date(box.createdAt).toLocaleDateString()}</span>
+                  {box.lastMessageAt && (
+                    <span>Last msg {new Date(box.lastMessageAt).toLocaleDateString()}</span>
+                  )}
                 </div>
               </CardContent>
               <CardFooter className="flex items-center justify-end gap-0.5">
@@ -362,7 +369,7 @@ export default function DashboardPage() {
                   <TooltipTrigger render={<Button
                     variant={box.hasUnread ? 'default' : 'ghost'}
                     size="icon-sm"
-                    onClick={() => router.push(`/dashboard/${box.id}`)}
+                    onClick={() => router.push(`/dashboard/boxes/${box.id}`)}
                     aria-label="View messages"
                   >
                     <Mail className="h-3.5 w-3.5" />

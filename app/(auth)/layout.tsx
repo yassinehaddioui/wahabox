@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SessionKeySync } from '@/components/session-key-sync'
 import { SessionProvider } from '@/lib/session-provider'
@@ -20,6 +20,10 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
+          <div className="flex items-center gap-2 p-3 border-b md:hidden">
+            <SidebarTrigger />
+            <span className="text-sm font-medium">Wahabox</span>
+          </div>
           <main className="flex flex-1 flex-col p-6">{children}</main>
         </SidebarInset>
       </SidebarProvider>
