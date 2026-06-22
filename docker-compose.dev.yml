@@ -55,8 +55,6 @@ services:
       SERVER_MASTER_SECRET: ${SERVER_MASTER_SECRET:-dev-master-secret-not-for-production}
       SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-not-for-production}
       APP_URL: ${APP_URL:-https://localhost}
-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
       NODE_ENV: development
     volumes:
       - .:/app
