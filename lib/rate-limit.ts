@@ -18,6 +18,7 @@ function lockoutDuration(failures: number): number {
 }
 
 async function slidingWindow(key: string, cfg: WindowConfig): Promise<boolean> {
+  if (process.env.APP_MODE === 'development') return false
   return withRedis(async (redis) => {
     const now = Date.now()
     const windowStart = now - cfg.windowMs
@@ -38,6 +39,7 @@ async function slidingWindow(key: string, cfg: WindowConfig): Promise<boolean> {
 }
 
 async function incrementFail(key: string): Promise<number> {
+  if (process.env.APP_MODE === 'development') return 0
   return withRedis(async (redis) => {
     const count = await redis.incr(key)
     if (count === 1) {
