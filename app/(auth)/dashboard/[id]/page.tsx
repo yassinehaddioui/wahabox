@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, Eye, EyeOff, Trash2, Unlock } from 'lucide-react'
+import { ArrowLeft, Download, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { Markdown } from '@/components/ui/markdown'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -97,11 +97,9 @@ export default function MessagesPage() {
 
   async function decryptMessage(msg: Message) {
     if (msg.plaintext) {
-      setDecrypted((prev) => {
-        const next = new Set(prev)
-        next.delete(msg.id)
-        return next
-      })
+      setMessages((prev) =>
+        prev.map((m) => (m.id === msg.id ? { ...m, plaintext: undefined } : m)),
+      )
       return
     }
 
@@ -180,6 +178,19 @@ export default function MessagesPage() {
     setDeleteTarget(null)
   }
 
+  function downloadMessage(msg: Message) {
+    if (!msg.plaintext) return
+    const blob = new Blob([msg.plaintext], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `message-${new Date(msg.createdAt).toISOString().replace(/[:.]/g, '-')}.md`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
   const unreadCount = messages.filter((m) => !m.isRead).length
 
   return (
@@ -254,6 +265,15 @@ export default function MessagesPage() {
                     ) : (
                       <Eye className="h-4 w-4" />
                     )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => downloadMessage(msg)}
+                    disabled={!msg.plaintext}
+                    aria-label="Download as markdown"
+                  >
+                    <Download className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
