@@ -3,15 +3,15 @@ import { createNextRequest } from '@/test/helpers/request'
 import '@/test/helpers/prisma-mock'
 import { POST } from './route'
 
-const { mockVerifyCsrf, mockVerifyTurnstile, mockCheckIpRate, mockCheckGlobalRate } = vi.hoisted(() => ({
+const { mockVerifyCsrf, mockCheckTurnstile, mockCheckIpRate, mockCheckGlobalRate } = vi.hoisted(() => ({
   mockVerifyCsrf: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
-  mockVerifyTurnstile: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
+  mockCheckTurnstile: vi.fn<(...args: unknown[]) => Promise<{ verified: boolean; setProofCookie: string | null }>>(),
   mockCheckIpRate: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
   mockCheckGlobalRate: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
 }))
 
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: mockVerifyCsrf }))
-vi.mock('@/lib/turnstile', () => ({ verifyTurnstile: mockVerifyTurnstile }))
+vi.mock('@/lib/turnstile', () => ({ checkTurnstile: mockCheckTurnstile, TURNSTILE_PROOF_COOKIE: 'turnstile_proof' }))
 vi.mock('@/lib/rate-limit', () => ({ checkIpRate: mockCheckIpRate, checkGlobalRate: mockCheckGlobalRate }))
 
 const validBody = {
@@ -34,7 +34,7 @@ describe('POST /api/auth/signup', () => {
     mockCheckIpRate.mockResolvedValue(false)
     mockCheckGlobalRate.mockResolvedValue(false)
     mockVerifyCsrf.mockResolvedValue(true)
-    mockVerifyTurnstile.mockResolvedValue(true)
+    mockCheckTurnstile.mockResolvedValue({ verified: true, setProofCookie: null })
   })
 
   it('creates a user and returns 201', async () => {
@@ -91,7 +91,7 @@ describe('POST /api/auth/signup', () => {
   })
 
   it('returns 400 when Turnstile verification fails', async () => {
-    mockVerifyTurnstile.mockResolvedValue(false)
+    mockCheckTurnstile.mockResolvedValue({ verified: false, setProofCookie: null })
 
     const req = createNextRequest('http://localhost/api/auth/signup', {
       method: 'POST',

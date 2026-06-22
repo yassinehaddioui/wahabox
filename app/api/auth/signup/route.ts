@@ -3,7 +3,7 @@ import { success, error } from '@/lib/response'
 import { parseBody, signupSchema } from '@/lib/validation'
 import { BadRequestError, ConflictError, RateLimitError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
-import { verifyTurnstile } from '@/lib/turnstile'
+import { checkTurnstile, TURNSTILE_PROOF_COOKIE } from '@/lib/turnstile'
 import prisma from '@/lib/prisma'
 import { checkIpRate, checkGlobalRate } from '@/lib/rate-limit'
 
@@ -14,6 +14,8 @@ function b64(s: string) {
 const WINDOW = { windowMs: 60_000, max: 3 }
 
 export async function POST(request: NextRequest) {
+  let proofToken: string | null = null
+
   try {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       ?? request.headers.get('x-real-ip')
@@ -31,8 +33,13 @@ export async function POST(request: NextRequest) {
     const csrfValid = await verifyAndConsumeCsrfToken('signup', body.csrfToken ?? null)
     if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
 
-    const turnstileVerified = await verifyTurnstile(body.turnstileToken ?? null, ip)
-    if (!turnstileVerified) {
+    const turnstileResult = await checkTurnstile(
+      request.cookies.get(TURNSTILE_PROOF_COOKIE)?.value,
+      body.turnstileToken ?? null,
+      ip,
+    )
+    proofToken = turnstileResult.setProofCookie
+    if (!turnstileResult.verified) {
       throw new BadRequestError('CAPTCHA verification failed')
     }
 
@@ -59,8 +66,28 @@ export async function POST(request: NextRequest) {
       throw err
     }
 
-    return success({ username: body.username }, 201)
+    const res = success({ username: body.username }, 201)
+    if (proofToken) {
+      res.cookies.set(TURNSTILE_PROOF_COOKIE, proofToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 2592000,
+      })
+    }
+    return res
   } catch (err) {
-    return error(err)
+    const errorRes = error(err)
+    if (proofToken) {
+      errorRes.cookies.set(TURNSTILE_PROOF_COOKIE, proofToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 2592000,
+      })
+    }
+    return errorRes
   }
 }

@@ -63,10 +63,15 @@ vi.mock('@/components/turnstile-widget', () => ({
   TurnstileWidget: () => <div data-testid="turnstile-widget" />,
 }))
 
+vi.mock('@/lib/turnstile-constants', () => ({
+  TURNSTILE_PROOF_COOKIE: 'turnstile_proof',
+}))
+
 import SignupPage from '@/app/(public)/signup/page'
 
 describe('SignupPage', () => {
   beforeEach(() => {
+    document.cookie = 'turnstile_proof=test'
     sessionStorage.clear()
     vi.clearAllMocks()
   })
