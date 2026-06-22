@@ -23,7 +23,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { Mail, Pencil, Copy, RefreshCw, WandSparkles, Lock } from 'lucide-react'
+import { Mail, Pencil, Copy, RefreshCw, WandSparkles, Lock, Trash2 } from 'lucide-react'
 
 async function fetchCsrfToken(tag: string): Promise<string | null> {
   const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
@@ -58,6 +58,9 @@ export default function DashboardPage() {
   const [editPassword, setEditPassword] = useState('')
   const [editPasswordTouched, setEditPasswordTouched] = useState(false)
   const [rotateBox, setRotateBox] = useState<PoBox | null>(null)
+  const [deleteConfirmBox, setDeleteConfirmBox] = useState<PoBox | null>(null)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deletingBox, setDeletingBox] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [now, setNow] = useState(Date.now())
   const [autoDecryptMap, setAutoDecryptMap] = useState<Record<string, boolean>>({})
@@ -234,6 +237,34 @@ export default function DashboardPage() {
   function copyDropLink(slug: string) {
     navigator.clipboard.writeText(`${window.location.origin}/drop/${slug}`)
     toast.success('Drop link copied')
+  }
+
+  async function deleteBox() {
+    if (!deleteConfirmBox) return
+    setDeletingBox(true)
+    try {
+      const csrfToken = await fetchCsrfToken('delete-box')
+      const res = await fetch(`/api/boxes/${deleteConfirmBox.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csrfToken }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Box deleted')
+        setDeleteConfirmBox(null)
+        setDeleteConfirmText('')
+        setEditBox(null)
+        setEditPasswordTouched(false)
+        await fetchBoxes()
+      } else {
+        toast.error(data.error)
+      }
+    } catch {
+      toast.error('Failed to delete box')
+    } finally {
+      setDeletingBox(false)
+    }
   }
 
   return (
@@ -482,11 +513,23 @@ export default function DashboardPage() {
                             onCheckedChange={setEditNotify}
                           />
                         </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => { setEditBox(null); setEditPasswordTouched(false) }}>
-                            Cancel
+                        <DialogFooter className="sm:justify-between">
+                          <Button
+                            variant="destructive"
+                            onClick={() => {
+                              setDeleteConfirmBox(editBox)
+                              setDeleteConfirmText('')
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete box
                           </Button>
-                          <Button onClick={updateBox}>Save</Button>
+                          <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => { setEditBox(null); setEditPasswordTouched(false) }}>
+                              Cancel
+                            </Button>
+                            <Button onClick={updateBox}>Save</Button>
+                          </div>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
@@ -498,6 +541,58 @@ export default function DashboardPage() {
           </Table>
         </Card>
       )}
+
+      <Dialog
+        open={deleteConfirmBox !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteConfirmBox(null)
+            setDeleteConfirmText('')
+          }
+        }}
+      >
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Delete box</DialogTitle>
+            <DialogDescription>
+              This will permanently delete <strong>{deleteConfirmBox?.label}</strong> and all
+              {' '}{deleteConfirmBox?._count.messages ?? 0} message
+              {(deleteConfirmBox?._count.messages ?? 0) !== 1 ? 's' : ''} associated with it.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="delete-confirm">
+              Type <span className="font-mono font-semibold text-destructive">DELETE</span> to confirm
+            </Label>
+            <Input
+              id="delete-confirm"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              autoComplete="off"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmBox(null)
+                setDeleteConfirmText('')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={deleteBox}
+              disabled={deleteConfirmText !== 'DELETE' || deletingBox}
+            >
+              {deletingBox ? 'Deleting...' : 'Delete forever'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

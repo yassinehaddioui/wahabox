@@ -66,6 +66,10 @@ export const updateBoxSchema = z.object({
   csrfToken: z.string().nullish(),
 })
 
+export const deleteBoxSchema = z.object({
+  csrfToken: z.string().nullish(),
+})
+
 export const submitMessageSchema = z.object({
   ciphertext: z.string().min(1).max(200_000),
   csrfToken: z.string().nullish(),

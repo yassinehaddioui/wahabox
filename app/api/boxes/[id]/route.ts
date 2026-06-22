@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { success, error } from '@/lib/response'
-import { parseBody, updateBoxSchema } from '@/lib/validation'
+import { parseBody, updateBoxSchema, deleteBoxSchema } from '@/lib/validation'
 import { getAuthUser } from '@/lib/auth'
 import { BadRequestError, NotFoundError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
@@ -70,6 +70,33 @@ export async function PATCH(
       notify: updated.notify,
       hasPassword: !!updated.passwordHash,
     })
+  } catch (err) {
+    return error(err)
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const user = await getAuthUser(request)
+    const { id } = await params
+    const body = await parseBody(request, deleteBoxSchema)
+
+    const csrfValid = await verifyAndConsumeCsrfToken('delete-box', body.csrfToken ?? null)
+    if (!csrfValid) throw new BadRequestError('Invalid CSRF token')
+
+    const box = await prisma.poBox.findFirst({
+      where: { id, ownerId: user.id },
+    })
+    if (!box) {
+      throw new NotFoundError('Box not found')
+    }
+
+    await prisma.poBox.delete({ where: { id } })
+
+    return success({ id })
   } catch (err) {
     return error(err)
   }
