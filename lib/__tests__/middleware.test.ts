@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createNextRequest } from '@/test/helpers/request'
 import { middleware, config } from '@/middleware'
 
@@ -25,7 +25,11 @@ describe('middleware', () => {
 describe('CSP in production', () => {
   beforeEach(() => {
     vi.resetModules()
-    process.env.NODE_ENV = 'production'
+    vi.stubEnv('NODE_ENV', 'production')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('includes Content-Security-Policy header', async () => {

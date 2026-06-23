@@ -11,8 +11,38 @@ vi.mock('next/navigation', () => ({
 }))
 
 beforeEach(() => {
-  localStorage.clear()
-  sessionStorage.clear()
+  vi.stubGlobal(
+    'localStorage',
+    (() => {
+      const store = new Map<string, string>()
+      return {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+        removeItem: (k: string) => void store.delete(k),
+        clear: () => void store.clear(),
+        get length() {
+          return store.size
+        },
+        key: (i: number) => [...store.keys()][i] ?? null,
+      }
+    })(),
+  )
+  vi.stubGlobal(
+    'sessionStorage',
+    (() => {
+      const store = new Map<string, string>()
+      return {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+        removeItem: (k: string) => void store.delete(k),
+        clear: () => void store.clear(),
+        get length() {
+          return store.size
+        },
+        key: (i: number) => [...store.keys()][i] ?? null,
+      }
+    })(),
+  )
   mockReplace.mockClear()
 })
 

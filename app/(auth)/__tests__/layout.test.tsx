@@ -23,6 +23,7 @@ vi.mock('@/lib/session', () => ({
 vi.mock('@/components/ui/sidebar', () => ({
   SidebarProvider: ({ children }: any) => <div data-testid="sidebar-provider">{children}</div>,
   SidebarInset: ({ children }: any) => <div data-testid="sidebar-inset">{children}</div>,
+  SidebarTrigger: () => <button data-testid="sidebar-trigger" />,
 }))
 
 vi.mock('@/components/app-sidebar', () => ({

@@ -88,7 +88,7 @@ describe('AppSidebar', () => {
   it('renders the logo link', () => {
     mockUseSession.mockReturnValue(null)
     render(<AppSidebar />)
-    expect(screen.getByText('Wahabox')).toBeInTheDocument()
+    expect(screen.getByAltText('Wahabox')).toBeInTheDocument()
   })
 
   it('renders all navigation items', () => {

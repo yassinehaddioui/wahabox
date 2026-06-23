@@ -81,7 +81,7 @@ describe('fixtures', () => {
   it('createMessage returns typed message with Buffer ciphertext', () => {
     const msg = createMessage()
     expect(Buffer.isBuffer(msg.ciphertext)).toBe(true)
-    expect(msg.isRead).toBe(false)
+    expect(msg.readAt).toBeNull()
   })
 
   it('createPasskeyCredential returns typed credential', () => {

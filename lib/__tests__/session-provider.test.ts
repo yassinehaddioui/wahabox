@@ -9,8 +9,10 @@ describe('SessionProvider', () => {
     render(
       React.createElement(
         SessionProvider,
-        { value: null },
-        React.createElement('div', { 'data-testid': 'child' }, 'hello'),
+        {
+          value: null,
+          children: React.createElement('div', { 'data-testid': 'child' }, 'hello'),
+        },
       ),
     )
     expect(screen.getByTestId('child')).toHaveTextContent('hello')
@@ -24,8 +26,10 @@ describe('SessionProvider', () => {
     render(
       React.createElement(
         SessionProvider,
-        { value: { username: 'alice' } },
-        React.createElement(Consumer),
+        {
+          value: { username: 'alice' },
+          children: React.createElement(Consumer),
+        },
       ),
     )
     expect(screen.getByTestId('session')).toHaveTextContent('alice')

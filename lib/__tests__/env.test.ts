@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { validateEnv } from '@/lib/env'
 
 // Env keys this suite mutates. Saved in beforeEach and restored in afterEach

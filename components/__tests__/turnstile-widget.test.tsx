@@ -68,7 +68,7 @@ describe('TurnstileWidget with existing script', () => {
     const { rerender } = render(<TurnstileWidget siteKey="test-site-key" onVerify={onVerify1} />)
     const onVerify2 = vi.fn()
     rerender(<TurnstileWidget siteKey="test-site-key" onVerify={onVerify2} />)
-    mockRender.mock.lastCall![1].callback('test-token')
+    ;(mockRender.mock.lastCall![1] as Record<string, any>).callback('test-token')
     expect(onVerify1).not.toHaveBeenCalled()
     expect(onVerify2).toHaveBeenCalledWith('test-token')
   })
@@ -76,14 +76,14 @@ describe('TurnstileWidget with existing script', () => {
   it('calls expired-callback when token expires', () => {
     const onExpire = vi.fn()
     render(<TurnstileWidget siteKey="test-site-key" onVerify={vi.fn()} onExpire={onExpire} />)
-    mockRender.mock.lastCall![1]['expired-callback']()
+    ;(mockRender.mock.lastCall![1] as Record<string, any>)['expired-callback']()
     expect(onExpire).toHaveBeenCalled()
   })
 
   it('calls error-callback on error', () => {
     const onError = vi.fn()
     render(<TurnstileWidget siteKey="test-site-key" onVerify={vi.fn()} onError={onError} />)
-    mockRender.mock.lastCall![1]['error-callback']()
+    ;(mockRender.mock.lastCall![1] as Record<string, any>)['error-callback']()
     expect(onError).toHaveBeenCalled()
   })
 })
