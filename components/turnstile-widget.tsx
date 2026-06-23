@@ -27,9 +27,11 @@ export function TurnstileWidget({ siteKey, onVerify, onExpire, onError }: Turnst
   const onExpireRef = useRef(onExpire)
   const onErrorRef = useRef(onError)
 
-  onVerifyRef.current = onVerify
-  onExpireRef.current = onExpire
-  onErrorRef.current = onError
+  useEffect(() => {
+    onVerifyRef.current = onVerify
+    onExpireRef.current = onExpire
+    onErrorRef.current = onError
+  })
 
   useEffect(() => {
     const container = containerRef.current

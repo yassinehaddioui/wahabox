@@ -35,11 +35,11 @@ const mockCrypto = vi.hoisted(() => ({
 vi.mock('@/lib/crypto', () => ({ crypto: mockCrypto }))
 
 vi.mock('@/components/ui/markdown', () => ({
-  Markdown: ({ children }: any) => <div data-testid="markdown">{children}</div>,
+  Markdown: ({ children }: { children: React.ReactNode }) => <div data-testid="markdown">{children}</div>,
 }))
 
 vi.mock('@/components/ui/skeleton', () => ({
-  Skeleton: ({ className }: any) => <div className={className} data-testid="skeleton" />,
+  Skeleton: ({ className }: { className?: string }) => <div className={className} data-testid="skeleton" />,
 }))
 
 import MessagesPage from '@/app/(auth)/dashboard/boxes/[id]/page'

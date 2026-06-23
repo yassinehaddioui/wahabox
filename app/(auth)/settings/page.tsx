@@ -162,15 +162,19 @@ export default function SettingsPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStatus()
   }, [fetchStatus])
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMfaStatus()
   }, [fetchMfaStatus])
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPasskeys()
   }, [fetchPasskeys])
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchRecoveryStatus()
   }, [fetchRecoveryStatus])
 
@@ -536,6 +540,13 @@ export default function SettingsPage() {
     router.push('/login')
   }
 
+  const recoveryYearsAgoText = (() => {
+    if (!recoveryStatus?.createdAt) return 'at account creation'
+    // eslint-disable-next-line react-hooks/purity
+    const days = Math.floor((Date.now() - new Date(recoveryStatus.createdAt).getTime()) / 86400000)
+    return days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`
+  })()
+
   return (
     <div className="w-full space-y-6">
       <div>
@@ -724,13 +735,7 @@ export default function SettingsPage() {
               <div className="rounded-lg border bg-canvas-soft px-4 py-3">
                 <p className="text-sm text-muted-foreground">
                   Last generated{' '}
-                  {(() => {
-                    if (!recoveryStatus?.createdAt) return 'at account creation'
-                    const days = Math.floor(
-                      (Date.now() - new Date(recoveryStatus.createdAt).getTime()) / 86400000,
-                    )
-                    return days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`
-                  })()}
+                  {recoveryYearsAgoText}
                   {recoveryStatus?.createdAt && (
                     <>
                       {' · '}

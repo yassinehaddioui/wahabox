@@ -93,7 +93,7 @@ describe('GET /api/healthz', () => {
 
   it('returns 503 with postgres timeout when prisma hangs', async () => {
     vi.useFakeTimers()
-    vi.mocked(prisma.$queryRaw).mockReturnValue(new Promise(() => {}) as any)
+    vi.mocked(prisma.$queryRaw).mockReturnValue(new Promise(() => {}) as never)
     redisMockCtrl.setPing(vi.fn().mockResolvedValue('PONG'))
 
     const reqPromise = GET(createNextRequest(URL))

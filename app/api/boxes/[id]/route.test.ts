@@ -65,7 +65,7 @@ describe('PATCH /api/boxes/[id]', () => {
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.poBox.findFirst.mockResolvedValue(createPoBox({ id: 'b1' }))
     prismaMock.poBox.update.mockResolvedValue(
-      createPoBox({ id: 'b1', label: 'Updated', greeting: 'Hi', slug: 'new-slug' }) as any,
+      createPoBox({ id: 'b1', label: 'Updated', greeting: 'Hi', slug: 'new-slug' }) as never,
     )
     const res = await PATCH(
       createNextRequest('http://localhost/api/boxes/b1', {
@@ -103,7 +103,7 @@ describe('PATCH /api/boxes/[id]', () => {
     prismaMock.poBox.findFirst.mockResolvedValue(
       createPoBox({ id: 'b1', passwordHash: '$2a$12$hash' }),
     )
-    prismaMock.poBox.update.mockResolvedValue(createPoBox({ id: 'b1', passwordHash: null }) as any)
+    prismaMock.poBox.update.mockResolvedValue(createPoBox({ id: 'b1', passwordHash: null }) as never)
     const res = await PATCH(
       createNextRequest('http://localhost/api/boxes/b1', {
         method: 'PATCH',
@@ -139,7 +139,7 @@ describe('DELETE /api/boxes/[id]', () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.poBox.findFirst.mockResolvedValue(createPoBox({ id: 'b1' }))
-    prismaMock.poBox.delete.mockResolvedValue({} as any)
+    prismaMock.poBox.delete.mockResolvedValue({} as never)
     const res = await DELETE(
       createNextRequest('http://localhost/api/boxes/b1', {
         method: 'DELETE',

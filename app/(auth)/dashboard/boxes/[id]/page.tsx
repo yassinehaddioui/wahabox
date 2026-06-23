@@ -45,20 +45,18 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [decrypted, setDecrypted] = useState<Set<string>>(new Set())
-  const [autoDecrypt, setAutoDecrypt] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-
-  useEffect(() => {
+  const [autoDecrypt, setAutoDecrypt] = useState(() => {
     try {
-      const stored = localStorage.getItem(AUTO_DECRYPT_KEY)
+      const stored =
+        typeof window !== 'undefined' ? localStorage.getItem(AUTO_DECRYPT_KEY) : null
       if (stored) {
         const ids: string[] = JSON.parse(stored)
-        if (ids.includes(id)) {
-          setAutoDecrypt(true)
-        }
+        return ids.includes(id)
       }
     } catch {}
-  }, [id])
+    return false
+  })
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   function toggleAutoDecrypt() {
     setAutoDecrypt((prev) => {
@@ -88,8 +86,35 @@ export default function MessagesPage() {
   }, [id])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMessages()
   }, [fetchMessages])
+
+  async function decryptForce(msg: Message) {
+    if (msg.plaintext) return
+
+    try {
+      const { crypto } = await import('@/lib/crypto')
+      await crypto.ready
+      const keys = getSessionKeys()
+
+      if (!keys) return
+
+      const plaintext = crypto.openMessage(
+        crypto.fromBase64(msg.ciphertext),
+        crypto.fromBase64(keys.publicKey),
+        crypto.fromBase64(keys.privateKey),
+      )
+
+      const wasUnread = !msg.readAt
+
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)))
+
+      if (wasUnread) {
+        await fetch(`/api/messages/${msg.id}`, { method: 'PATCH' }).catch(() => {})
+      }
+    } catch {}
+  }
 
   useEffect(() => {
     if (!autoDecrypt || loading || messages.length === 0) return
@@ -140,32 +165,6 @@ export default function MessagesPage() {
         return next
       })
     }
-  }
-
-  async function decryptForce(msg: Message) {
-    if (msg.plaintext) return
-
-    try {
-      const { crypto } = await import('@/lib/crypto')
-      await crypto.ready
-      const keys = getSessionKeys()
-
-      if (!keys) return
-
-      const plaintext = crypto.openMessage(
-        crypto.fromBase64(msg.ciphertext),
-        crypto.fromBase64(keys.publicKey),
-        crypto.fromBase64(keys.privateKey),
-      )
-
-      const wasUnread = !msg.readAt
-
-      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, plaintext } : m)))
-
-      if (wasUnread) {
-        await fetch(`/api/messages/${msg.id}`, { method: 'PATCH' }).catch(() => {})
-      }
-    } catch {}
   }
 
   async function deleteMessage(msgId: string) {

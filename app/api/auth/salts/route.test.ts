@@ -24,7 +24,7 @@ describe('POST /api/auth/salts', () => {
     prismaMock.user.findUnique.mockResolvedValue({
       pwKdfSalt: Buffer.alloc(16, 0x22),
       authSalt: Buffer.alloc(16, 0xbb),
-    } as any)
+    } as never)
 
     const req = createNextRequest('http://localhost/api/auth/salts', {
       method: 'POST',

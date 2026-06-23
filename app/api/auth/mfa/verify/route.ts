@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import type { AuthenticationResponseJSON } from '@simplewebauthn/server'
 import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { parseBody, mfaVerifySchema } from '@/lib/validation'
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { mfaToken, assertion } = (await request.json()) as { mfaToken?: string; assertion?: any }
+    const { mfaToken, assertion } = (await request.json()) as { mfaToken?: string; assertion?: AuthenticationResponseJSON }
 
     if (!mfaToken || !assertion) {
       throw new BadRequestError('mfaToken and assertion are required')

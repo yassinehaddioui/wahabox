@@ -38,7 +38,7 @@ vi.mock('@/lib/crypto', () => ({
 }))
 
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, disabled, ...props }: any) => (
+  Button: ({ children, onClick, disabled, ...props }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean } & Record<string, unknown>) => (
     <button onClick={onClick} disabled={disabled} {...props}>
       {children}
     </button>
@@ -46,35 +46,35 @@ vi.mock('@/components/ui/button', () => ({
 }))
 
 vi.mock('@/components/ui/input', () => ({
-  Input: (props: any) => <input {...props} />,
+  Input: (props: Record<string, unknown>) => <input {...props} />,
 }))
 
 vi.mock('@/components/ui/label', () => ({
-  Label: ({ children, ...props }: any) => <label {...props}>{children}</label>,
+  Label: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => <label {...props}>{children}</label>,
 }))
 
 vi.mock('@/components/ui/card', () => ({
-  Card: ({ children, ...props }: any) => (
+  Card: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => (
     <div data-testid="card" {...props}>
       {children}
     </div>
   ),
-  CardHeader: ({ children, ...props }: any) => (
+  CardHeader: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => (
     <div data-testid="card-header" {...props}>
       {children}
     </div>
   ),
-  CardContent: ({ children, ...props }: any) => (
+  CardContent: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => (
     <div data-testid="card-content" {...props}>
       {children}
     </div>
   ),
-  CardDescription: ({ children, ...props }: any) => (
+  CardDescription: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => (
     <div data-testid="card-description" {...props}>
       {children}
     </div>
   ),
-  CardTitle: ({ children, ...props }: any) => (
+  CardTitle: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => (
     <div data-testid="card-title" {...props}>
       {children}
     </div>

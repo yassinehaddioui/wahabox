@@ -50,7 +50,7 @@ describe('POST /api/auth/signup', () => {
 
   it('creates a user and returns 201', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
-    prismaMock.user.create.mockResolvedValue({} as any)
+    prismaMock.user.create.mockResolvedValue({} as never)
 
     const req = createNextRequest('http://localhost/api/auth/signup', {
       method: 'POST',
@@ -70,8 +70,7 @@ describe('POST /api/auth/signup', () => {
 
   it('returns 409 on duplicate username (P2002)', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
-    const prismaError = new Error('Unique constraint') as any
-    prismaError.code = 'P2002'
+    const prismaError = Object.assign(new Error('Unique constraint'), { code: 'P2002' as const })
     prismaMock.user.create.mockRejectedValue(prismaError)
 
     const req = createNextRequest('http://localhost/api/auth/signup', {

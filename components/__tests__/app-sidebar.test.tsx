@@ -26,7 +26,7 @@ vi.mock('@/lib/utils', () => ({
 }))
 
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, ...props }: any) => (
+  Button: ({ children, onClick, ...props }: { children: React.ReactNode; onClick?: () => void } & Record<string, unknown>) => (
     <button onClick={onClick} {...props}>
       {children}
     </button>

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import type { RegistrationResponseJSON } from '@simplewebauthn/server'
 import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
 import { BadRequestError, UnauthorizedError } from '@/lib/errors'
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     const user = await getAuthUser(request)
     const body = (await request.json()) as {
       action?: string
-      attestation?: any
+      attestation?: RegistrationResponseJSON
       deviceName?: string
     }
 

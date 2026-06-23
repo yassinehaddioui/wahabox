@@ -7,13 +7,11 @@ import { SessionProvider, useSession } from '@/lib/session-provider'
 describe('SessionProvider', () => {
   it('renders children', () => {
     render(
-      React.createElement(
-        SessionProvider,
-        {
-          value: null,
-          children: React.createElement('div', { 'data-testid': 'child' }, 'hello'),
-        },
-      ),
+      // eslint-disable-next-line react/no-children-prop
+      React.createElement(SessionProvider, {
+        value: null,
+        children: React.createElement('div', { 'data-testid': 'child' }, 'hello'),
+      }),
     )
     expect(screen.getByTestId('child')).toHaveTextContent('hello')
   })
@@ -24,13 +22,11 @@ describe('SessionProvider', () => {
       return React.createElement('div', { 'data-testid': 'session' }, session?.username ?? 'none')
     }
     render(
-      React.createElement(
-        SessionProvider,
-        {
-          value: { username: 'alice' },
-          children: React.createElement(Consumer),
-        },
-      ),
+      // eslint-disable-next-line react/no-children-prop
+      React.createElement(SessionProvider, {
+        value: { username: 'alice' },
+        children: React.createElement(Consumer),
+      }),
     )
     expect(screen.getByTestId('session')).toHaveTextContent('alice')
   })

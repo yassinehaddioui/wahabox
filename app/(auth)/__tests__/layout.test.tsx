@@ -9,7 +9,7 @@ vi.mock('next/headers', () => ({
 
 const mockRedirect = vi.fn()
 vi.mock('next/navigation', () => ({
-  redirect: (...args: any[]) => {
+  redirect: (...args: unknown[]) => {
     mockRedirect(...args)
     throw new Error('NEXT_REDIRECT')
   },
@@ -17,12 +17,12 @@ vi.mock('next/navigation', () => ({
 
 const mockGetSession = vi.fn()
 vi.mock('@/lib/session', () => ({
-  getSession: (...args: any[]) => mockGetSession(...args),
+  getSession: (...args: unknown[]) => mockGetSession(...args),
 }))
 
 vi.mock('@/components/ui/sidebar', () => ({
-  SidebarProvider: ({ children }: any) => <div data-testid="sidebar-provider">{children}</div>,
-  SidebarInset: ({ children }: any) => <div data-testid="sidebar-inset">{children}</div>,
+  SidebarProvider: ({ children }: { children: React.ReactNode }) => <div data-testid="sidebar-provider">{children}</div>,
+  SidebarInset: ({ children }: { children: React.ReactNode }) => <div data-testid="sidebar-inset">{children}</div>,
   SidebarTrigger: () => <button data-testid="sidebar-trigger" />,
 }))
 
@@ -35,7 +35,7 @@ vi.mock('@/components/session-key-sync', () => ({
 }))
 
 vi.mock('@/lib/session-provider', () => ({
-  SessionProvider: ({ value, children }: any) => (
+  SessionProvider: ({ value, children }: { value: Record<string, unknown> | null; children: React.ReactNode }) => (
     <div data-testid="session-provider" data-username={value?.username}>
       {children}
     </div>

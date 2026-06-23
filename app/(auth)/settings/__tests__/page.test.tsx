@@ -620,7 +620,7 @@ describe('SettingsPage', () => {
         ok: true,
       },
       { json: () => ({ success: true, data: { csrfToken: 'csrf-regen' } }), ok: true },
-      putPromise as any,
+      putPromise as never,
     ])
 
     mockCrypto.generateRecoveryCode = vi.fn(() => 'ABCD-EFGH-IJKL-MNOP')

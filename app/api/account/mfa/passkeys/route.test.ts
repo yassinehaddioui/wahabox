@@ -68,7 +68,7 @@ describe('POST /api/account/mfa/passkeys', () => {
     vi.mocked(generateRegOptions).mockResolvedValue({
       challenge: 'x',
       rp: { name: 'Wahabox' },
-    } as any)
+    } as never)
     const res = await POST(
       createNextRequest('http://localhost/api/account/mfa/passkeys', { method: 'POST', body: {} }),
     )
@@ -92,7 +92,7 @@ describe('POST /api/account/mfa/passkeys', () => {
       credentialId: new Uint8Array([1]),
       publicKey: new Uint8Array([2]),
       counter: 0,
-      transports: undefined as any,
+      transports: undefined as never,
     })
     const res = await POST(
       createNextRequest('http://localhost/api/account/mfa/passkeys', {

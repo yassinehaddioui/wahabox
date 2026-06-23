@@ -62,7 +62,7 @@ export default function DashboardPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deletingBox, setDeletingBox] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
   const [autoDecryptMap, setAutoDecryptMap] = useState<Record<string, boolean>>({})
 
   const fetchBoxes = useCallback(async () => {
@@ -81,6 +81,7 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBoxes()
   }, [fetchBoxes])
 
@@ -109,6 +110,7 @@ export default function DashboardPage() {
       for (const box of boxes) {
         map[box.id] = ids.includes(box.id)
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAutoDecryptMap((prev) => {
         const merged = { ...prev }
         for (const box of boxes) {

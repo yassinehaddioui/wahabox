@@ -27,7 +27,7 @@ const mockCrypto = vi.hoisted(() => ({
 vi.mock('@/lib/crypto', () => ({ crypto: mockCrypto }))
 
 vi.mock('@/components/ui/text-editor', () => ({
-  TextEditor: ({ id, value, onChange, maxLength }: any) => (
+  TextEditor: ({ id, value, onChange, maxLength }: { id: string; value: string; onChange: (value: string) => void; maxLength: number }) => (
     <textarea
       id={id}
       value={value}

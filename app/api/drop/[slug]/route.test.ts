@@ -280,7 +280,7 @@ describe('POST /api/drop/[slug]', () => {
     vi.mocked(checkTurnstile).mockResolvedValue({ verified: true, setProofCookie: null })
     prismaMock.poBox.findUnique.mockResolvedValue(createPoBox())
     prismaMock.message.count.mockResolvedValue(0)
-    prismaMock.message.create.mockResolvedValue({} as any)
+    prismaMock.message.create.mockResolvedValue({} as never)
     const res = await POST(
       createNextRequest(`http://localhost/api/drop/${SLUG}`, {
         method: 'POST',
@@ -302,7 +302,7 @@ describe('POST /api/drop/[slug]', () => {
     vi.mocked(checkTurnstile).mockResolvedValue({ verified: true, setProofCookie: null })
     prismaMock.poBox.findUnique.mockResolvedValue(createPoBox())
     prismaMock.message.count.mockResolvedValue(0)
-    prismaMock.message.create.mockResolvedValue({} as any)
+    prismaMock.message.create.mockResolvedValue({} as never)
     await POST(
       createNextRequest(`http://localhost/api/drop/${SLUG}`, {
         method: 'POST',

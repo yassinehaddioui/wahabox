@@ -39,7 +39,7 @@ describe('GET /api/boxes', () => {
     mockAuth()
     const box = createPoBox({ passwordHash: '$2a$12$secret' })
     const row = { ...box, _count: { messages: 3 }, messages: [{ id: 'm-1' }] }
-    prismaMock.poBox.findMany.mockResolvedValue([row] as any)
+    prismaMock.poBox.findMany.mockResolvedValue([row] as never)
     const res = await GET(createNextRequest('http://localhost/api/boxes'))
     const body = await res.json()
     expect(body.data[0].passwordHash).toBeUndefined()
@@ -50,7 +50,7 @@ describe('GET /api/boxes', () => {
     mockAuth()
     const box = createPoBox({ label: 'My Box' })
     const row = { ...box, _count: { messages: 5 }, messages: [{ id: 'm-1' }] }
-    prismaMock.poBox.findMany.mockResolvedValue([row] as any)
+    prismaMock.poBox.findMany.mockResolvedValue([row] as never)
     const res = await GET(createNextRequest('http://localhost/api/boxes'))
     const body = await res.json()
     expect(body.data[0].hasUnread).toBe(true)
@@ -61,7 +61,7 @@ describe('GET /api/boxes', () => {
     mockAuth()
     const box = createPoBox({ passwordHash: null })
     const row = { ...box, _count: { messages: 0 }, messages: [] }
-    prismaMock.poBox.findMany.mockResolvedValue([row] as any)
+    prismaMock.poBox.findMany.mockResolvedValue([row] as never)
     const res = await GET(createNextRequest('http://localhost/api/boxes'))
     const body = await res.json()
     expect(body.data[0].hasPassword).toBe(false)

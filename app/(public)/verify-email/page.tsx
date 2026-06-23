@@ -21,6 +21,7 @@ function VerifyContent() {
 
   useEffect(() => {
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState('error')
       setMessage('No verification token found in the link.')
       return

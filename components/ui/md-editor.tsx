@@ -9,11 +9,13 @@ import { cn } from '@/lib/utils'
 export function MdEditor({ id, value, onChange, maxLength, className }: TextEditorProps) {
   const { resolvedTheme } = useTheme()
   const [charCount, setCharCount] = useState(value.length)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return matchMedia('(max-width: 639px)').matches
+  })
 
   useEffect(() => {
     const mql = matchMedia('(max-width: 639px)')
-    setIsMobile(mql.matches)
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
     mql.addEventListener('change', handler)
     return () => mql.removeEventListener('change', handler)
