@@ -23,6 +23,7 @@
 # production
 /build
 /backups
+.version
 
 # misc
 .DS_Store
