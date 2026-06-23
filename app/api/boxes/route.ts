@@ -40,19 +40,20 @@ export async function GET(request: NextRequest) {
     })
 
     const boxIds: string[] = boxes.map((b: { id: string }) => b.id)
+    // FIXME(prisma-7): groupBy input type has erroneous array intersection.
+    // Re-check after Prisma upgrade. Runtime behavior is correct.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const latestMessages: { poBoxId: string; _max: { createdAt: Date | null } }[] =
       boxIds.length > 0
-        ? await prisma.message.groupBy({
+        ? ((await prisma.message.groupBy({
             by: ['poBoxId'],
             where: { poBoxId: { in: boxIds } },
             _max: { createdAt: true },
-          })
+          } as any)) as { poBoxId: string; _max: { createdAt: Date | null } }[])
         : []
 
     const lastMessageMap = new Map(
-      latestMessages.map(
-        (m: { poBoxId: string; _max: { createdAt: Date | null } }) => [m.poBoxId, m._max.createdAt],
-      ),
+      latestMessages.map((m) => [m.poBoxId, m._max.createdAt]),
     )
 
     return success(
