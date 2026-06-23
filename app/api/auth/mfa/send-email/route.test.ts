@@ -65,7 +65,7 @@ describe('POST /api/auth/mfa/send-email', () => {
     expect(mockDecryptEmail).toHaveBeenCalled()
     expect(mockSendMfaCodeEmail).toHaveBeenCalledWith('test@example.com', USER.username, '482631')
 
-    const updated = JSON.parse(await redisMock.get('mfa:valid-token')!)
+    const updated = JSON.parse((await redisMock.get('mfa:valid-token'))!)
     expect(updated.emailCodeHash).toBeDefined()
     expect(updated.emailCodeHash).not.toBeNull()
     expect(updated.emailSentAt).toBeGreaterThan(0)

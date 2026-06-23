@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const boxIds = boxes.map((b) => b.id)
-    const latestMessages =
+    const boxIds: string[] = boxes.map((b: { id: string }) => b.id)
+    const latestMessages: { poBoxId: string; _max: { createdAt: Date | null } }[] =
       boxIds.length > 0
         ? await prisma.message.groupBy({
             by: ['poBoxId'],
@@ -49,7 +49,11 @@ export async function GET(request: NextRequest) {
           })
         : []
 
-    const lastMessageMap = new Map(latestMessages.map((m) => [m.poBoxId, m._max.createdAt]))
+    const lastMessageMap = new Map(
+      latestMessages.map(
+        (m: { poBoxId: string; _max: { createdAt: Date | null } }) => [m.poBoxId, m._max.createdAt],
+      ),
+    )
 
     return success(
       boxes.map(
@@ -64,7 +68,7 @@ export async function GET(request: NextRequest) {
           ...box,
           hasUnread: unreadMessages.length > 0,
           hasPassword: !!passwordHash,
-          lastMessageAt: lastMessageMap.get(box.id as string)?.toISOString() ?? null,
+          lastMessageAt: (lastMessageMap.get(box.id as string) as Date | undefined)?.toISOString() ?? null,
         }),
       ),
     )

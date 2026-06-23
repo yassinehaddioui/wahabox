@@ -127,7 +127,7 @@ describe('POST /api/auth/mfa/verify', () => {
       expect(res.status).toBe(401)
       expect(json.error).toContain('Invalid code')
 
-      const updated = JSON.parse(await redisMock.get('mfa:valid-token')!)
+      const updated = JSON.parse((await redisMock.get('mfa:valid-token'))!)
       expect(updated.emailCodeHash).toBeNull()
       expect(updated.emailSentAt).toBeNull()
       expect(updated.emailAttempts).toBe(3)

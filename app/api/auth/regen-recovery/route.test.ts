@@ -33,7 +33,7 @@ beforeEach(async () => {
   mockGetAuthUser.mockResolvedValue({ id: USER.id, username: USER.username })
   mockVerifyCsrf.mockResolvedValue(true)
   const { notifyRecoveryRegenerated } = await import('@/lib/notifications')
-  notifyRecoveryRegenerated.mockResolvedValue(undefined)
+  vi.mocked(notifyRecoveryRegenerated).mockResolvedValue(undefined)
 })
 
 describe('PUT /api/auth/regen-recovery', () => {
@@ -115,7 +115,7 @@ describe('PUT /api/auth/regen-recovery', () => {
 
   it('notification failure does not affect response', async () => {
     const { notifyRecoveryRegenerated } = await import('@/lib/notifications')
-    notifyRecoveryRegenerated.mockRejectedValue(new Error('Email service down'))
+    vi.mocked(notifyRecoveryRegenerated).mockRejectedValue(new Error('Email service down'))
 
     const res = await PUT(makeRequest())
     const json = await res.json()

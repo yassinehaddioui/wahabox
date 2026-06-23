@@ -143,7 +143,7 @@ describe('POST /api/auth/mfa/recover', () => {
     const res = await POST(makeRequest('valid-token', 'WRONG'))
     expect(res.status).toBe(401)
 
-    const updated = JSON.parse(await redisMock.get('mfa:valid-token')!)
+    const updated = JSON.parse((await redisMock.get('mfa:valid-token'))!)
     expect(updated.recoveryAttempts).toBe(1)
   })
 
