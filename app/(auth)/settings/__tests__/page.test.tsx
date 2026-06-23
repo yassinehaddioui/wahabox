@@ -205,6 +205,7 @@ describe('SettingsPage', () => {
       expect(screen.getByText('Email 2FA')).toBeInTheDocument()
       expect(screen.getByText('Authenticator App')).toBeInTheDocument()
       expect(screen.getByText('Passkeys')).toBeInTheDocument()
+      expect(screen.getByText('Strong')).toBeInTheDocument()
     })
   })
 
@@ -231,7 +232,10 @@ describe('SettingsPage', () => {
       },
     ])
     render(React.createElement(SettingsPage))
-    await waitFor(() => expect(screen.getByText('Authenticator App')).toBeInTheDocument())
+    await waitFor(() => {
+      expect(screen.getByText('Authenticator App')).toBeInTheDocument()
+      expect(screen.getByText('Weak')).toBeInTheDocument()
+    })
 
     fireEvent.click(screen.getByText('Setup'))
 

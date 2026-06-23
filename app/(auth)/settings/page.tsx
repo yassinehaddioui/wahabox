@@ -30,6 +30,7 @@ import {
   KeyRound,
   RefreshCw,
   LogOut,
+  Star,
 } from 'lucide-react'
 import { clearSessionKeys, getSessionKeys } from '@/lib/session-keys'
 
@@ -49,6 +50,20 @@ type MfaStatus = {
   hasRecoveryCodes: boolean
   hasVerifiedEmail: boolean
   hasEmail: boolean
+}
+
+function getProtectionLevel(
+  status: MfaStatus | null,
+  passkeyCount: number,
+): { stars: number; label: string } {
+  if (!status) return { stars: 0, label: 'Weak' }
+  let count = 0
+  if (status.mfaEmail) count++
+  if (status.mfaTotp) count++
+  if (passkeyCount > 0) count++
+  const labels = ['Weak', 'Moderate', 'Good', 'Strong']
+  const clamped = Math.min(count, 3)
+  return { stars: clamped, label: labels[clamped] }
 }
 
 type Passkey = {
@@ -747,6 +762,19 @@ export default function SettingsPage() {
             <CardTitle className="text-base">Multi-Factor Authentication</CardTitle>
           </div>
           <CardDescription>Add extra layers of security to your account.</CardDescription>
+          {!mfaLoading && (
+            <div className="flex items-center gap-1.5 mt-1">
+              {[1, 2, 3].map((n) => (
+                <Star
+                  key={n}
+                  className={`h-3.5 w-3.5 ${n <= getProtectionLevel(mfaStatus, passkeys.length).stars ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`}
+                />
+              ))}
+              <Badge variant="secondary" className="text-xs font-normal">
+                {getProtectionLevel(mfaStatus, passkeys.length).label}
+              </Badge>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           {mfaLoading ? (
