@@ -24,6 +24,7 @@
 /build
 /backups
 version.json
+.version
 
 # misc
 .DS_Store
