@@ -1,6 +1,47 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { generateCsrfToken, storeCsrfToken, verifyAndConsumeCsrfToken } from '@/lib/csrf'
-import { resetRedisMock } from '@/test/helpers/redis-mock'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import crypto from 'crypto'
+
+const store = new Map<string, string>()
+
+vi.mock('@/lib/redis', () => ({
+  getRedis: async () => ({
+    get: async (key: string) => store.get(key) ?? null,
+    set: async (key: string, value: string) => {
+      store.set(key, value)
+      return 'OK'
+    },
+    del: async (key: string) => {
+      const had = store.has(key)
+      store.delete(key)
+      return had ? 1 : 0
+    },
+  }),
+  withRedis: async <T>(fn: (redis: unknown) => Promise<T>, fallback: T): Promise<T> => {
+    try {
+      return await fn({
+        get: async (key: string) => store.get(key) ?? null,
+        set: async (key: string, value: string) => {
+          store.set(key, value)
+          return 'OK'
+        },
+        del: async (key: string) => {
+          const had = store.has(key)
+          store.delete(key)
+          return had ? 1 : 0
+        },
+      })
+    } catch {
+      return fallback
+    }
+  },
+  closeRedis: async () => {},
+}))
+
+import {
+  generateCsrfToken,
+  storeCsrfToken,
+  verifyAndConsumeCsrfToken,
+} from '@/lib/csrf'
 
 describe('generateCsrfToken', () => {
   it('returns a token in nonce.signature format', () => {
@@ -22,7 +63,7 @@ describe('generateCsrfToken', () => {
 
 describe('storeCsrfToken', () => {
   beforeEach(() => {
-    resetRedisMock()
+    store.clear()
   })
 
   it('resolves without error', async () => {
@@ -33,7 +74,7 @@ describe('storeCsrfToken', () => {
 
 describe('verifyAndConsumeCsrfToken', () => {
   beforeEach(() => {
-    resetRedisMock()
+    store.clear()
   })
 
   it('returns true for a valid stored token with matching tag', async () => {
