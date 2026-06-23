@@ -92,7 +92,7 @@ describe('POST /api/account/mfa/passkeys', () => {
       credentialId: new Uint8Array([1]),
       publicKey: new Uint8Array([2]),
       counter: 0,
-      transports: null,
+      transports: undefined as any,
     })
     const res = await POST(
       createNextRequest('http://localhost/api/account/mfa/passkeys', {

@@ -162,12 +162,14 @@ describe('SignupPage', () => {
     expect(await screen.findByText('Account Created!')).toBeInTheDocument()
 
     const lastCall = fetchStub.mock.lastCall
+    expect(lastCall).toBeDefined()
+    if (!lastCall) throw new Error('expected fetch to be called')
     expect(lastCall[0]).toBe('/api/auth/signup')
     expect(lastCall[1]).toMatchObject({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     })
-    const payload = JSON.parse(lastCall[1].body)
+    const payload = JSON.parse((lastCall[1]?.body ?? '') as string)
     expect(payload).toMatchObject({
       username: 'testuser',
       csrfToken: 'test-csrf-token',

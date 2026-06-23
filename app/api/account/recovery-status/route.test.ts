@@ -43,9 +43,9 @@ describe('GET /api/account/recovery-status', () => {
     mockAuth()
     prismaMock.user.findUnique.mockResolvedValue(
       createUser({
-        encPrivRec: null,
-        recKdfSalt: null,
-        recNonce: null,
+        encPrivRec: null as any,
+        recKdfSalt: null as any,
+        recNonce: null as any,
         recoveryCodeCreatedAt: null,
       }),
     )
@@ -60,7 +60,7 @@ describe('GET /api/account/recovery-status', () => {
   it('returns false and null when recovery material is partially missing', async () => {
     mockAuth()
     prismaMock.user.findUnique.mockResolvedValue(
-      createUser({ encPrivRec: null, recoveryCodeCreatedAt: null }),
+      createUser({ encPrivRec: null as any, recoveryCodeCreatedAt: null }),
     )
     const res = await GET(createNextRequest('http://localhost/api/account/recovery-status'))
     const body = await res.json()
