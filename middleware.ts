@@ -4,17 +4,46 @@ import type { NextRequest } from 'next/server'
 const ONE_YEAR = 31_536_000
 const IS_PROD = process.env.NODE_ENV === 'production'
 
+function plausibleOrigin(scriptSrc: string | undefined): string | null {
+  if (!scriptSrc) return null
+  try {
+    return new URL(scriptSrc).origin
+  } catch {
+    return null
+  }
+}
+
+const SCRIPT_ORIGIN = plausibleOrigin(process.env.PLAUSIBLE_SCRIPT_SRC)
+
 export function middleware(request: NextRequest) {
   const response = NextResponse.next()
 
   if (IS_PROD) {
+    const scriptSrc = [
+      "'self'",
+      "'unsafe-inline'",
+      "'unsafe-eval'",
+      'https://challenges.cloudflare.com',
+      SCRIPT_ORIGIN,
+    ]
+      .filter(Boolean)
+      .join(' ')
+
+    const connectSrc = [
+      "'self'",
+      'https://challenges.cloudflare.com',
+      SCRIPT_ORIGIN,
+    ]
+      .filter(Boolean)
+      .join(' ')
+
     response.headers.set(
       'Content-Security-Policy',
       [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
+        `script-src ${scriptSrc}`,
         "style-src 'self' 'unsafe-inline'",
-        "connect-src 'self' https://challenges.cloudflare.com",
+        `connect-src ${connectSrc}`,
         "img-src 'self' data: https://api.qrserver.com",
         "frame-src 'self' https://challenges.cloudflare.com",
         "frame-ancestors 'none'",

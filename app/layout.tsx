@@ -31,6 +31,8 @@ export const metadata: Metadata = {
   },
 }
 
+const plausibleScriptSrc = process.env.PLAUSIBLE_SCRIPT_SRC
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,6 +40,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable}`}>
+      {plausibleScriptSrc && (
+        <head>
+          {/* Privacy-friendly analytics by Plausible */}
+          <script async src={plausibleScriptSrc}></script>
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                'window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()',
+            }}
+          ></script>
+        </head>
+      )}
       <body>
         <TooltipProvider>
           <div className="mx-auto w-full max-w-[1200px]">{children}</div>
