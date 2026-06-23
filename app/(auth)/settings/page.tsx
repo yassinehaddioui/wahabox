@@ -768,7 +768,7 @@ export default function SettingsPage() {
           </div>
           <CardDescription>Add extra layers of security to your account.</CardDescription>
           {!mfaLoading && (
-            <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex items-center gap-1.5 mt-1"><span className="text-xs text-muted-foreground py-2">Current level of protection:</span>
               {[1, 2, 3].map((n) => (
                 <Star
                   key={n}
