@@ -3,7 +3,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
 import React from 'react'
 
-const mockRender = vi.fn(() => 'widget-1')
+const mockRender = vi.fn<
+  (container: string | HTMLElement, options: Record<string, unknown>) => string
+>(() => 'widget-1')
 const mockReset = vi.fn()
 const mockRemove = vi.fn()
 
@@ -92,7 +94,7 @@ describe('TurnstileWidget with script injection path', () => {
   })
 
   it('cleans up widget on unmount', () => {
-    const { unmount } = render(<TurnstileWidget onVerify={vi.fn()} />)
+    const { unmount } = render(<TurnstileWidget siteKey="test-site-key" onVerify={vi.fn()} />)
     window.onTurnstileLoad?.()
     unmount()
     expect(mockRemove).toHaveBeenCalledWith('widget-1')

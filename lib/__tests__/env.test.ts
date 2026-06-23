@@ -3,7 +3,7 @@ import { validateEnv } from '@/lib/env'
 
 // Env keys this suite mutates. Saved in beforeEach and restored in afterEach
 // so process.env is never permanently changed — test/setup.ts defaults survive.
-const MANAGED_KEYS = ['DATABASE_URL', 'SERVER_MASTER_SECRET', 'SESSION_SECRET', 'NODE_ENV'] as const
+const MANAGED_KEYS = ['DATABASE_URL', 'SERVER_MASTER_SECRET', 'SESSION_SECRET'] as const
 
 let saved: Record<string, string | undefined>
 
@@ -22,6 +22,7 @@ afterEach(() => {
       process.env[key] = saved[key]
     }
   }
+  vi.unstubAllEnvs()
 })
 
 describe('validateEnv', () => {
@@ -38,7 +39,7 @@ describe('validateEnv', () => {
   })
 
   it('throws in production when SESSION_SECRET is the default', () => {
-    process.env.NODE_ENV = 'production'
+    vi.stubEnv('NODE_ENV', 'production')
     process.env.SESSION_SECRET = 'dev-session-secret-change-in-production'
     expect(() => validateEnv()).toThrow(
       'SESSION_SECRET must be set to a unique value in production',
@@ -46,7 +47,7 @@ describe('validateEnv', () => {
   })
 
   it('accepts the default SESSION_SECRET in development', () => {
-    process.env.NODE_ENV = 'development'
+    vi.stubEnv('NODE_ENV', 'development')
     process.env.SESSION_SECRET = 'dev-session-secret-change-in-production'
     expect(() => validateEnv()).not.toThrow()
   })
