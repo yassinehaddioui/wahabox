@@ -40,9 +40,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           >
             Docs
           </Button>
+          <Link
+            href="https://box.wahalabs.com/drop/FiigUseCaEp-wytxiGtz6g"
+            className="inline-flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-transparent bg-clip-padding px-3 text-sm text-muted-foreground font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground active:translate-y-px"
+          >
+            Feedback
+          </Link>
           <Button
             variant="ghost"
             size="sm"
+            className="font-semibold"
             render={<Link href="/login" className="text-muted-foreground" />}
           >
             Sign In
