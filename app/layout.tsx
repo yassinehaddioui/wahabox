@@ -1,9 +1,18 @@
 import type { Metadata } from 'next'
 import { Inter, Source_Serif_4, JetBrains_Mono } from 'next/font/google'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
-import version from '@/version.json'
 import './globals.css'
+
+function getVersion(): { sha: string; date: string } {
+  try {
+    return JSON.parse(readFileSync(join(process.cwd(), 'version.json'), 'utf-8'))
+  } catch {
+    return { sha: 'unknown', date: '' }
+  }
+}
 
 const fontSans = Inter({
   variable: '--font-sans',
@@ -38,6 +47,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const version = getVersion()
+
   return (
     <html lang="en" className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable}`}>
       {plausibleScriptSrc && (
@@ -67,25 +78,35 @@ export default function RootLayout({
                 Wahalabs LLC
               </a>{' '}
               &mdash; {new Date().getFullYear()}&nbsp;&middot;&nbsp;
-              Deployed SHA:{' '}
-              <a
-                href={`https://github.com/yassinehaddioui/wahabox/commit/${version.sha}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-muted-foreground transition-colors"
-              >
-                {version.sha}
-              </a>
-              &nbsp;&middot;&nbsp;
-              Last deploy:{' '}
-              {new Date(version.date).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZoneName: 'short',
-              })}
+              {version.sha !== 'unknown' && (
+                <>
+                  Deployed SHA:{' '}
+                  <a
+                    href={`https://github.com/yassinehaddioui/wahabox/commit/${version.sha}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-muted-foreground transition-colors"
+                  >
+                    {version.sha}
+                  </a>
+                  &nbsp;&middot;&nbsp;
+                </>
+              )}
+              {version.date ? (
+                <>
+                  Last deploy:{' '}
+                  {new Date(version.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short',
+                  })}
+                </>
+              ) : (
+                'Deploy info unavailable'
+              )}
             </p>
           </footer>
           <Toaster />
