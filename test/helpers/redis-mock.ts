@@ -17,7 +17,7 @@ interface RedisMulti {
   exec(): Promise<Array<[Error | null, unknown]>>
 }
 
-const { redisMock, resetRedisMock } = vi.hoisted(() => {
+const state = vi.hoisted(() => {
   const store = new Map<string, string>()
   const sortedSets = new Map<string, Map<string, number>>()
   const ttls = new Map<string, number>()
@@ -232,14 +232,14 @@ const { redisMock, resetRedisMock } = vi.hoisted(() => {
     ttls.clear()
   }
 
-  return { redisMock: client, resetRedisMock }
+  return { client, resetRedisMock }
 })
 
 vi.mock('@/lib/redis', () => ({
-  getRedis: async () => redisMock,
-  withRedis: async <T>(fn: (redis: typeof redisMock) => Promise<T>, fallback: T): Promise<T> => {
+  getRedis: async () => state.client,
+  withRedis: async <T>(fn: (redis: typeof state.client) => Promise<T>, fallback: T): Promise<T> => {
     try {
-      return await fn(redisMock)
+      return await fn(state.client)
     } catch {
       return fallback
     }
@@ -247,4 +247,5 @@ vi.mock('@/lib/redis', () => ({
   closeRedis: async () => {},
 }))
 
-export { redisMock, resetRedisMock }
+export const redisMock = state.client
+export const resetRedisMock = state.resetRedisMock
