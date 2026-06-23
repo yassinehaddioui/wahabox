@@ -174,6 +174,12 @@ git pull --ff-only
 echo "  ✓ Pulled latest changes"
 echo ""
 
+# ── Pre-build: Write version file on host (git available) ─────────────
+echo "▸ Writing version.json with current git SHA..."
+node scripts/write-version.mjs
+echo "  ✓ version.json written"
+echo ""
+
 # ── Phase 7: Build and deploy ───────────────────────────────────────
 echo "▸ Building migrate image (to pick up new migrations)..."
 docker compose build migrate
