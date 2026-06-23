@@ -242,7 +242,7 @@ describe('DashboardPage', () => {
       )
       expect(patchCall).toBeTruthy()
       if (patchCall) {
-        const body = JSON.parse(patchCall[1].body as string)
+        const body = JSON.parse(patchCall[1]?.body as string)
         expect(body.label).toBe('Updated Inbox')
         expect(body.greeting).toBeUndefined()
         expect(body.notify).toBeUndefined()
