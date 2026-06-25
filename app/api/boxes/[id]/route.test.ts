@@ -12,7 +12,7 @@ import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 
 function mockAuth(): void {
-  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser' })
+  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
 }
 
 describe('PATCH /api/boxes/[id]', () => {

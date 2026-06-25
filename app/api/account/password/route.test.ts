@@ -16,7 +16,7 @@ import { clearSessionCookie } from '@/lib/session'
 import { checkIpRate, checkGlobalRate } from '@/lib/rate-limit'
 
 function mockAuth(): void {
-  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser' })
+  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
 }
 
 describe('GET /api/account/password', () => {

@@ -12,7 +12,7 @@ import { getAuthUser } from '@/lib/auth'
 import { generateRecoveryCodes } from '@/lib/totp'
 
 function mockAuth(): void {
-  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser' })
+  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
 }
 
 describe('POST /api/account/mfa/recovery', () => {

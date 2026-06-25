@@ -9,6 +9,8 @@ type SessionData = {
   createdAt: number
 }
 
+export type ValidatedSession = SessionData & { role: string }
+
 const SESSION_COOKIE = 'session'
 const SESSION_MAX_AGE = 24 * 60 * 60 * 1000
 
@@ -67,19 +69,19 @@ export function getSession(token: string): SessionData | undefined {
   }
 }
 
-export async function validateSession(token: string): Promise<SessionData | undefined> {
+export async function validateSession(token: string): Promise<ValidatedSession | undefined> {
   const session = await getSession(token)
   if (!session) return undefined
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { tokenVersion: true },
+    select: { tokenVersion: true, role: true },
   })
   if (!user || user.tokenVersion !== session.tokenVersion) {
     return undefined
   }
 
-  return session
+  return { ...session, role: user.role }
 }
 
 export async function destroySession(): Promise<void> {}

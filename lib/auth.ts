@@ -5,6 +5,7 @@ import { validateSession } from './session'
 export type AuthUser = {
   id: string
   username: string
+  role: string
 }
 
 export async function getAuthUser(request: NextRequest): Promise<AuthUser> {
@@ -18,5 +19,5 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser> {
     throw new UnauthorizedError('Invalid or expired session')
   }
 
-  return { id: session.userId, username: session.username }
+  return { id: session.userId, username: session.username, role: session.role }
 }

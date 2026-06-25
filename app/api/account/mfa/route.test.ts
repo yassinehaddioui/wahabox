@@ -18,7 +18,7 @@ import { getAuthUser } from '@/lib/auth'
 import { generateTotpSecret, getTotpUri, verifyTotp, generateRecoveryCodes } from '@/lib/totp'
 
 function mockAuth(): void {
-  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser' })
+  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
 }
 
 describe('GET /api/account/mfa', () => {

@@ -16,6 +16,7 @@ describe('getAuthUser', () => {
       username: 'alice',
       tokenVersion: 1,
       createdAt: Date.now(),
+      role: 'user',
     })
 
     const req = createNextRequest('http://localhost/api/test', {
@@ -23,7 +24,7 @@ describe('getAuthUser', () => {
     })
 
     const user = await getAuthUser(req)
-    expect(user).toEqual({ id: 'user-1', username: 'alice' })
+    expect(user).toEqual({ id: 'user-1', username: 'alice', role: 'user' })
   })
 
   it('throws UnauthorizedError when no session cookie exists', async () => {

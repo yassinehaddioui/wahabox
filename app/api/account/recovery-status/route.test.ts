@@ -10,7 +10,7 @@ vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 import { getAuthUser } from '@/lib/auth'
 
 function mockAuth(): void {
-  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser' })
+  vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
 }
 
 describe('GET /api/account/recovery-status', () => {

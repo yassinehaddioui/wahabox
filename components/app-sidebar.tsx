@@ -3,9 +3,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Package, Settings } from 'lucide-react'
+import { Package, Settings, Shield } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +31,14 @@ export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const session = useSession()
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    fetch('/api/admin/status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setIsAdmin(data?.data?.isAdmin ?? false))
+      .catch(() => setIsAdmin(false))
+  }, [])
 
   async function handleLogout() {
     clearSessionKeys()
@@ -68,6 +77,24 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+            {isAdmin === null ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton disabled className="opacity-40">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Admin
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : isAdmin ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link href="/admin" />}
+                  isActive={pathname.startsWith('/admin')}
+                >
+                  <Shield className="mr-2 h-4 w-4" />
+                  Admin
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : null}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
