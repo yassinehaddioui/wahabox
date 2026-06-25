@@ -33,11 +33,9 @@ export const metadata: Metadata = {
   title: 'Wahabox',
   description: 'Encrypted virtual PO box messaging',
   icons: {
-    icon: [
-      { url: '/WahaBox-Logo-512.png', sizes: '512x512', type: 'image/png' },
-      { url: '/WahaBox-Logo.svg', type: 'image/svg+xml' },
-    ],
+    icon: [{ url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' }],
   },
+  manifest: '/site.webmanifest',
 }
 
 const plausibleScriptSrc = process.env.PLAUSIBLE_SCRIPT_SRC
