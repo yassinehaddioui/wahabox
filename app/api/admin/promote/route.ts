@@ -6,6 +6,7 @@ import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { success, error } from '@/lib/response'
 import { BadRequestError, RateLimitError, ApiError } from '@/lib/errors'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 const PROMOTE_WINDOW = { windowMs: 900_000, max: 3 }
 
@@ -70,13 +71,15 @@ export async function POST(request: NextRequest) {
       data: { role: 'admin' },
     })
 
-    // 9. Audit log
-    console.log('[admin] promote', {
-      userId: user.id,
-      username: user.username,
+    // 9. Audit log (fire-and-forget — failure must not block promotion)
+    await writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'admin.promote',
+      targetType: 'user',
+      targetId: user.id,
+      targetLabel: user.username,
       ip,
-      timestamp: new Date().toISOString(),
-      action: 'self-promote',
     })
 
     // 10. Return success

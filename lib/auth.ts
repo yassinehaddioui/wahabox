@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { UnauthorizedError } from './errors'
+import { ForbiddenError, UnauthorizedError } from './errors'
 import { validateSession } from './session'
 
 export type AuthUser = {
@@ -20,4 +20,12 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser> {
   }
 
   return { id: session.userId, username: session.username, role: session.role }
+}
+
+export async function getAdminUser(request: NextRequest): Promise<AuthUser> {
+  const user = await getAuthUser(request)
+  if (user.role !== 'admin') {
+    throw new ForbiddenError('Admin access required')
+  }
+  return user
 }

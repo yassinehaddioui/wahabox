@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { validateSession } from '@/lib/session'
+import { AdminNav } from '@/components/admin-nav'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
@@ -12,5 +13,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (session.role !== 'admin') redirect('/admin-promote')
 
-  return <>{children}</>
+  return (
+    <div className="w-full space-y-0">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Admin Panel</h1>
+        <p className="text-sm text-muted-foreground">Manage users, boxes, and monitor system health.</p>
+      </div>
+      <AdminNav />
+      {children}
+    </div>
+  )
 }

@@ -7,8 +7,10 @@ vi.mock('next/headers', () => ({
   cookies: () => ({ get: mockCookiesGet }),
 }))
 
+const mockUsePathname = vi.fn(() => '/admin')
 const mockRedirect = vi.fn()
 vi.mock('next/navigation', () => ({
+  usePathname: () => mockUsePathname(),
   redirect: (...args: unknown[]) => {
     mockRedirect(...args)
     throw new Error('NEXT_REDIRECT')

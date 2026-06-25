@@ -23,6 +23,13 @@ export class UnauthorizedError extends ApiError {
   }
 }
 
+export class ForbiddenError extends ApiError {
+  constructor(message = 'Forbidden') {
+    super(message, 403, 'FORBIDDEN')
+    this.name = 'ForbiddenError'
+  }
+}
+
 export class NotFoundError extends ApiError {
   constructor(message = 'Not found') {
     super(message, 404, 'NOT_FOUND')
