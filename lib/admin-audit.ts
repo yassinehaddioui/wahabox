@@ -5,6 +5,8 @@ export type AuditAction =
   | 'admin.promote'
   | 'admin.demote'
   | 'admin.force_logout'
+  | 'admin.suspend'
+  | 'admin.unsuspend'
   | 'admin.box_deactivate'
   | 'admin.box_activate'
   | 'admin.box_delete'

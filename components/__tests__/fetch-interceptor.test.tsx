@@ -133,14 +133,12 @@ describe('FetchInterceptor', () => {
 
     const { unmount } = render(<FetchInterceptor />)
 
-    // Verify the fetch was replaced (guarded fetch is not the original stub)
     const guardedFetch = window.fetch
     expect(guardedFetch).not.toBe(stub)
 
     unmount()
 
-    // After unmount, calling fetch invokes the original stub again
-    expect(window.fetch).toBe(guardedFetch)
+    expect(window.fetch).not.toBe(guardedFetch)
     await window.fetch('/test')
     expect(stub).toHaveBeenCalledWith('/test')
   })

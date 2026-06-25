@@ -26,6 +26,7 @@ model User {
   emailVerified        Boolean    @default(false)
   notificationsEnabled Boolean    @default(true)
   role                 String     @default("user")
+  suspended            Boolean    @default(false)
   mfaEmail             Boolean    @default(false)
   mfaTotp              Boolean    @default(false)
   mfaPasskey           Boolean    @default(false)

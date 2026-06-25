@@ -23,6 +23,7 @@ type UserDetail = {
   mfaPasskey: boolean
   keyVersion: number
   tokenVersion: number
+  suspended: boolean
   createdAt: string
   boxCount: number
   passkeyCount: number
@@ -80,6 +81,7 @@ export default function UserDetailPage() {
   const [error, setError] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [suspendConfirmOpen, setSuspendConfirmOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -137,6 +139,7 @@ export default function UserDetailPage() {
       } finally {
         setActionLoading(null)
         setConfirmOpen(false)
+        setSuspendConfirmOpen(false)
       }
     },
     [id],
@@ -223,9 +226,14 @@ export default function UserDetailPage() {
           <InfoRow label="Username" value={user.username} />
           <div className="flex items-center justify-between py-1.5">
             <span className="text-sm text-muted-foreground">Role</span>
-            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-              {user.role}
-            </Badge>
+            <div className="flex items-center gap-1.5">
+              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                {user.role}
+              </Badge>
+              {user.suspended && (
+                <Badge variant="destructive">Suspended</Badge>
+              )}
+            </div>
           </div>
           <InfoRow label="Member since" value={memberSince} icon={Calendar} />
           <InfoRow label="Key Version" value={user.keyVersion} icon={Key} />
@@ -297,6 +305,44 @@ export default function UserDetailPage() {
               {actionLoading === 'demote' ? 'Demoting...' : 'Demote to User'}
             </Button>
           )}
+          {/* Suspend / Unsuspend */}
+          {user.role === 'user' && !user.suspended && (
+            <Dialog open={suspendConfirmOpen} onOpenChange={setSuspendConfirmOpen}>
+              <DialogTrigger render={<Button variant="destructive" disabled={isBusy} />}>
+                {actionLoading === 'suspend' ? 'Suspending...' : 'Suspend User'}
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Suspend User</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to suspend this user? They will be
+                    immediately logged out and unable to log in.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setSuspendConfirmOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => performAction('suspend')}
+                    disabled={isBusy}
+                  >
+                    {actionLoading === 'suspend' ? 'Suspending...' : 'Confirm Suspend'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+          {user.suspended && (
+            <Button
+              onClick={() => performAction('unsuspend')}
+              disabled={isBusy}
+            >
+              {actionLoading === 'unsuspend' ? 'Unsuspending...' : 'Unsuspend User'}
+            </Button>
+          )}
+          {/* Force Logout */}
           <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
             <DialogTrigger render={<Button variant="destructive" disabled={isBusy} />}>
               {actionLoading === 'force_logout' ? 'Logging out...' : 'Force Logout'}

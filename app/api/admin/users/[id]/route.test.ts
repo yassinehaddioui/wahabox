@@ -214,6 +214,130 @@ describe('PATCH /api/admin/users/[id]', () => {
     expect(prismaMock.user.update).not.toHaveBeenCalled()
   })
 
+  // ── Suspend ───────────────────────────────────────────────────
+
+  it('suspends user: sets suspended=true, bumps tokenVersion, writes audit log', async () => {
+    happySetup({ targetTokenVersion: 5 })
+
+    const req = createNextRequest('http://localhost/api/admin/users/user-target', {
+      method: 'PATCH',
+      body: { action: 'suspend', csrfToken: 'valid-csrf' },
+      cookies: { session: 'valid' },
+    })
+    const res = await PATCH(req, createRouteContext({ id: TARGET_ID }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(body.data.message).toBe('User suspended')
+    expect(body.data.action).toBe('suspend')
+    expect(prismaMock.user.update).toHaveBeenCalledWith({
+      where: { id: TARGET_ID },
+      data: { suspended: true, tokenVersion: { increment: 1 } },
+    })
+    expect(mockWriteAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.suspend',
+        targetId: TARGET_ID,
+      }),
+    )
+  })
+
+  it('rejects suspend on admin account with 400', async () => {
+    happySetup({ targetRole: 'admin' })
+
+    const req = createNextRequest('http://localhost/api/admin/users/user-target', {
+      method: 'PATCH',
+      body: { action: 'suspend', csrfToken: 'valid-csrf' },
+      cookies: { session: 'valid' },
+    })
+    const res = await PATCH(req, createRouteContext({ id: TARGET_ID }))
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.success).toBe(false)
+    expect(body.error).toBe('Cannot suspend admin accounts')
+    expect(prismaMock.user.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects self-suspend with 400', async () => {
+    happySetup()
+    mockGetAdminUser.mockResolvedValue({
+      id: TARGET_ID,
+      username: 'theadmin',
+      role: 'admin',
+    })
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: TARGET_ID,
+      username: 'theadmin',
+      role: 'user',
+      tokenVersion: 3,
+    })
+
+    const req = createNextRequest('http://localhost/api/admin/users/user-target', {
+      method: 'PATCH',
+      body: { action: 'suspend', csrfToken: 'valid-csrf' },
+      cookies: { session: 'valid' },
+    })
+    const res = await PATCH(req, createRouteContext({ id: TARGET_ID }))
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.success).toBe(false)
+    expect(body.error).toBe('Cannot suspend yourself')
+    expect(prismaMock.user.update).not.toHaveBeenCalled()
+  })
+
+  // ── Unsuspend ─────────────────────────────────────────────────
+
+  it('unsuspends user: sets suspended=false, writes audit log (no tokenVersion bump)', async () => {
+    happySetup({ targetTokenVersion: 8 })
+
+    const req = createNextRequest('http://localhost/api/admin/users/user-target', {
+      method: 'PATCH',
+      body: { action: 'unsuspend', csrfToken: 'valid-csrf' },
+      cookies: { session: 'valid' },
+    })
+    const res = await PATCH(req, createRouteContext({ id: TARGET_ID }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(body.data.message).toBe('User unsuspended')
+    expect(body.data.action).toBe('unsuspend')
+    expect(prismaMock.user.update).toHaveBeenCalledWith({
+      where: { id: TARGET_ID },
+      data: { suspended: false },
+    })
+    // tokenVersion should NOT be bumped on unsuspend
+    expect(prismaMock.user.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ tokenVersion: expect.anything() }) }),
+    )
+    expect(mockWriteAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.unsuspend',
+        targetId: TARGET_ID,
+      }),
+    )
+  })
+
+  it('rejects unsuspend on admin account with 400', async () => {
+    happySetup({ targetRole: 'admin' })
+
+    const req = createNextRequest('http://localhost/api/admin/users/user-target', {
+      method: 'PATCH',
+      body: { action: 'unsuspend', csrfToken: 'valid-csrf' },
+      cookies: { session: 'valid' },
+    })
+    const res = await PATCH(req, createRouteContext({ id: TARGET_ID }))
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.success).toBe(false)
+    expect(body.error).toBe('Admin accounts cannot be suspended')
+    expect(prismaMock.user.update).not.toHaveBeenCalled()
+  })
+
   // Test 6: User not found → 404
   it('returns 404 when target user does not exist', async () => {
     happySetup()

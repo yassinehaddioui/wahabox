@@ -38,6 +38,7 @@ const defaultUser = {
   mfaPasskey: false,
   keyVersion: 42,
   tokenVersion: 7,
+  suspended: false,
   createdAt: '2024-01-15T10:30:00.000Z',
   boxCount: 3,
   passkeyCount: 1,
@@ -48,6 +49,7 @@ const adminUser = {
   ...defaultUser,
   username: 'adminuser',
   role: 'admin' as const,
+  suspended: false,
   mfaTotp: true,
   mfaPasskey: true,
 }
@@ -422,6 +424,114 @@ describe('UserDetailPage', () => {
 
     await waitFor(() => {
       expect(mockToast.error).toHaveBeenCalledWith('Failed to get security token')
+    })
+  })
+
+  // ── Suspend / Unsuspend ───────────────────────────────────────
+
+  it('shows Suspend User button when user is not suspended', async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/admin/users/user-1') {
+        return mockFetchResponse(200, { success: true, data: defaultUser })
+      }
+      return mockFetchResponse(404, { success: false, error: 'Not found' })
+    })
+
+    render(<UserDetailPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Suspend User')).toBeInTheDocument()
+    })
+  })
+
+  it('does not show Suspend User button when role is admin', async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/admin/users/user-1') {
+        return mockFetchResponse(200, { success: true, data: adminUser })
+      }
+      return mockFetchResponse(404, { success: false, error: 'Not found' })
+    })
+
+    render(<UserDetailPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('adminuser')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByText('Suspend User')).not.toBeInTheDocument()
+  })
+
+  it('shows Unsuspend User button and Suspended badge when suspended', async () => {
+    const suspendedUser = { ...defaultUser, suspended: true }
+
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/admin/users/user-1') {
+        return mockFetchResponse(200, { success: true, data: suspendedUser })
+      }
+      return mockFetchResponse(404, { success: false, error: 'Not found' })
+    })
+
+    render(<UserDetailPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Unsuspend User')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('Suspended')).toBeInTheDocument()
+    expect(screen.queryByText('Suspend User')).not.toBeInTheDocument()
+  })
+
+  it('suspend confirmation dialog shows with correct message', async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/admin/users/user-1') {
+        return mockFetchResponse(200, { success: true, data: defaultUser })
+      }
+      return mockFetchResponse(404, { success: false, error: 'Not found' })
+    })
+
+    render(<UserDetailPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Suspend User')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Suspend User'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Confirm Suspend')).toBeInTheDocument()
+    })
+
+    expect(
+      screen.getByText(/Are you sure you want to suspend this user/),
+    ).toBeInTheDocument()
+  })
+
+  it('unsuspend action calls PATCH API', async () => {
+    const suspendedUser = { ...defaultUser, suspended: true }
+
+    mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+      if (url === '/api/admin/users/user-1' && (!init || init.method === undefined)) {
+        return mockFetchResponse(200, { success: true, data: suspendedUser })
+      }
+      if (url === '/api/csrf?tag=admin-user-action') {
+        return mockFetchResponse(200, { success: true, data: { csrfToken: 'csrf-unsuspend' } })
+      }
+      if (url === '/api/admin/users/user-1' && init?.method === 'PATCH') {
+        return mockFetchResponse(200, { success: true, data: { message: 'User unsuspended', action: 'unsuspend' } })
+      }
+      return mockFetchResponse(404, { success: false, error: 'Not found' })
+    })
+
+    render(<UserDetailPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Unsuspend User')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Unsuspend User'))
+
+    await waitFor(() => {
+      expect(mockToast.success).toHaveBeenCalledWith('User unsuspended')
     })
   })
 })

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 import { success, error } from '@/lib/response'
 import { parseBody, loginSchema } from '@/lib/validation'
-import { UnauthorizedError, BadRequestError, RateLimitError, MfaRequiredError } from '@/lib/errors'
+import { UnauthorizedError, BadRequestError, RateLimitError, MfaRequiredError, SuspendedError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 import { createSession, setSessionCookie } from '@/lib/session'
@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
         emailEncrypted: true,
         emailNonce: true,
         emailVerified: true,
+        suspended: true,
       },
     })
 
@@ -99,6 +100,10 @@ export async function POST(request: NextRequest) {
     }
 
     await clearFailures(body.username)
+
+    if (user.suspended) {
+      throw new SuspendedError()
+    }
 
     const methods: string[] = []
     if (user.mfaEmail && user.emailVerified && user.emailEncrypted && user.emailNonce) {

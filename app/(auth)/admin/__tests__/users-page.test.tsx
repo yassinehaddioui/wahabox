@@ -16,6 +16,7 @@ const defaultUsers = {
         id: 'u1',
         username: 'alice',
         role: 'admin',
+        suspended: false,
         hasEmail: true,
         emailVerified: true,
         mfaEmail: false,
@@ -28,6 +29,7 @@ const defaultUsers = {
         id: 'u2',
         username: 'bob',
         role: 'user',
+        suspended: false,
         hasEmail: true,
         emailVerified: false,
         mfaEmail: true,
@@ -40,6 +42,7 @@ const defaultUsers = {
         id: 'u3',
         username: 'carol',
         role: 'user',
+        suspended: false,
         hasEmail: false,
         emailVerified: false,
         mfaEmail: false,
@@ -115,6 +118,47 @@ describe('AdminUsersPage', () => {
       expect(screen.getByLabelText('TOTP enabled')).toBeInTheDocument()
       expect(screen.getByLabelText('Passkey enabled')).toBeInTheDocument()
       expect(screen.getByLabelText('Email MFA enabled')).toBeInTheDocument()
+    })
+
+    it('shows ban icon for suspended users', async () => {
+      const suspendedData = {
+        success: true,
+        data: {
+          users: [
+            {
+              id: 'u4',
+              username: 'dave',
+              role: 'user',
+              suspended: true,
+              hasEmail: false,
+              emailVerified: false,
+              mfaEmail: false,
+              mfaTotp: false,
+              mfaPasskey: false,
+              boxCount: 0,
+              createdAt: '2025-06-01T10:00:00.000Z',
+            },
+          ],
+          total: 1,
+          page: 1,
+          limit: 20,
+          totalPages: 1,
+        },
+      }
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(suspendedData),
+      })
+      globalThis.fetch = mockFetch as unknown as typeof fetch
+
+      render(<AdminUsersPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('dave')).toBeInTheDocument()
+      })
+
+      expect(screen.getByLabelText('Suspended account')).toBeInTheDocument()
     })
 
     it('renders username as link to user detail page', async () => {

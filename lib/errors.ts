@@ -30,6 +30,13 @@ export class ForbiddenError extends ApiError {
   }
 }
 
+export class SuspendedError extends ApiError {
+  constructor(message = 'Your account has been suspended, contact admins.') {
+    super(message, 403, 'SUSPENDED')
+    this.name = 'SuspendedError'
+  }
+}
+
 export class NotFoundError extends ApiError {
   constructor(message = 'Not found') {
     super(message, 404, 'NOT_FOUND')

@@ -75,9 +75,9 @@ export async function validateSession(token: string): Promise<ValidatedSession |
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { tokenVersion: true, role: true },
+    select: { tokenVersion: true, role: true, suspended: true },
   })
-  if (!user || user.tokenVersion !== session.tokenVersion) {
+  if (!user || user.tokenVersion !== session.tokenVersion || user.suspended) {
     return undefined
   }
 

@@ -21,12 +21,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Search, ChevronLeft, ChevronRight, Smartphone, Key, Mail, X } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Smartphone, Key, Mail, X, Ban } from 'lucide-react'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 type User = {
   id: string
   username: string
   role: string
+  suspended: boolean
   hasEmail: boolean
   emailVerified: boolean
   mfaEmail: boolean
@@ -234,12 +236,25 @@ export default function AdminUsersPage() {
                 {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
-                      <Link
-                        href={`/admin/users/${user.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {user.username}
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {user.username}
+                        </Link>
+                        {user.suspended && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Ban
+                                className="h-4 w-4 text-destructive"
+                                aria-label="Suspended account"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>Suspended</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>

@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
           id: true,
           username: true,
           role: true,
+          suspended: true,
           emailEncrypted: true,
           emailVerified: true,
           notificationsEnabled: true,

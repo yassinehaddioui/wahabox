@@ -40,6 +40,7 @@ export async function GET(
         mfaPasskey: true,
         keyVersion: true,
         tokenVersion: true,
+        suspended: true,
         createdAt: true,
         _count: { select: { poBoxes: true, passkeyCredentials: true } },
       },
@@ -148,6 +149,44 @@ export async function PATCH(
           ip,
         })
         return success({ message: 'User force-logged out', action })
+      }
+      case 'suspend': {
+        if (targetUser.role === 'admin')
+          throw new BadRequestError('Cannot suspend admin accounts')
+        if (targetUser.id === adminUser.id)
+          throw new BadRequestError('Cannot suspend yourself')
+        await prisma.user.update({
+          where: { id },
+          data: { suspended: true, tokenVersion: { increment: 1 } },
+        })
+        await writeAuditLog({
+          actorId: adminUser.id,
+          actorUsername: adminUser.username,
+          action: 'admin.suspend',
+          targetType: 'user',
+          targetId: id,
+          targetLabel: targetUser.username,
+          ip,
+        })
+        return success({ message: 'User suspended', action })
+      }
+      case 'unsuspend': {
+        if (targetUser.role === 'admin')
+          throw new BadRequestError('Admin accounts cannot be suspended')
+        await prisma.user.update({
+          where: { id },
+          data: { suspended: false },
+        })
+        await writeAuditLog({
+          actorId: adminUser.id,
+          actorUsername: adminUser.username,
+          action: 'admin.unsuspend',
+          targetType: 'user',
+          targetId: id,
+          targetLabel: targetUser.username,
+          ip,
+        })
+        return success({ message: 'User unsuspended', action })
       }
       default:
         throw new BadRequestError(`Unknown action: ${action}`)
