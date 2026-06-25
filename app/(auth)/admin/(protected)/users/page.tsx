@@ -245,12 +245,14 @@ export default function AdminUsersPage() {
                         </Link>
                         {user.suspended && (
                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Ban
-                                className="h-4 w-4 text-destructive"
-                                aria-label="Suspended account"
-                              />
-                            </TooltipTrigger>
+                            <TooltipTrigger
+                              render={
+                                <Ban
+                                  className="h-4 w-4 text-destructive"
+                                  aria-label="Suspended account"
+                                />
+                              }
+                            />
                             <TooltipContent>Suspended</TooltipContent>
                           </Tooltip>
                         )}
