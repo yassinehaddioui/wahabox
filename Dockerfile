@@ -2,10 +2,16 @@ FROM node:26-alpine AS base
 RUN npm install -g corepack && corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
-# ----- deps -----
-FROM base AS deps
+# ----- deps-prod (production only, for migrator) -----
+FROM base AS deps-prod
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile --prefer-offline
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --prod --prefer-offline
+
+# ----- deps (full, for builder — extends deps-prod so store is warm) -----
+FROM deps-prod AS deps
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --prefer-offline
 
 # ----- builder -----
 FROM base AS builder
@@ -17,7 +23,7 @@ RUN DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy pnpm prisma generate 
 # ----- migrator -----
 FROM base AS migrator
 ENV NODE_ENV=production
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps-prod /app/node_modules ./node_modules
 COPY prisma ./prisma
 COPY prisma.config.ts ./prisma.config.ts
 CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
