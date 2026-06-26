@@ -13,7 +13,7 @@ function GitHubIcon({ className }: { className?: string }) {
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="flex h-16 items-center justify-between border-b border-hairline px-6">
+      <header className="flex h-16 items-center justify-between border-b border-hairline px-4 sm:px-6 overflow-hidden">
         <Link href="/" className="flex items-center text-base font-semibold tracking-tigh gap-2">
           <Image
             src="/WahaBox-Logo.svg"
@@ -28,7 +28,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             href="https://github.com/yassinehaddioui/wahabox"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            className="hidden sm:inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
             aria-label="View source on GitHub"
           >
             <GitHubIcon className="size-5" />
@@ -36,13 +36,14 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <Button
             variant="ghost"
             size="sm"
+            className="hidden md:inline-flex"
             render={<Link href="/docs" className="text-muted-foreground" />}
           >
             Docs
           </Button>
           <Link
             href="https://box.wahalabs.com/drop/FiigUseCaEp-wytxiGtz6g"
-            className="inline-flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-transparent bg-clip-padding px-3 text-sm text-muted-foreground font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground active:translate-y-px"
+            className="hidden md:inline-flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-transparent bg-clip-padding px-3 text-sm text-muted-foreground font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground active:translate-y-px"
           >
             Feedback
           </Link>
