@@ -357,7 +357,7 @@ describe('BoxDetailPage', () => {
   // ── Action error toast (CSRF failure) ─────────────────────────
 
   it('shows error toast when CSRF fetch fails', async () => {
-    mockFetch.mockImplementation((url: string, _init?: RequestInit) => {
+    mockFetch.mockImplementation((url: string, _?: RequestInit) => {
       if (url === '/api/admin/boxes/box-1') {
         return mockFetchResponse(200, { success: true, data: defaultBox })
       }

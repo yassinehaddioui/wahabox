@@ -79,17 +79,6 @@ function InfoRow({
   )
 }
 
-function StatusBadge({ enabled, label }: { enabled: boolean; label: string }) {
-  return (
-    <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <Badge variant={enabled ? 'default' : 'secondary'}>
-        {enabled ? label : `No ${label.toLowerCase()}`}
-      </Badge>
-    </div>
-  )
-}
-
 function formatDate(iso: string | null) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('en-US', {

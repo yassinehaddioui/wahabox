@@ -24,17 +24,6 @@ function mockBoxesResponse(mock: MockFetch, data = defaultBoxes) {
   globalThis.fetch = mock as unknown as typeof fetch
 }
 
-function mockCsrfResponse(mock: MockFetch) {
-  mock.mockImplementation((url: string | URL | Request) => {
-    const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.href : url.url
-    if (urlStr.includes('/api/csrf')) {
-      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ success: true, data: { csrfToken: 'tok_123' } }) })
-    }
-    return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(defaultBoxes) })
-  })
-  globalThis.fetch = mock as unknown as typeof fetch
-}
-
 describe('AdminBoxesPage', () => {
   let mockFetch: MockFetch
 

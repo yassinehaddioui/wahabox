@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -856,12 +857,13 @@ export default function SettingsPage() {
                 {totpSetup && (
                   <div className="rounded-lg border bg-canvas-soft p-4 space-y-3">
                     <div className="flex flex-col items-center gap-3">
-                      <img
+                      <Image
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(totpSetup.uri)}`}
                         alt="TOTP QR Code"
                         className="rounded-lg border bg-white p-2"
                         width={180}
                         height={180}
+                        unoptimized
                       />
                       <p className="font-mono text-xs text-muted-foreground break-all select-all">
                         {totpSetup.secret}

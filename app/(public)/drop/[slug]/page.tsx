@@ -26,26 +26,6 @@ declare global {
   }
 }
 
-async function solvePow(challenge: string, difficulty: number): Promise<string> {
-  const enc = new TextEncoder()
-  let nonce = 0
-  while (true) {
-    const data = enc.encode(challenge + nonce)
-    const hash = await crypto.subtle.digest('SHA-256', data)
-    const bytes = new Uint8Array(hash)
-    const bitsNeeded = Math.ceil(difficulty / 4)
-    let valid = true
-    for (let i = 0; i < bitsNeeded; i++) {
-      if (bytes[i] !== 0) {
-        valid = false
-        break
-      }
-    }
-    if (valid) return String(nonce)
-    nonce++
-  }
-}
-
 export default function DropPage() {
   const { slug } = useParams<{ slug: string }>()
   const [box, setBox] = useState<BoxInfo | null>(null)
@@ -136,7 +116,7 @@ export default function DropPage() {
       }
       delete window.onTurnstileLoad
     }
-  }, [loading, renderTurnstile, hasProof])
+  }, [loading, renderTurnstile, hasProof, hasSiteKey])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

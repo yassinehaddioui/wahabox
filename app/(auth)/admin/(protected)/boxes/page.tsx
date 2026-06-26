@@ -43,14 +43,6 @@ type Box = {
   createdAt: string
 }
 
-type BoxesResponse = Box & { total?: never } & {
-  boxes: Box[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
-}
-
 async function fetchCsrfToken(tag: string): Promise<string | null> {
   try {
     const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)

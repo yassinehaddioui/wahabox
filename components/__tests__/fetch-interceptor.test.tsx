@@ -10,7 +10,7 @@ vi.mock('@/lib/session-keys', () => ({
 import { FetchInterceptor } from '@/components/fetch-interceptor'
 
 let mockLocationHref = ''
-let mockLocationSetter = vi.fn((href: string) => {
+const mockLocationSetter = vi.fn((href: string) => {
   mockLocationHref = href
 })
 
