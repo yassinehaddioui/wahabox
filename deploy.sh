@@ -46,9 +46,9 @@ Phases:
   4. Pre-deploy backup (skipped if SKIP_BACKUP=1 or no ./backup.sh)
   5. Tag current image as prev-{timestamp}
   6. Git fetch + reset to origin/{current-branch}
-  7. docker compose build + up (app only, --no-deps)
-  8. Health check polling (36 × 5s = 180s timeout)
-  9. Success cleanup or rollback on failure
+  7. Start postgres/redis → build migrate+app (single pass) → run migrations → start app
+  8. Health check polling (36 × 5s = 180s timeout, first attempt immediate)
+  9. Success cleanup (parallel prune) or rollback on failure
 EOF
   exit 0
 fi
@@ -181,18 +181,19 @@ echo "  ✓ version.json written"
 echo ""
 
 # ── Phase 7: Build and deploy ───────────────────────────────────────
-echo "▸ Building migrate image (to pick up new migrations)..."
-docker compose build migrate
-echo "  ✓ Migrate image built"
-
-echo "▸ Ensuring dependencies are running (postgres, redis, migrate)..."
-docker compose up -d postgres redis migrate
-echo "  ✓ Dependencies ready"
+echo "▸ Starting postgres and redis (warmup in parallel with build)..."
+docker compose up -d postgres redis
+echo "  ✓ Database containers starting"
 echo ""
 
-echo "▸ Building ${APP_SERVICE} image..."
-docker compose build "$APP_SERVICE"
+echo "▸ Building migrate and ${APP_SERVICE} images (shared stages, single pass)..."
+docker compose build migrate "$APP_SERVICE"
 echo "  ✓ Build complete"
+echo ""
+
+echo "▸ Running migrations..."
+docker compose up -d migrate
+echo "  ✓ Migrations applied"
 echo ""
 
 echo "▸ Deploying ${APP_SERVICE} container..."
@@ -211,7 +212,6 @@ HEALTHY=false
 
 while [ "$ATTEMPT" -lt "$HEALTH_MAX_ATTEMPTS" ]; do
   ATTEMPT=$((ATTEMPT + 1))
-  sleep "$HEALTH_INTERVAL"
 
   HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || echo "000")
 
@@ -222,6 +222,8 @@ while [ "$ATTEMPT" -lt "$HEALTH_MAX_ATTEMPTS" ]; do
   else
     echo "  ✗ Attempt $ATTEMPT/$HEALTH_MAX_ATTEMPTS — HTTP $HTTP_CODE — not ready"
   fi
+
+  [ "$ATTEMPT" -lt "$HEALTH_MAX_ATTEMPTS" ] && sleep "$HEALTH_INTERVAL"
 done
 echo ""
 
@@ -233,9 +235,9 @@ if [ "$HEALTHY" = true ]; then
   echo "========================================"
   echo ""
 
-  echo "▸ Cleaning up dangling images..."
-  docker image prune -f
-  echo ""
+  echo "▸ Cleaning up dangling images (background)..."
+  docker image prune -f &
+  PRUNE_PID=$!
 
   echo "▸ Pruning old rollback images (keeping last $MAX_PREV_IMAGES)..."
   PREV_TAGS=$(docker images --format '{{.Tag}}' "$IMAGE_NAME" 2>/dev/null | grep '^prev-' | sort -r || true)
@@ -254,6 +256,7 @@ if [ "$HEALTHY" = true ]; then
     echo "  No prev-* images to prune"
   fi
 
+  wait $PRUNE_PID
   echo ""
   docker compose ps
   exit 0
@@ -295,7 +298,6 @@ else
   echo "▸ Verifying rollback health ($((ROLLBACK_MAX_ATTEMPTS * HEALTH_INTERVAL))s timeout)..."
   ROLLBACK_OK=false
   for i in $(seq 1 "$ROLLBACK_MAX_ATTEMPTS"); do
-    sleep "$HEALTH_INTERVAL"
     HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || echo "000")
     if [ "$HTTP_CODE" = "200" ]; then
       ROLLBACK_OK=true
@@ -304,6 +306,7 @@ else
     else
       echo "  ✗ Rollback check $i/${ROLLBACK_MAX_ATTEMPTS} — HTTP $HTTP_CODE"
     fi
+    [ "$i" -lt "$ROLLBACK_MAX_ATTEMPTS" ] && sleep "$HEALTH_INTERVAL"
   done
 
   echo ""
