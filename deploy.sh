@@ -68,6 +68,17 @@ done
 echo "  ✓ All prerequisites met"
 echo ""
 
+# ── Pre-fetch base images (background, overlaps with phases 1-6) ─────
+echo "▸ Pre-fetching base images (parallel, overlaps with next phases)..."
+docker pull node:26-alpine >/dev/null 2>&1 &
+PULL_PID1=$!
+docker pull postgres:17-alpine >/dev/null 2>&1 &
+PULL_PID2=$!
+docker pull redis:7-alpine >/dev/null 2>&1 &
+PULL_PID3=$!
+echo "  ✓ Base image pre-fetch started"
+echo ""
+
 # ── Phase 1: Deploy lock with stale detection ────────────────────────
 echo "▸ Acquiring deploy lock..."
 if [ -f "$DEPLOY_LOCK" ]; then
@@ -181,6 +192,8 @@ echo "  ✓ version.json written"
 echo ""
 
 # ── Phase 7: Build and deploy ───────────────────────────────────────
+wait $PULL_PID1 $PULL_PID2 $PULL_PID3 2>/dev/null || true
+
 echo "▸ Starting postgres and redis (warmup in parallel with build)..."
 docker compose up -d postgres redis
 echo "  ✓ Database containers starting"
