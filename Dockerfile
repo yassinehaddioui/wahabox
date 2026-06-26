@@ -18,7 +18,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy pnpm prisma generate && pnpm exec next build --no-lint
+RUN DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy pnpm prisma generate && pnpm build
 
 # ----- migrator (prisma CLI only — installs from warm store, then strips) -----
 FROM base AS migrator
