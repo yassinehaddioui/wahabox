@@ -2,7 +2,7 @@ FROM node:26-alpine AS base
 RUN npm install -g corepack && corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
-# ----- deps-prod (production only, for migrator) -----
+# ----- deps-prod (production only — warms pnpm store, base for deps) -----
 FROM base AS deps-prod
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
@@ -20,10 +20,18 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy pnpm prisma generate && pnpm build
 
-# ----- migrator -----
+# ----- migrator (prisma CLI only — installs from warm store, then strips) -----
 FROM base AS migrator
 ENV NODE_ENV=production
-COPY --from=deps-prod /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --prod --prefer-offline && \
+    find node_modules -maxdepth 1 -mindepth 1 \
+      ! -name 'prisma' ! -name '.prisma' ! -name '.pnpm' ! -name '.modules.yaml' \
+      -exec rm -rf {} + && \
+    find node_modules/.pnpm -maxdepth 1 -mindepth 1 \
+      ! -name 'prisma@*' ! -name '@prisma+*' ! -name 'lock.yaml' \
+      -exec rm -rf {} +
 COPY prisma ./prisma
 COPY prisma.config.ts ./prisma.config.ts
 CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
