@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { success, error } from '@/lib/response'
+import { getAuthUser } from '@/lib/auth'
 import { NotFoundError } from '@/lib/errors'
 import prisma from '@/lib/prisma'
 
@@ -40,6 +41,35 @@ export async function GET(
       autoDestruct: message.autoDestruct,
       readAt: message.readAt?.toISOString() ?? null,
     })
+  } catch (err) {
+    return error(err)
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const user = await getAuthUser(request)
+    const { id } = await params
+
+    const message = await prisma.secureMessage.findFirst({
+      where: { id, senderId: user.id },
+    })
+    if (!message) {
+      throw new NotFoundError('Message not found')
+    }
+
+    await prisma.secureMessage.update({
+      where: { id },
+      data: {
+        isDestroyed: true,
+        ciphertext: null,
+      },
+    })
+
+    return success({ id })
   } catch (err) {
     return error(err)
   }

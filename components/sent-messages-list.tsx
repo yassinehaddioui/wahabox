@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { Copy, Lock } from 'lucide-react'
+import { Copy, Lock, Trash2 } from 'lucide-react'
 
 type SentMessage = {
   id: string
@@ -42,6 +42,19 @@ export function SentMessagesList() {
     const base = `${window.location.origin}/read/${id}`
     navigator.clipboard.writeText(base)
     toast.success('Link copied (without decryption key)')
+  }
+
+  async function deleteMessage(id: string) {
+    const res = await fetch(`/api/secure-messages/${id}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (data.success) {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, isDestroyed: true } : m)),
+      )
+      toast.success('Message deleted')
+    } else {
+      toast.error('Failed to delete message')
+    }
   }
 
   if (loading) return null
@@ -118,6 +131,15 @@ export function SentMessagesList() {
                 title="Copy link (without decryption key)"
               >
                 <Copy className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => deleteMessage(msg.id)}
+                title="Delete message"
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
           )
