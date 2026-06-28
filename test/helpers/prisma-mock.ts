@@ -54,6 +54,12 @@ export interface PrismaMock {
     deleteMany: PrismaMockFn
     count: PrismaMockFn
   }
+  secureMessage: {
+    findUnique: PrismaMockFn
+    findMany: PrismaMockFn
+    create: PrismaMockFn
+    update: PrismaMockFn
+  }
 }
 
 /**
@@ -94,6 +100,12 @@ const prismaMock = vi.hoisted(
       deleteMany: vi.fn(),
       count: vi.fn(),
     },
+    secureMessage: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
   }),
 )
 
@@ -127,6 +139,10 @@ const allStubs: readonly PrismaMockFn[] = [
   prismaMock.passkeyCredential.delete,
   prismaMock.passkeyCredential.deleteMany,
   prismaMock.passkeyCredential.count,
+  prismaMock.secureMessage.findUnique,
+  prismaMock.secureMessage.findMany,
+  prismaMock.secureMessage.create,
+  prismaMock.secureMessage.update,
 ]
 
 /** Apply default resolve values to every stub. Called on load and after reset. */
@@ -157,6 +173,11 @@ function applyDefaultResolves(): void {
   prismaMock.passkeyCredential.delete.mockResolvedValue({})
   prismaMock.passkeyCredential.deleteMany.mockResolvedValue({ count: 0 })
   prismaMock.passkeyCredential.count.mockResolvedValue(0)
+
+  prismaMock.secureMessage.findUnique.mockResolvedValue(null)
+  prismaMock.secureMessage.findMany.mockResolvedValue([])
+  prismaMock.secureMessage.create.mockResolvedValue({})
+  prismaMock.secureMessage.update.mockResolvedValue({})
 }
 
 // Apply defaults on initial module load.

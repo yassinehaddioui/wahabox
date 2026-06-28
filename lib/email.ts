@@ -87,6 +87,40 @@ export async function sendNewMessageNotification(to: string, boxLabel: string): 
   )
 }
 
+export async function sendSecureMessageNotification(to: string, readUrl: string): Promise<void> {
+  if (process.env.APP_MODE === 'development') {
+    console.log('[email] Secure message link:', readUrl)
+    return
+  }
+
+  const client = getSes()
+
+  await client.send(
+    new SendEmailCommand({
+      FromEmailAddress: getFromAddress(),
+      Destination: { ToAddresses: [to] },
+      Content: {
+        Simple: {
+          Subject: { Data: 'Someone sent you an encrypted message' },
+          Body: {
+            Text: {
+              Data: [
+                'Someone sent you an encrypted message via Wahabox.',
+                '',
+                'Open this link to read it (the key is in the URL fragment and never touches any server):',
+                '',
+                readUrl,
+                '',
+                'Keep this link safe — it is the only way to view the message.',
+              ].join('\n'),
+            },
+          },
+        },
+      },
+    }),
+  )
+}
+
 export async function checkNotificationRateLimit(userId: string): Promise<boolean> {
   return withRedis(async (redis) => {
     const key = `notif:${userId}`

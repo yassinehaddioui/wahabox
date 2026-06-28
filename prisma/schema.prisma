@@ -39,6 +39,7 @@ model User {
 
   poBoxes            PoBox[]
   passkeyCredentials PasskeyCredential[]
+  secureMessages     SecureMessage[]
 
   @@map("users")
 }
@@ -73,6 +74,29 @@ model Message {
 
   @@index([poBoxId, createdAt])
   @@map("messages")
+}
+
+model SecureMessage {
+  id              String    @id @default(uuid()) @db.Uuid
+  senderId        String    @map("sender_id") @db.Uuid
+  ciphertext      Bytes?
+  msgNonce        Bytes     @map("msg_nonce")
+  passwordHash    String?   @map("password_hash")
+  passwordSalt    Bytes?    @map("password_salt")
+  receiverEmail   Bytes?    @map("receiver_email")
+  emailNonce      Bytes?    @map("email_nonce")
+  emailKeyVersion Int?      @map("email_key_version")
+  startDate       DateTime? @map("start_date")
+  endDate         DateTime? @map("end_date")
+  autoDestruct    Boolean   @default(false) @map("auto_destruct")
+  isDestroyed     Boolean   @default(false) @map("is_destroyed")
+  readAt          DateTime? @map("read_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, createdAt])
+  @@map("secure_messages")
 }
 
 model PasskeyCredential {

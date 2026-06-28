@@ -76,3 +76,17 @@ export class InvalidPasswordError extends ApiError {
     this.name = 'InvalidPasswordError'
   }
 }
+
+export class MessageDestroyedError extends ApiError {
+  constructor(message = 'This message has been destroyed') {
+    super(message, 404, 'MESSAGE_DESTROYED')
+    this.name = 'MessageDestroyedError'
+  }
+}
+
+export class MessageNotAvailableError extends ApiError {
+  constructor(message = 'This message is not available yet') {
+    super(message, 403, 'MESSAGE_NOT_AVAILABLE')
+    this.name = 'MessageNotAvailableError'
+  }
+}

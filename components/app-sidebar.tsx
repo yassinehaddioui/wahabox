@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Package, Settings, Shield } from 'lucide-react'
+import { Package, Send, Settings, Shield } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -24,6 +24,7 @@ import { clearSessionKeys } from '@/lib/session-keys'
 
 const navItems = [
   { href: '/dashboard', label: 'Boxes', icon: Package },
+  { href: '/send', label: 'Send', icon: Send },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 

@@ -104,6 +104,23 @@ export const mfaManageSchema = z.object({
   attestation: z.any().optional(),
 })
 
+export const createSecureMessageSchema = z.object({
+  ciphertext: z.string().min(1).max(200_000),
+  msgNonce: z.string().min(1),
+  urlFragment: z.string().min(1),
+  passwordHash: z.string().nullish(),
+  passwordSalt: z.string().nullish(),
+  receiverEmail: z.string().email().nullish(),
+  startDate: z.string().datetime().nullish(),
+  endDate: z.string().datetime().nullish(),
+  autoDestruct: z.boolean(),
+  csrfToken: z.string().nullish(),
+})
+
+export const revealSecureMessageSchema = z.object({
+  password: z.string().nullish(),
+})
+
 export async function parseBody<T extends z.ZodType>(
   request: Request,
   schema: T,
