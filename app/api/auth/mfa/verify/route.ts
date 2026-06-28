@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     if (allVerified) {
       const user = await prisma.user.findUnique({
         where: { id: session.userId },
-        select: { id: true, username: true, encPrivPw: true, pwNonce: true, publicKey: true },
+        select: { id: true, username: true, encPrivPw: true, pwNonce: true, publicKey: true, publicKeySign: true, encPrivSignPw: true, signNoncePw: true },
       })
 
       if (!user) throw new UnauthorizedError('User not found')
@@ -134,6 +134,9 @@ export async function POST(request: NextRequest) {
         encPrivPw: b64(user.encPrivPw),
         pwNonce: b64(user.pwNonce),
         publicKey: b64(user.publicKey),
+        publicKeySign: user.publicKeySign ? b64(user.publicKeySign) : null,
+        encPrivSignPw: user.encPrivSignPw ? b64(user.encPrivSignPw) : null,
+        signNoncePw: user.signNoncePw ? b64(user.signNoncePw) : null,
       })
     }
 
@@ -207,6 +210,9 @@ export async function PUT(request: NextRequest) {
                   encPrivPw: true,
                   pwNonce: true,
                   publicKey: true,
+                  publicKeySign: true,
+                  encPrivSignPw: true,
+                  signNoncePw: true,
                 },
               })
 
@@ -222,6 +228,9 @@ export async function PUT(request: NextRequest) {
                 encPrivPw: b64(user.encPrivPw),
                 pwNonce: b64(user.pwNonce),
                 publicKey: b64(user.publicKey),
+                publicKeySign: user.publicKeySign ? b64(user.publicKeySign) : null,
+                encPrivSignPw: user.encPrivSignPw ? b64(user.encPrivSignPw) : null,
+                signNoncePw: user.signNoncePw ? b64(user.signNoncePw) : null,
               })
             }
 

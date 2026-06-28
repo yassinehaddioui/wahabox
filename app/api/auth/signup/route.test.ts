@@ -32,6 +32,7 @@ const validBody = {
   authVerifier: Buffer.alloc(32, 0xaa).toString('base64'),
   authSalt: Buffer.alloc(16, 0xbb).toString('base64'),
   publicKey: Buffer.alloc(32, 0xcc).toString('base64'),
+  publicKeySign: Buffer.alloc(64, 0xdd).toString('base64'),
   encPrivPw: Buffer.alloc(48, 0x11).toString('base64'),
   pwKdfSalt: Buffer.alloc(16, 0x22).toString('base64'),
   pwNonce: Buffer.alloc(24, 0x33).toString('base64'),

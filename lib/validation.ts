@@ -46,9 +46,9 @@ export const recoveryCompleteSchema = z.object({
   newEncPrivPw: z.string().min(1),
   newPwKdfSalt: z.string().min(1),
   newPwNonce: z.string().min(1),
-  newPublicKeySign: z.string().min(1),
-  newEncPrivSignPw: z.string().min(1),
-  newSignNoncePw: z.string().min(1),
+  newPublicKeySign: z.string().min(1).optional(),
+  newEncPrivSignPw: z.string().min(1).optional(),
+  newSignNoncePw: z.string().min(1).optional(),
 })
 
 export const createBoxSchema = z.object({

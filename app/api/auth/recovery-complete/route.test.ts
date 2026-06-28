@@ -43,6 +43,9 @@ function makeRequest(overrides: Record<string, unknown> = {}) {
       newEncPrivPw: Buffer.alloc(48, 0x11).toString('base64'),
       newPwKdfSalt: Buffer.alloc(16, 0x22).toString('base64'),
       newPwNonce: Buffer.alloc(24, 0x33).toString('base64'),
+      newPublicKeySign: Buffer.alloc(32, 0x77).toString('base64'),
+      newEncPrivSignPw: Buffer.alloc(48, 0x88).toString('base64'),
+      newSignNoncePw: Buffer.alloc(24, 0x99).toString('base64'),
       ...overrides,
     },
   })
@@ -81,6 +84,9 @@ describe('POST /api/auth/recovery-complete', () => {
         encPrivPw: expect.any(Buffer),
         pwKdfSalt: expect.any(Buffer),
         pwNonce: expect.any(Buffer),
+        publicKeySign: expect.any(Buffer),
+        encPrivSignPw: expect.any(Buffer),
+        signNoncePw: expect.any(Buffer),
         tokenVersion: { increment: 1 },
       },
     })

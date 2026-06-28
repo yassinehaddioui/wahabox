@@ -19,6 +19,9 @@ export type FixtureUser = {
   encPrivRec: Buffer
   recKdfSalt: Buffer
   recNonce: Buffer
+  publicKeySign: Buffer | null
+  encPrivSignPw: Buffer | null
+  signNoncePw: Buffer | null
   keyVersion: number
   tokenVersion: number
   emailEncrypted: Buffer | null
@@ -96,6 +99,9 @@ export function createUser(overrides: Partial<FixtureUser> = {}): FixtureUser {
     encPrivRec: Buffer.alloc(48, 0x44),
     recKdfSalt: Buffer.alloc(16, 0x55),
     recNonce: Buffer.alloc(24, 0x66),
+    publicKeySign: Buffer.alloc(32, 0x77),
+    encPrivSignPw: Buffer.alloc(48, 0x88),
+    signNoncePw: Buffer.alloc(24, 0x99),
     keyVersion: 1,
     tokenVersion: 0,
     emailEncrypted: null,

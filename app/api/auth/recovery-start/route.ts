@@ -48,6 +48,9 @@ export async function POST(request: NextRequest) {
         recKdfSalt: true,
         recNonce: true,
         publicKey: true,
+        publicKeySign: true,
+        encPrivSignPw: true,
+        signNoncePw: true,
       },
     })
 
@@ -76,6 +79,9 @@ export async function POST(request: NextRequest) {
       recKdfSalt: b64(user.recKdfSalt),
       recNonce: b64(user.recNonce),
       publicKey: b64(user.publicKey),
+      publicKeySign: user.publicKeySign ? b64(user.publicKeySign) : null,
+      encPrivSignRec: user.encPrivSignPw ? b64(user.encPrivSignPw) : null,
+      signNonceRec: user.signNoncePw ? b64(user.signNoncePw) : null,
       sealedChallenge: Buffer.from(sealedChallenge).toString('base64'),
       recoveryToken,
     })

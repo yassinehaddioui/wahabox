@@ -70,6 +70,9 @@ export async function POST(request: NextRequest) {
         encPrivPw: b64(body.newEncPrivPw),
         pwKdfSalt: b64(body.newPwKdfSalt),
         pwNonce: b64(body.newPwNonce),
+        ...(body.newPublicKeySign && { publicKeySign: b64(body.newPublicKeySign) }),
+        ...(body.newEncPrivSignPw && { encPrivSignPw: b64(body.newEncPrivSignPw) }),
+        ...(body.newSignNoncePw && { signNoncePw: b64(body.newSignNoncePw) }),
         tokenVersion: { increment: 1 },
       },
     })

@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
           authVerifier: b64(body.authVerifier),
           authSalt: b64(body.authSalt),
           publicKey: b64(body.publicKey),
+          publicKeySign: b64(body.publicKeySign),
           encPrivPw: b64(body.encPrivPw),
           pwKdfSalt: b64(body.pwKdfSalt),
           pwNonce: b64(body.pwNonce),

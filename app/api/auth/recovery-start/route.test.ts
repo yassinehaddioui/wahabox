@@ -64,6 +64,9 @@ describe('POST /api/auth/recovery-start', () => {
     expect(json.data.recKdfSalt).toBeDefined()
     expect(json.data.recNonce).toBeDefined()
     expect(json.data.publicKey).toBeDefined()
+    expect(json.data.publicKeySign).toBeDefined()
+    expect(json.data.encPrivSignRec).toBeDefined()
+    expect(json.data.signNonceRec).toBeDefined()
     expect(json.data.sealedChallenge).toBeDefined()
     expect(json.data.recoveryToken).toMatch(/^[0-9a-f]+$/)
     expect(json.data.passwordHash).toBeUndefined()
@@ -169,7 +172,7 @@ describe('POST /api/auth/recovery-start', () => {
     expect(Object.keys(json.data)).not.toContain('passwordHash')
   })
 
-  it('queries only encPrivRec/recKdfSalt/recNonce/publicKey from user', async () => {
+  it('queries only encPrivRec/recKdfSalt/recNonce/publicKey and signing-key fields from user', async () => {
     const user = createUser()
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     prismaMock.user.findUnique.mockResolvedValue(user)
@@ -178,7 +181,15 @@ describe('POST /api/auth/recovery-start', () => {
 
     expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
       where: { username: 'testuser' },
-      select: { encPrivRec: true, recKdfSalt: true, recNonce: true, publicKey: true },
+      select: {
+        encPrivRec: true,
+        recKdfSalt: true,
+        recNonce: true,
+        publicKey: true,
+        publicKeySign: true,
+        encPrivSignPw: true,
+        signNoncePw: true,
+      },
     })
   })
 })

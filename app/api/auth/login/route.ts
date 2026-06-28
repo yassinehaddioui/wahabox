@@ -84,6 +84,9 @@ export async function POST(request: NextRequest) {
         emailNonce: true,
         emailVerified: true,
         suspended: true,
+        publicKeySign: true,
+        encPrivSignPw: true,
+        signNoncePw: true,
       },
     })
 
@@ -146,6 +149,9 @@ export async function POST(request: NextRequest) {
       encPrivPw: b64(user.encPrivPw),
       pwNonce: b64(user.pwNonce),
       publicKey: b64(user.publicKey),
+      publicKeySign: user.publicKeySign ? b64(user.publicKeySign) : null,
+      encPrivSignPw: user.encPrivSignPw ? b64(user.encPrivSignPw) : null,
+      signNoncePw: user.signNoncePw ? b64(user.signNoncePw) : null,
     })
     if (proofToken) {
       res.cookies.set(TURNSTILE_PROOF_COOKIE, proofToken, {
