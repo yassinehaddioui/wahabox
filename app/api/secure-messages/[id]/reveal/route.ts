@@ -51,7 +51,7 @@ export async function POST(
     // Check date window
     const now = new Date()
     if (message.startDate && now < message.startDate) {
-      throw new MessageNotAvailableError('This message is not available yet')
+      throw new MessageNotAvailableError('This message is not available yet', message.startDate)
     }
     if (message.endDate && now > message.endDate) {
       throw new MessageNotAvailableError('This message has expired')

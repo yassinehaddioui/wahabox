@@ -21,7 +21,9 @@ export function SecureMessageForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [startDate, setStartDate] = useState('')
+  const [startTime, setStartTime] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [endTime, setEndTime] = useState('')
   const [autoDestruct, setAutoDestruct] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{ id: string; readUrl: string } | null>(null)
@@ -42,7 +44,15 @@ export function SecureMessageForm() {
       toast.error('Invalid email address')
       return
     }
-    if (startDate && endDate && endDate <= startDate) {
+
+    const startDateTime = startDate && startTime
+      ? `${startDate}T${startTime}`
+      : startDate || undefined
+    const endDateTime = endDate && endTime
+      ? `${endDate}T${endTime}`
+      : endDate || undefined
+
+    if (startDateTime && endDateTime && endDateTime <= startDateTime) {
       toast.error('End date must be after start date')
       return
     }
@@ -115,8 +125,8 @@ export function SecureMessageForm() {
       if (passwordHash) payload.passwordHash = passwordHash
       if (passwordSalt) payload.passwordSalt = passwordSalt
       if (email) payload.receiverEmail = email
-      if (startDate) payload.startDate = new Date(startDate).toISOString()
-      if (endDate) payload.endDate = new Date(endDate).toISOString()
+      if (startDateTime) payload.startDate = new Date(startDateTime).toISOString()
+      if (endDateTime) payload.endDate = new Date(endDateTime).toISOString()
 
       const res = await fetch('/api/secure-messages', {
         method: 'POST',
@@ -168,7 +178,7 @@ export function SecureMessageForm() {
               {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
             </Button>
           </div>
-          <Button variant="outline" onClick={() => { setResult(null); setMessage(''); setEmail(''); setPassword(''); setStartDate(''); setEndDate(''); setAutoDestruct(false) }}>
+          <Button variant="outline" onClick={() => { setResult(null); setMessage(''); setEmail(''); setPassword(''); setStartDate(''); setStartTime(''); setEndDate(''); setEndTime(''); setAutoDestruct(false) }}>
             Send Another
           </Button>
         </CardContent>
@@ -214,22 +224,42 @@ export function SecureMessageForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="startDate">Start date (optional)</Label>
-          <Input
-            id="startDate"
-            type="datetime-local"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
+          <Label htmlFor="start-date">Start date (optional)</Label>
+          <div className="flex gap-2">
+            <input
+              id="start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="h-10 flex-1 min-w-0 rounded-sm border border-input bg-card px-3 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground"
+            />
+            <input
+              id="start-time"
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="h-10 w-28 min-w-0 rounded-sm border border-input bg-card px-3 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground"
+            />
+          </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="endDate">End date (optional)</Label>
-          <Input
-            id="endDate"
-            type="datetime-local"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
+          <Label htmlFor="end-date">End date (optional)</Label>
+          <div className="flex gap-2">
+            <input
+              id="end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="h-10 flex-1 min-w-0 rounded-sm border border-input bg-card px-3 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground"
+            />
+            <input
+              id="end-time"
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="h-10 w-28 min-w-0 rounded-sm border border-input bg-card px-3 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground"
+            />
+          </div>
         </div>
       </div>
 

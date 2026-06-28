@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { ApiError } from './errors'
 import { MfaRequiredError } from './errors'
+import { MessageNotAvailableError } from './errors'
 
 type SuccessResponse<T = unknown> = {
   success: true
@@ -26,6 +27,18 @@ export function error(err: unknown): NextResponse<ErrorResponse> {
         code: err.code,
         mfaToken: err.mfaToken,
         methods: err.methods,
+      },
+      { status: err.statusCode },
+    )
+  }
+
+  if (err instanceof MessageNotAvailableError) {
+    return NextResponse.json(
+      {
+        success: false as const,
+        error: err.message,
+        code: err.code,
+        startDate: err.startDate ?? undefined,
       },
       { status: err.statusCode },
     )

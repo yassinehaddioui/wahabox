@@ -85,8 +85,11 @@ export class MessageDestroyedError extends ApiError {
 }
 
 export class MessageNotAvailableError extends ApiError {
-  constructor(message = 'This message is not available yet') {
+  public startDate?: string
+
+  constructor(message = 'This message is not available yet', startDate?: Date) {
     super(message, 403, 'MESSAGE_NOT_AVAILABLE')
     this.name = 'MessageNotAvailableError'
+    this.startDate = startDate?.toISOString()
   }
 }

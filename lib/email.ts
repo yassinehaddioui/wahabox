@@ -1,6 +1,7 @@
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2'
 import { withRedis } from './redis'
 import ENV from './env'
+import { formatUtcDate } from './utils'
 
 let sesClient: SESv2Client | null = null
 
@@ -171,7 +172,7 @@ export async function sendRecoveryKeyRegeneratedNotification(
   timestamp: Date,
 ): Promise<void> {
   const loginLink = `${ENV.APP_URL}/login`
-  const formattedTimestamp = timestamp.toLocaleString()
+  const formattedTimestamp = formatUtcDate(timestamp)
 
   if (process.env.APP_MODE === 'development') {
     console.log(`[email] Recovery key regenerated notification sent to ${to}`)

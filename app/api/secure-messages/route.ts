@@ -93,6 +93,8 @@ export async function GET(request: NextRequest) {
         readAt: true,
         isDestroyed: true,
         autoDestruct: true,
+        startDate: true,
+        endDate: true,
         passwordHash: true,
         receiverEmail: true,
         emailNonce: true,
@@ -123,6 +125,8 @@ export async function GET(request: NextRequest) {
           readAt: m.readAt?.toISOString() ?? null,
           isDestroyed: m.isDestroyed,
           autoDestruct: m.autoDestruct,
+          startDate: m.startDate?.toISOString() ?? null,
+          endDate: m.endDate?.toISOString() ?? null,
           hasPassword: !!m.passwordHash,
           receiverEmail,
         }

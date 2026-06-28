@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { Copy, Lock, Trash2 } from 'lucide-react'
+import { Copy, Lock, Trash2, Clock } from 'lucide-react'
+import { formatUtcDate } from '@/lib/utils'
 
 type SentMessage = {
   id: string
@@ -13,6 +14,8 @@ type SentMessage = {
   readAt: string | null
   isDestroyed: boolean
   autoDestruct: boolean
+  startDate: string | null
+  endDate: string | null
   hasPassword: boolean
   receiverEmail: string | null
 }
@@ -123,6 +126,20 @@ export function SentMessagesList() {
                     <> · Read {new Date(msg.readAt).toLocaleString()}</>
                   )}
                 </p>
+                {!msg.readAt && !msg.isDestroyed && (msg.startDate || msg.endDate) && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3 shrink-0" />
+                    <span>
+                      {msg.startDate && (
+                        <>Available {formatUtcDate(msg.startDate)}</>
+                      )}
+                      {msg.startDate && msg.endDate && ' · '}
+                      {msg.endDate && (
+                        <>Expires {formatUtcDate(msg.endDate)}</>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
               <Button
                 variant="ghost"
