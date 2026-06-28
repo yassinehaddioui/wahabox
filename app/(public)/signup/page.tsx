@@ -105,6 +105,8 @@ export default function SignupPage() {
           encPrivRec: sessionStorage.getItem('signup:encPrivRec'),
           recNonce: sessionStorage.getItem('signup:recNonce'),
           recKdfSalt: sessionStorage.getItem('signup:recKdfSalt'),
+          encPrivSignPw: sessionStorage.getItem('signup:encPrivSignPw'),
+          signNoncePw: sessionStorage.getItem('signup:signNoncePw'),
           turnstileToken: turnstileToken,
         }),
       })

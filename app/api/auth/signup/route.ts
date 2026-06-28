@@ -58,6 +58,8 @@ export async function POST(request: NextRequest) {
           encPrivRec: b64(body.encPrivRec),
           recKdfSalt: b64(body.recKdfSalt),
           recNonce: b64(body.recNonce),
+          encPrivSignPw: body.encPrivSignPw ? b64(body.encPrivSignPw) : undefined,
+          signNoncePw: body.signNoncePw ? b64(body.signNoncePw) : undefined,
           recoveryCodeCreatedAt: new Date(),
         },
       })

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Markdown } from '@/components/ui/markdown'
 import { Skeleton } from '@/components/ui/skeleton'
-import { FileQuestion, Clock, Hourglass, BadgeCheck, BadgeAlert, BadgeX } from 'lucide-react'
+import { FileQuestion, Clock, Hourglass, BadgeCheck, BadgeAlert } from 'lucide-react'
 
 type Metadata = {
   hasPassword: boolean
@@ -271,23 +271,15 @@ export default function ReadPage() {
         <CardContent>
           {signatureState && signatureState !== 'unsigned' && (
             <div className="flex items-center gap-1 mb-3">
-              {signatureState === 'verified' && (
+              {signatureState === 'verified' ? (
                 <BadgeCheck className="h-4 w-4 text-emerald-500" />
-              )}
-              {signatureState === 'invalid' && (
+              ) : (
                 <BadgeAlert className="h-4 w-4 text-destructive" />
               )}
-              {signatureState === 'unsigned' && (
-                <BadgeX className="h-4 w-4 text-muted-foreground" />
-              )}
               <span className={`text-xs font-medium ${
-                signatureState === 'verified' ? 'text-emerald-600' :
-                signatureState === 'invalid' ? 'text-destructive' :
-                'text-muted-foreground'
+                signatureState === 'verified' ? 'text-emerald-600' : 'text-destructive'
               }`}>
-                {signatureState === 'verified' ? 'Signed' :
-                 signatureState === 'invalid' ? 'Invalid Signature' :
-                 'Unsigned'}
+                {signatureState === 'verified' ? 'Signed' : 'Invalid Signature'}
               </span>
             </div>
           )}

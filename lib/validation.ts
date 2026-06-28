@@ -22,6 +22,8 @@ export const signupSchema = z.object({
   encPrivRec: z.string().min(1),
   recKdfSalt: z.string().min(1),
   recNonce: z.string().min(1),
+  encPrivSignPw: z.string().nullish(),
+  signNoncePw: z.string().nullish(),
 })
 
 export const loginSchema = z.object({

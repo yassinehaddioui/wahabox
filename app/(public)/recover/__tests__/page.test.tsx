@@ -27,6 +27,7 @@ const mockCrypto = vi.hoisted(() => ({
   openSealed: vi.fn(() => new Uint8Array(32)),
   computeAuthVerifier: vi.fn(() => new Uint8Array(32)),
   wrapPrivateKey: vi.fn(() => ({ ciphertext: new Uint8Array(32), nonce: new Uint8Array(24) })),
+  generateSignKeypair: vi.fn(() => ({ publicKey: new Uint8Array(32), privateKey: new Uint8Array(64) })),
   randomBytes: vi.fn((n: number) => new Uint8Array(n)),
 }))
 
