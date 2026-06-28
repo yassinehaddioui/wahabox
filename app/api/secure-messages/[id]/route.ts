@@ -22,6 +22,8 @@ export async function GET(
         isDestroyed: true,
         autoDestruct: true,
         readAt: true,
+        signature: true,
+        senderPublicKeySign: true,
       },
     })
 
@@ -40,6 +42,12 @@ export async function GET(
       isDestroyed: message.isDestroyed,
       autoDestruct: message.autoDestruct,
       readAt: message.readAt?.toISOString() ?? null,
+      signature: message.signature
+        ? Buffer.from(message.signature).toString('base64')
+        : null,
+      senderPublicKeySign: message.senderPublicKeySign
+        ? Buffer.from(message.senderPublicKeySign).toString('base64')
+        : null,
     })
   } catch (err) {
     return error(err)

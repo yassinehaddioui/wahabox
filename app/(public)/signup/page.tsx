@@ -44,11 +44,13 @@ export default function SignupPage() {
       const { authKey, kekPw } = crypto.splitMasterKey(masterKey)
 
       const keypair = crypto.generateKeypair()
+      const signKeypair = crypto.generateSignKeypair()
 
       const code = crypto.generateRecoveryCode()
       const kekRec = crypto.deriveRecoveryKey(code, recKdfSalt)
 
       const encPrivPw = crypto.wrapPrivateKey(keypair.privateKey, kekPw)
+      const encPrivSignPw = crypto.wrapPrivateKey(signKeypair.privateKey, kekPw)
       const encPrivRec = crypto.wrapPrivateKey(keypair.privateKey, kekRec)
 
       const authVerifier = crypto.computeAuthVerifier(authKey, authSalt)
@@ -63,6 +65,9 @@ export default function SignupPage() {
       sessionStorage.setItem('signup:encPrivRec', crypto.toBase64(encPrivRec.ciphertext))
       sessionStorage.setItem('signup:recNonce', crypto.toBase64(encPrivRec.nonce))
       sessionStorage.setItem('signup:recKdfSalt', crypto.toBase64(recKdfSalt))
+      sessionStorage.setItem('signup:publicKeySign', crypto.toBase64(signKeypair.publicKey))
+      sessionStorage.setItem('signup:encPrivSignPw', crypto.toBase64(encPrivSignPw.ciphertext))
+      sessionStorage.setItem('signup:signNoncePw', crypto.toBase64(encPrivSignPw.nonce))
 
       setRecoveryCode(code)
       setStep('recovery')
@@ -93,6 +98,7 @@ export default function SignupPage() {
           authVerifier: sessionStorage.getItem('signup:authVerifier'),
           authSalt: sessionStorage.getItem('signup:authSalt'),
           publicKey: sessionStorage.getItem('signup:publicKey'),
+          publicKeySign: sessionStorage.getItem('signup:publicKeySign'),
           encPrivPw: sessionStorage.getItem('signup:encPrivPw'),
           pwNonce: sessionStorage.getItem('signup:pwNonce'),
           pwKdfSalt: sessionStorage.getItem('signup:pwKdfSalt'),

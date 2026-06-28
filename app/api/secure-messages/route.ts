@@ -63,6 +63,12 @@ export async function POST(request: NextRequest) {
         startDate,
         endDate,
         autoDestruct: body.autoDestruct,
+        signature: body.signature
+          ? Buffer.from(body.signature, 'base64')
+          : undefined,
+        senderPublicKeySign: body.senderPublicKeySign
+          ? Buffer.from(body.senderPublicKeySign, 'base64')
+          : undefined,
       },
     })
 
@@ -99,6 +105,8 @@ export async function GET(request: NextRequest) {
         receiverEmail: true,
         emailNonce: true,
         emailKeyVersion: true,
+        signature: true,
+        senderPublicKeySign: true,
       },
     })
 
@@ -129,6 +137,12 @@ export async function GET(request: NextRequest) {
           endDate: m.endDate?.toISOString() ?? null,
           hasPassword: !!m.passwordHash,
           receiverEmail,
+          signature: m.signature
+            ? Buffer.from(m.signature).toString('base64')
+            : null,
+          senderPublicKeySign: m.senderPublicKeySign
+            ? Buffer.from(m.senderPublicKeySign).toString('base64')
+            : null,
         }
       }),
     )

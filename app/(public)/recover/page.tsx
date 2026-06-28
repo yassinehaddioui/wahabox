@@ -42,7 +42,7 @@ export default function RecoverPage() {
       if (!startData.success)
         throw new Error(startData.error || 'Invalid username or recovery code')
 
-      const { encPrivRec, recKdfSalt, recNonce, publicKey, sealedChallenge, recoveryToken } =
+      const { encPrivRec, recKdfSalt, recNonce, publicKey, publicKeySign, encPrivSignRec, signNonceRec, sealedChallenge, recoveryToken } =
         startData.data
 
       const recKdfSaltBytes = crypto.fromBase64(recKdfSalt)
@@ -55,6 +55,13 @@ export default function RecoverPage() {
         privateKey = crypto.unwrapPrivateKey(encPrivRecBytes, recNonceBytes, kekRec)
       } catch {
         throw new Error('Invalid recovery code')
+      }
+
+      let privateKeySign: Uint8Array | null = null
+      if (encPrivSignRec && signNonceRec) {
+        const encPrivSignRecBytes = crypto.fromBase64(encPrivSignRec)
+        const signNonceRecBytes = crypto.fromBase64(signNonceRec)
+        privateKeySign = crypto.unwrapPrivateKey(encPrivSignRecBytes, signNonceRecBytes, kekRec)
       }
 
       const publicKeyBytes = crypto.fromBase64(publicKey)
@@ -72,6 +79,13 @@ export default function RecoverPage() {
       const masterKey = crypto.deriveMasterKey(newPassword, pwKdfSalt)
       const { authKey, kekPw } = crypto.splitMasterKey(masterKey)
       const encPrivPw = crypto.wrapPrivateKey(privateKey, kekPw)
+      let encPrivSignPw: string | undefined
+      let signNoncePwStr: string | undefined
+      if (privateKeySign) {
+        const wrapped = crypto.wrapPrivateKey(privateKeySign, kekPw)
+        encPrivSignPw = crypto.toBase64(wrapped.ciphertext)
+        signNoncePwStr = crypto.toBase64(wrapped.nonce)
+      }
       const authVerifier = crypto.computeAuthVerifier(authKey, authSalt)
 
       const completeCsrfRes = await fetch('/api/csrf?tag=recovery-complete')
@@ -91,6 +105,9 @@ export default function RecoverPage() {
           newEncPrivPw: crypto.toBase64(encPrivPw.ciphertext),
           newPwKdfSalt: crypto.toBase64(pwKdfSalt),
           newPwNonce: crypto.toBase64(encPrivPw.nonce),
+          newPublicKeySign: startData.data.publicKeySign,
+          newEncPrivSignPw: encPrivSignPw,
+          newSignNoncePw: signNoncePwStr,
         }),
       })
       const completeData = await completeRes.json()

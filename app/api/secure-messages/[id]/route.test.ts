@@ -24,6 +24,8 @@ describe('GET /api/secure-messages/[id]', () => {
       isDestroyed: false,
       autoDestruct: false,
       readAt: null,
+      signature: null,
+      senderPublicKeySign: null,
       ...overrides,
     })
   }
@@ -45,6 +47,8 @@ describe('GET /api/secure-messages/[id]', () => {
       isDestroyed: false,
       autoDestruct: false,
       readAt: null,
+      signature: null,
+      senderPublicKeySign: null,
     })
   })
 
@@ -99,6 +103,8 @@ describe('GET /api/secure-messages/[id]', () => {
         isDestroyed: true,
         autoDestruct: true,
         readAt: true,
+        signature: true,
+        senderPublicKeySign: true,
       }),
     })
   })

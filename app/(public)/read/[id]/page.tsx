@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Markdown } from '@/components/ui/markdown'
 import { Skeleton } from '@/components/ui/skeleton'
-import { FileQuestion, Clock, Hourglass } from 'lucide-react'
+import { FileQuestion, Clock, Hourglass, BadgeCheck, BadgeAlert, BadgeX } from 'lucide-react'
 
 type Metadata = {
   hasPassword: boolean
@@ -20,6 +20,8 @@ type Metadata = {
   endDate: string | null
   isDestroyed: boolean
   autoDestruct: boolean
+  signature: string | null
+  senderPublicKeySign: string | null
   readAt: string | null
 }
 
@@ -34,6 +36,7 @@ export default function ReadPage() {
   const [plaintext, setPlaintext] = useState<string | null>(null)
   const [dateError, setDateError] = useState('')
   const [countdown, setCountdown] = useState('')
+  const [signatureState, setSignatureState] = useState<'verified' | 'invalid' | 'unsigned' | null>(null)
 
   // Fetch metadata on mount
   useEffect(() => {
@@ -174,6 +177,27 @@ export default function ReadPage() {
         return
       }
 
+      if (meta?.signature && meta?.senderPublicKeySign) {
+        const { crypto } = await import('@/lib/crypto')
+        await crypto.ready
+        const messageToSign = revealData.data.ciphertext + '|' + sodium.to_base64(
+          sodium.from_base64(meta!.msgNonce, sodium.base64_variants.ORIGINAL),
+          sodium.base64_variants.ORIGINAL
+        )
+        try {
+          const valid = crypto.verifyDetached(
+            new TextEncoder().encode(messageToSign),
+            crypto.fromBase64(meta.signature),
+            crypto.fromBase64(meta.senderPublicKeySign)
+          )
+          setSignatureState(valid ? 'verified' : 'invalid')
+        } catch {
+          setSignatureState('invalid')
+        }
+      } else {
+        setSignatureState('unsigned')
+      }
+
       // Decrypt
       const ciphertext = sodium.from_base64(revealData.data.ciphertext, sodium.base64_variants.ORIGINAL)
       const decrypted = sodium.crypto_secretbox_open_easy(ciphertext, msgNonce, key)
@@ -245,6 +269,28 @@ export default function ReadPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {signatureState && signatureState !== 'unsigned' && (
+            <div className="flex items-center gap-1 mb-3">
+              {signatureState === 'verified' && (
+                <BadgeCheck className="h-4 w-4 text-emerald-500" />
+              )}
+              {signatureState === 'invalid' && (
+                <BadgeAlert className="h-4 w-4 text-destructive" />
+              )}
+              {signatureState === 'unsigned' && (
+                <BadgeX className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className={`text-xs font-medium ${
+                signatureState === 'verified' ? 'text-emerald-600' :
+                signatureState === 'invalid' ? 'text-destructive' :
+                'text-muted-foreground'
+              }`}>
+                {signatureState === 'verified' ? 'Signed' :
+                 signatureState === 'invalid' ? 'Invalid Signature' :
+                 'Unsigned'}
+              </span>
+            </div>
+          )}
           <Markdown>{plaintext}</Markdown>
         </CardContent>
       </Card>

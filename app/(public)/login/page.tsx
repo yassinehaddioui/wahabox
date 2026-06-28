@@ -86,7 +86,14 @@ export default function LoginPage() {
 
   async function finishLogin(
     mk: Uint8Array,
-    loginData: { encPrivPw: string; pwNonce: string; publicKey: string },
+    loginData: {
+      encPrivPw: string
+      pwNonce: string
+      publicKey: string
+      encPrivSignPw?: string | null
+      signNoncePw?: string | null
+      publicKeySign?: string | null
+    },
   ) {
     const { crypto } = await import('@/lib/crypto')
     await crypto.ready
@@ -96,7 +103,20 @@ export default function LoginPage() {
     const { kekPw } = crypto.splitMasterKey(mk)
     const privateKey = crypto.unwrapPrivateKey(encPrivPw, pwNonce, kekPw)
 
-    setSessionKeys(crypto.toBase64(privateKey), loginData.publicKey)
+    let privateKeySign: string | undefined
+    if (loginData.encPrivSignPw && loginData.signNoncePw) {
+      const encPrivSignPw = crypto.fromBase64(loginData.encPrivSignPw)
+      const signNoncePw = crypto.fromBase64(loginData.signNoncePw)
+      const privateKeySignBytes = crypto.unwrapPrivateKey(encPrivSignPw, signNoncePw, kekPw)
+      privateKeySign = crypto.toBase64(privateKeySignBytes)
+    }
+
+    setSessionKeys(
+      crypto.toBase64(privateKey),
+      loginData.publicKey,
+      privateKeySign,
+      loginData.publicKeySign ?? undefined,
+    )
 
     router.push('/dashboard')
   }

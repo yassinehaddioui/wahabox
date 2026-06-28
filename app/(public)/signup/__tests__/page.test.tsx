@@ -26,6 +26,10 @@ vi.mock('@/lib/crypto', () => ({
       publicKey: new Uint8Array(32),
       privateKey: new Uint8Array(64),
     })),
+    generateSignKeypair: vi.fn(() => ({
+      publicKey: new Uint8Array(32),
+      privateKey: new Uint8Array(64),
+    })),
     generateRecoveryCode: vi.fn(() => 'RECOVERY-CODE-1234'),
     deriveRecoveryKey: vi.fn(() => new Uint8Array(32)),
     wrapPrivateKey: vi.fn(() => ({

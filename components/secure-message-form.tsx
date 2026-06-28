@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Copy, Check } from 'lucide-react'
+import { getSessionKeys } from '@/lib/session-keys'
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -108,12 +109,27 @@ export function SecureMessageForm() {
         urlFragment = sodium.to_base64(key, sodium.base64_variants.URLSAFE_NO_PADDING)
       }
 
-      // 4. Fetch CSRF token
+      // 4. Sign the encrypted payload if the sender has a signing key
+      const sessionKeys = getSessionKeys()
+      let signature: string | undefined
+      let senderPublicKeySign: string | undefined
+      if (sessionKeys?.privateKeySign) {
+        const messageToSign = sodium.to_base64(ciphertext, sodium.base64_variants.ORIGINAL) + '|' +
+          sodium.to_base64(msgNonce, sodium.base64_variants.ORIGINAL)
+        const sigBytes = crypto.signDetached(
+          new TextEncoder().encode(messageToSign),
+          crypto.fromBase64(sessionKeys.privateKeySign)
+        )
+        signature = crypto.toBase64(sigBytes)
+        senderPublicKeySign = sessionKeys.publicKeySign ?? undefined
+      }
+
+      // 5. Fetch CSRF token
       const csrfRes = await fetch('/api/csrf?tag=create-secure-message')
       const csrfData = await csrfRes.json()
       const csrfToken = csrfData.success ? csrfData.data.csrfToken : null
 
-      // 5. POST to the API
+      // 6. POST to the API
       const payload: Record<string, unknown> = {
         ciphertext: sodium.to_base64(ciphertext, sodium.base64_variants.ORIGINAL),
         msgNonce: sodium.to_base64(msgNonce, sodium.base64_variants.ORIGINAL),
@@ -127,6 +143,8 @@ export function SecureMessageForm() {
       if (email) payload.receiverEmail = email
       if (startDateTime) payload.startDate = new Date(startDateTime).toISOString()
       if (endDateTime) payload.endDate = new Date(endDateTime).toISOString()
+      if (signature) payload.signature = signature
+      if (senderPublicKeySign) payload.senderPublicKeySign = senderPublicKeySign
 
       const res = await fetch('/api/secure-messages', {
         method: 'POST',
