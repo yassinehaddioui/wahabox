@@ -15,6 +15,7 @@ export const signupSchema = z.object({
   authVerifier: z.string().min(1),
   authSalt: z.string().min(1),
   publicKey: z.string().min(1),
+  publicKeySign: z.string().min(1),
   encPrivPw: z.string().min(1),
   pwKdfSalt: z.string().min(1),
   pwNonce: z.string().min(1),
@@ -45,6 +46,9 @@ export const recoveryCompleteSchema = z.object({
   newEncPrivPw: z.string().min(1),
   newPwKdfSalt: z.string().min(1),
   newPwNonce: z.string().min(1),
+  newPublicKeySign: z.string().min(1),
+  newEncPrivSignPw: z.string().min(1),
+  newSignNoncePw: z.string().min(1),
 })
 
 export const createBoxSchema = z.object({
@@ -114,6 +118,8 @@ export const createSecureMessageSchema = z.object({
   startDate: z.string().datetime().nullish(),
   endDate: z.string().datetime().nullish(),
   autoDestruct: z.boolean(),
+  signature: z.string().nullish(),
+  senderPublicKeySign: z.string().nullish(),
   csrfToken: z.string().nullish(),
 })
 

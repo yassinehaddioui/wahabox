@@ -145,4 +145,26 @@ export const crypto = {
   fromBase64(s: string): Uint8Array {
     return sodium.from_base64(s, sodium.base64_variants.ORIGINAL)
   },
+
+  /**
+   * Generate a new Ed25519 signing keypair.
+   * The private key is 64 bytes (seed + public key); the public key is 32 bytes.
+   */
+  generateSignKeypair(): KeyPair {
+    return sodium.crypto_sign_keypair()
+  },
+
+  /**
+   * Create a detached Ed25519 signature (64 bytes) for a message.
+   */
+  signDetached(message: Uint8Array, secretKey: Uint8Array): Uint8Array {
+    return sodium.crypto_sign_detached(message, secretKey)
+  },
+
+  /**
+   * Verify a detached Ed25519 signature. Returns true iff valid.
+   */
+  verifyDetached(message: Uint8Array, signature: Uint8Array, publicKey: Uint8Array): boolean {
+    return sodium.crypto_sign_verify_detached(signature, message, publicKey)
+  },
 }

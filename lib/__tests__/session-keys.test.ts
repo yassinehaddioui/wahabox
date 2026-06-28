@@ -5,6 +5,8 @@ import {
   clearSessionKeys,
   PRIVATE_KEY_STORAGE_KEY,
   PUBLIC_KEY_STORAGE_KEY,
+  PRIVATE_KEY_SIGN_STORAGE_KEY,
+  PUBLIC_KEY_SIGN_STORAGE_KEY,
 } from '@/lib/session-keys'
 
 type Stored = Map<string, string>
@@ -94,6 +96,8 @@ describe('session-keys', () => {
     expect(getSessionKeys()).toEqual({
       privateKey: 'priv-b64',
       publicKey: 'pub-b64',
+      privateKeySign: null,
+      publicKeySign: null,
     })
   })
 
@@ -108,7 +112,12 @@ describe('session-keys', () => {
 
     const keys = getSessionKeys()
 
-    expect(keys).toEqual({ privateKey: 'priv-b64', publicKey: 'pub-b64' })
+    expect(keys).toEqual({
+      privateKey: 'priv-b64',
+      publicKey: 'pub-b64',
+      privateKeySign: null,
+      publicKeySign: null,
+    })
     expect(sessionStore.get(PRIVATE_KEY_STORAGE_KEY)).toBe('priv-b64')
     expect(sessionStore.get(PUBLIC_KEY_STORAGE_KEY)).toBe('pub-b64')
   })
@@ -160,5 +169,87 @@ describe('session-keys', () => {
     expect(() => setSessionKeys('a', 'b')).not.toThrow()
     expect(getSessionKeys()).toBeNull()
     expect(() => clearSessionKeys()).not.toThrow()
+  })
+
+  it('setSessionKeys with 4 params stores signing keys in both stores', () => {
+    setSessionKeys('priv-b64', 'pub-b64', 'priv-sign-b64', 'pub-sign-b64')
+    expect(sessionStore.get(PRIVATE_KEY_STORAGE_KEY)).toBe('priv-b64')
+    expect(sessionStore.get(PUBLIC_KEY_STORAGE_KEY)).toBe('pub-b64')
+    expect(sessionStore.get(PRIVATE_KEY_SIGN_STORAGE_KEY)).toBe('priv-sign-b64')
+    expect(sessionStore.get(PUBLIC_KEY_SIGN_STORAGE_KEY)).toBe('pub-sign-b64')
+    expect(localStore.get(PRIVATE_KEY_SIGN_STORAGE_KEY)).toBe('priv-sign-b64')
+    expect(localStore.get(PUBLIC_KEY_SIGN_STORAGE_KEY)).toBe('pub-sign-b64')
+  })
+
+  it('setSessionKeys with 2 params (backward compat) does not store signing keys', () => {
+    setSessionKeys('priv-b64', 'pub-b64')
+    expect(sessionStore.has(PRIVATE_KEY_SIGN_STORAGE_KEY)).toBe(false)
+    expect(sessionStore.has(PUBLIC_KEY_SIGN_STORAGE_KEY)).toBe(false)
+    expect(localStore.has(PRIVATE_KEY_SIGN_STORAGE_KEY)).toBe(false)
+    expect(localStore.has(PUBLIC_KEY_SIGN_STORAGE_KEY)).toBe(false)
+  })
+
+  it('getSessionKeys returns signing keys when all 4 are stored', () => {
+    setSessionKeys('priv-b64', 'pub-b64', 'priv-sign-b64', 'pub-sign-b64')
+    expect(getSessionKeys()).toEqual({
+      privateKey: 'priv-b64',
+      publicKey: 'pub-b64',
+      privateKeySign: 'priv-sign-b64',
+      publicKeySign: 'pub-sign-b64',
+    })
+  })
+
+  it('getSessionKeys returns null for signing keys when only 2-param call was used', () => {
+    setSessionKeys('priv-b64', 'pub-b64')
+    expect(getSessionKeys()).toEqual({
+      privateKey: 'priv-b64',
+      publicKey: 'pub-b64',
+      privateKeySign: null,
+      publicKeySign: null,
+    })
+  })
+
+  it('getSessionKeys falls back to localStorage for signing keys', () => {
+    localStore.set(PRIVATE_KEY_STORAGE_KEY, 'priv-b64')
+    localStore.set(PUBLIC_KEY_STORAGE_KEY, 'pub-b64')
+    localStore.set(PRIVATE_KEY_SIGN_STORAGE_KEY, 'priv-sign-b64')
+    localStore.set(PUBLIC_KEY_SIGN_STORAGE_KEY, 'pub-sign-b64')
+    sessionStore.clear()
+
+    expect(getSessionKeys()).toEqual({
+      privateKey: 'priv-b64',
+      publicKey: 'pub-b64',
+      privateKeySign: 'priv-sign-b64',
+      publicKeySign: 'pub-sign-b64',
+    })
+  })
+
+  it('clearSessionKeys removes signing keys from both stores', () => {
+    setSessionKeys('priv-b64', 'pub-b64', 'priv-sign-b64', 'pub-sign-b64')
+    clearSessionKeys()
+    expect(sessionStore.has(PRIVATE_KEY_SIGN_STORAGE_KEY)).toBe(false)
+    expect(sessionStore.has(PUBLIC_KEY_SIGN_STORAGE_KEY)).toBe(false)
+    expect(localStore.has(PRIVATE_KEY_SIGN_STORAGE_KEY)).toBe(false)
+    expect(localStore.has(PUBLIC_KEY_SIGN_STORAGE_KEY)).toBe(false)
+  })
+
+  it('signing keys are cleared alongside encryption keys on storage event', () => {
+    setSessionKeys('priv-b64', 'pub-b64', 'priv-sign-b64', 'pub-sign-b64')
+
+    listeners.push(() => {
+      clearSessionKeys()
+    })
+
+    dispatchStorageEvent(PRIVATE_KEY_STORAGE_KEY, null)
+
+    expect(getSessionKeys()).toBeNull()
+    expect(sessionStore.has(PRIVATE_KEY_SIGN_STORAGE_KEY)).toBe(false)
+    expect(localStore.has(PRIVATE_KEY_SIGN_STORAGE_KEY)).toBe(false)
+  })
+
+  it('getSessionKeys returns null when signing keys exist but encryption keys do not', () => {
+    localStore.set(PRIVATE_KEY_SIGN_STORAGE_KEY, 'priv-sign-b64')
+    localStore.set(PUBLIC_KEY_SIGN_STORAGE_KEY, 'pub-sign-b64')
+    expect(getSessionKeys()).toBeNull()
   })
 })

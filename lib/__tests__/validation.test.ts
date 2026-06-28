@@ -63,6 +63,7 @@ describe('signupSchema', () => {
     authVerifier: 'verifier',
     authSalt: 'salt',
     publicKey: 'pub',
+    publicKeySign: 'pubsign',
     encPrivPw: 'encpw',
     pwKdfSalt: 'pwkdf',
     pwNonce: 'pwnonce',
@@ -178,6 +179,9 @@ describe('recoveryCompleteSchema', () => {
     newEncPrivPw: 'newencpw',
     newPwKdfSalt: 'newpwkdf',
     newPwNonce: 'newpwnonce',
+    newPublicKeySign: 'newpubsign',
+    newEncPrivSignPw: 'newencsignpw',
+    newSignNoncePw: 'newsignnoncepw',
   }
 
   it('parses a valid payload and lowercases the username', () => {
