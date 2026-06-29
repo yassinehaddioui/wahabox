@@ -67,7 +67,7 @@ sleep 10
 # -- Run database migrations --------------------------------------------------
 echo ""
 info "→ Running database migrations..."
-if docker compose exec -T app pnpm prisma migrate deploy; then
+if docker compose run --rm migrate; then
     ok "  ✓ Migrations applied successfully"
 else
     warn "  ⚠ Migration command exited with an error."

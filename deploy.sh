@@ -205,7 +205,7 @@ echo "  ✓ Build complete"
 echo ""
 
 echo "▸ Running migrations..."
-docker compose up -d migrate
+docker compose run --rm migrate
 echo "  ✓ Migrations applied"
 echo ""
 
