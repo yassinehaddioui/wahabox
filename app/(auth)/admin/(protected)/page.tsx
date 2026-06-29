@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Users, Package, Mail, Shield, Activity, Server, Database, Gauge, Key, Check, X } from 'lucide-react'
+import { Users, Package, Mail, Shield, Activity, Server, Database, Gauge, Key, Check, X, Lock, Trash2, Clock, Eye, Hash } from 'lucide-react'
 
 type Stats = {
   totalUsers: number
@@ -19,6 +19,13 @@ type Stats = {
   newMessages30d: number
   activeBoxes: number
   inactiveBoxes: number
+  totalSecureMessages: number
+  readSecureMessages: number
+  destroyedSecureMessages: number
+  autoDestructSecureMessages: number
+  passwordProtectedSecureMessages: number
+  newSecureMessages7d: number
+  newSecureMessages30d: number
 }
 
 type Health = {
@@ -261,6 +268,79 @@ export default function AdminDashboardPage() {
           <Card>
             <CardContent className="py-4 text-sm text-muted-foreground">
               Activity data unavailable
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
+      {/* Secure Messages */}
+      <section>
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          <Lock className="h-4 w-4" />
+          Secure Messages
+        </h2>
+        {loading ? (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+          </div>
+        ) : stats ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <StatCard icon={Hash} label="Total" value={stats.totalSecureMessages} />
+              <StatCard icon={Eye} label="Read" value={stats.readSecureMessages} />
+              <StatCard
+                icon={Clock}
+                label="Pending"
+                value={stats.totalSecureMessages - stats.readSecureMessages - stats.destroyedSecureMessages}
+              />
+              <StatCard icon={Trash2} label="Destroyed" value={stats.destroyedSecureMessages} />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Card>
+                <CardContent className="space-y-3 py-4">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm">
+                      <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                      Password Protected
+                    </span>
+                    <span className="tabular-nums font-semibold">{stats.passwordProtectedSecureMessages}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      Auto-Destruct
+                    </span>
+                    <span className="tabular-nums font-semibold">{stats.autoDestructSecureMessages}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="space-y-3 py-4">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm">
+                      <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                      New This Week
+                    </span>
+                    <span className="tabular-nums font-semibold">{stats.newSecureMessages7d}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm">
+                      <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                      New This Month
+                    </span>
+                    <span className="tabular-nums font-semibold">{stats.newSecureMessages30d}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-4 text-sm text-muted-foreground">
+              Secure message stats unavailable
             </CardContent>
           </Card>
         )}
