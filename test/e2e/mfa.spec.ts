@@ -28,16 +28,15 @@ test('MFA enrollment with TOTP and recovery code bypass', async ({ page }) => {
   await page.waitForSelector('text=Authenticator App')
 
   await page.getByRole('button', { name: 'Setup' }).click()
-  await page.waitForTimeout(500)
+  await page.waitForSelector('p.font-mono.text-xs')
 
-  const secret = await page.locator('p.font-mono.text-xs').textContent()
+  const secret = await page.locator('p.font-mono.text-xs').first().textContent()
   const totpCode = await generate({ secret: secret!.trim() })
 
   await page.locator('input[placeholder="000000"]').fill(totpCode)
   await page.getByRole('button', { name: 'Confirm' }).click()
 
-  await page.waitForSelector('text=Recovery Codes')
-  await page.waitForTimeout(500)
+  await page.waitForSelector('[role="dialog"] code')
 
   const recoveryCodes = await page.locator('[role="dialog"] code').allTextContents()
   await page.getByRole('button', { name: "I've saved my codes" }).click()

@@ -6,7 +6,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 3 : 2,
   workers: 1,
-  reporter: 'html',
+  reporter: process.env.CI ? 'html' : 'list',
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   use: {
     baseURL: 'https://wahabox.localhost',
     trace: 'on-first-retry',

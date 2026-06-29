@@ -41,7 +41,7 @@ async function createSecureMessage(
   }: { message: string; password?: string; autoDestruct?: boolean; startDate?: string },
 ): Promise<string> {
   await page.goto('/send')
-  await expect(page.locator('h1')).toHaveText('Send Encrypted Message')
+  await expect(page.locator('[data-slot="card-title"]')).toHaveText('Send Encrypted Message')
 
   // Type message in MdEditor textarea
   await page.locator('.w-md-editor-text-input').fill(message)

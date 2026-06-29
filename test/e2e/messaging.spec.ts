@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { clearRateLimits } from './helpers'
+import { clearRateLimits, addTurnstileProofCookie } from './helpers'
 
 test.beforeEach(() => clearRateLimits())
 
@@ -28,12 +28,13 @@ test('create box, drop message, and decrypt', async ({ browser }) => {
 
   await page.fill('input[placeholder="Box name"]', 'Test Box')
   await page.getByRole('button', { name: 'Create' }).click()
-  await page.waitForTimeout(1500)
+  await page.waitForSelector('a[href^="/drop/"]')
 
   const dropLink = await page.locator('a[href^="/drop/"]').first().textContent()
   const slug = dropLink!.trim().replace('/drop/', '')
 
   const incognito = await browser.newContext()
+  await addTurnstileProofCookie(incognito)
   const dropPage = await incognito.newPage()
   await dropPage.goto(`/drop/${slug}`)
   await dropPage.waitForSelector('text=Send an encrypted message')
@@ -43,14 +44,13 @@ test('create box, drop message, and decrypt', async ({ browser }) => {
   await incognito.close()
 
   await page.reload()
-  await page.waitForTimeout(1500)
+  await page.waitForSelector('a[href^="/drop/"]')
 
   await page.getByRole('link', { name: 'Test Box' }).click()
   await page.waitForURL(/\/dashboard\//)
   await expect(page.locator('text=1 message')).toBeVisible()
 
   await page.getByRole('button', { name: 'Decrypt message' }).click()
-  await page.waitForTimeout(2000)
   await expect(page.locator('text=This is a secret message!')).toBeVisible()
 
   await context.close()
