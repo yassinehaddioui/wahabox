@@ -265,24 +265,27 @@ export default function ReadPage() {
         <CardHeader>
           <CardTitle>Encrypted Message</CardTitle>
           <CardDescription>
-            {meta?.autoDestruct ? 'This message has been destroyed after reading.' : 'Decrypted message'}
+            {signatureState && signatureState !== 'unsigned' && (
+              <div className="flex items-center gap-1 mb-3">
+                {signatureState === 'verified' ? (
+                  <BadgeCheck className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <BadgeAlert className="h-4 w-4 text-destructive" />
+                )}
+                <span className={`text-xs font-medium ${signatureState === 'verified' ? 'text-emerald-600' : 'text-destructive'
+                  }`}>
+                  {signatureState === 'verified' ? 'Signed' : 'Invalid Signature'}
+                </span>
+              </div>
+            )}
+            {meta?.autoDestruct && (<p className="text-red-500 font-semibold">This message has been automatically destroyed. Do not reload the page.</p>)
+
+            }
           </CardDescription>
+
         </CardHeader>
         <CardContent>
-          {signatureState && signatureState !== 'unsigned' && (
-            <div className="flex items-center gap-1 mb-3">
-              {signatureState === 'verified' ? (
-                <BadgeCheck className="h-4 w-4 text-emerald-500" />
-              ) : (
-                <BadgeAlert className="h-4 w-4 text-destructive" />
-              )}
-              <span className={`text-xs font-medium ${
-                signatureState === 'verified' ? 'text-emerald-600' : 'text-destructive'
-              }`}>
-                {signatureState === 'verified' ? 'Signed' : 'Invalid Signature'}
-              </span>
-            </div>
-          )}
+
           <Markdown>{plaintext}</Markdown>
         </CardContent>
       </Card>
