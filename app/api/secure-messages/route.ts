@@ -9,6 +9,7 @@ import {
   revealReceiverEmail,
 } from '@/lib/secure-message-crypto'
 import { sendSecureMessageNotification } from '@/lib/email'
+import ENV from '@/lib/env'
 import prisma from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Assemble read URL with fragment (urlFragment is NOT stored in DB)
-    const readUrl = `/read/${secureMessage.id}#${body.urlFragment}`
+    const readUrl = `${ENV.APP_URL}/read/${secureMessage.id}#${body.urlFragment}`
 
     // Send email notification if receiver email was provided
     if (body.receiverEmail) {
