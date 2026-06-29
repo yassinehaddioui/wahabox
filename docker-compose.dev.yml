@@ -52,10 +52,6 @@ services:
       PNPM_CONFIRM_MODULES_PURGE: 'false'
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/wahabox?schema=public
       REDIS_URL: redis://redis:6379
-      SERVER_MASTER_SECRET: ${SERVER_MASTER_SECRET:-dev-master-secret-not-for-production}
-      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-not-for-production}
-      APP_URL: ${APP_URL:-https://localhost}
-      NODE_ENV: development
     volumes:
       - .:/app
       - node_modules_dev:/app/node_modules

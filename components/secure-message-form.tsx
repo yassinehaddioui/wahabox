@@ -187,7 +187,7 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Your message has been encrypted and saved. Share this link with the recipient:
+            Your message has been encrypted and saved. The shareable link contains the address and the decryption key.
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 break-all rounded-sm border bg-muted px-3 py-2 font-mono text-sm">
@@ -197,6 +197,7 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
               {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
             </Button>
           </div>
+          <p className="font-bold">Make sure to save this link somewhere because it is not stored on the server.</p>
           <Button variant="outline" onClick={() => { setResult(null); setMessage(''); setEmail(''); setPassword(''); setStartDate(''); setStartTime(''); setEndDate(''); setEndTime(''); setAutoDestruct(false) }}>
             Send Another
           </Button>
