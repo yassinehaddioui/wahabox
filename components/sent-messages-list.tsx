@@ -4,9 +4,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Copy, Lock, Trash2, Clock } from 'lucide-react'
-import { formatUtcDate } from '@/lib/utils'
+import { cn, formatUtcDate } from '@/lib/utils'
 
 type SentMessage = {
   id: string
@@ -20,9 +22,31 @@ type SentMessage = {
   receiverEmail: string | null
 }
 
+const SHOW_DELETED_KEY = 'wahabox:showDeleted'
+
 export function SentMessagesList() {
   const [messages, setMessages] = useState<SentMessage[]>([])
   const [loading, setLoading] = useState(true)
+  const [showDeleted, setShowDeleted] = useState<boolean>(() => {
+    try {
+      const stored =
+        typeof window !== 'undefined' ? localStorage.getItem(SHOW_DELETED_KEY) : null
+      if (stored !== null) return JSON.parse(stored) as boolean
+    } catch {}
+    return false
+  })
+
+  function toggleShowDeleted() {
+    setShowDeleted((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem(SHOW_DELETED_KEY, JSON.stringify(next))
+      } catch {}
+      return next
+    })
+  }
+
+  const visibleMessages = showDeleted ? messages : messages.filter((m) => !m.isDestroyed)
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -78,10 +102,32 @@ export function SentMessagesList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Sent Messages ({messages.length})</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-base">Sent Messages ({visibleMessages.length})</CardTitle>
+          <div className="ml-auto flex items-center gap-2">
+            <Switch
+              id="show-deleted"
+              checked={showDeleted}
+              onCheckedChange={toggleShowDeleted}
+            />
+            <Label htmlFor="show-deleted" className="text-xs text-muted-foreground cursor-pointer">
+              Show deleted
+            </Label>
+            <Badge
+              className={cn(
+                'text-xs',
+                showDeleted
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  : 'bg-muted text-muted-foreground',
+              )}
+            >
+              {showDeleted ? 'ON' : 'OFF'}
+            </Badge>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {messages.map((msg) => {
+        {visibleMessages.map((msg) => {
           let status: {
             label: string
             variant: 'default' | 'secondary' | 'destructive' | 'outline'
