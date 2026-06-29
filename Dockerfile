@@ -28,9 +28,6 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --prod --prefer-offline && \
     find node_modules -maxdepth 1 -mindepth 1 \
       ! -name 'prisma' ! -name '.prisma' ! -name '.pnpm' ! -name '.modules.yaml' \
-      -exec rm -rf {} + && \
-    find node_modules/.pnpm -maxdepth 1 -mindepth 1 \
-      ! -name 'prisma@*' ! -name '@prisma+*' ! -name 'lock.yaml' \
       -exec rm -rf {} +
 COPY prisma ./prisma
 COPY prisma.config.ts ./prisma.config.ts
