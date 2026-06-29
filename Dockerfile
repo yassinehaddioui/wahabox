@@ -25,10 +25,7 @@ FROM base AS migrator
 ENV NODE_ENV=production
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --prod --prefer-offline && \
-    find node_modules -maxdepth 1 -mindepth 1 \
-      ! -name 'prisma' ! -name '.prisma' ! -name '.pnpm' ! -name '.modules.yaml' \
-      -exec rm -rf {} +
+    pnpm install --frozen-lockfile --prod --prefer-offline
 COPY prisma ./prisma
 COPY prisma.config.ts ./prisma.config.ts
 CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
