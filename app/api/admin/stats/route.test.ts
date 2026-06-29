@@ -1,14 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createNextRequest } from '@/test/helpers/request'
-import { ForbiddenError, UnauthorizedError, RateLimitError } from '@/lib/errors'
+import { ForbiddenError, UnauthorizedError } from '@/lib/errors'
 import { GET } from './route'
 
-const { mockGetAdminUser, mockCheckIpRate, mockPrismaUserCount, mockPrismaPoBoxCount, mockPrismaMessageCount } = vi.hoisted(() => ({
+const { mockGetAdminUser, mockCheckIpRate, mockPrismaUserCount, mockPrismaPoBoxCount, mockPrismaMessageCount, mockPrismaSecureMessageCount } = vi.hoisted(() => ({
   mockGetAdminUser: vi.fn(),
   mockCheckIpRate: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
   mockPrismaUserCount: vi.fn<(...args: unknown[]) => Promise<number>>(),
   mockPrismaPoBoxCount: vi.fn<(...args: unknown[]) => Promise<number>>(),
   mockPrismaMessageCount: vi.fn<(...args: unknown[]) => Promise<number>>(),
+  mockPrismaSecureMessageCount: vi.fn<(...args: unknown[]) => Promise<number>>(),
 }))
 
 vi.mock('@/lib/auth', () => ({ getAdminUser: mockGetAdminUser }))
@@ -18,6 +19,7 @@ vi.mock('@/lib/prisma', () => ({
     user: { count: mockPrismaUserCount },
     poBox: { count: mockPrismaPoBoxCount },
     message: { count: mockPrismaMessageCount },
+    secureMessage: { count: mockPrismaSecureMessageCount },
   },
 }))
 
@@ -57,6 +59,18 @@ describe('GET /api/admin/stats', () => {
       .mockResolvedValueOnce(30)    // newMessages7d
       .mockResolvedValueOnce(120)   // newMessages30d
 
+    // SecureMessage count called 7 times: totalSecureMessages, readSecureMessages,
+    // destroyedSecureMessages, autoDestructSecureMessages, passwordProtectedSecureMessages,
+    // newSecureMessages7d, newSecureMessages30d
+    mockPrismaSecureMessageCount
+      .mockResolvedValueOnce(60)    // totalSecureMessages
+      .mockResolvedValueOnce(25)    // readSecureMessages
+      .mockResolvedValueOnce(10)    // destroyedSecureMessages
+      .mockResolvedValueOnce(8)     // autoDestructSecureMessages
+      .mockResolvedValueOnce(12)    // passwordProtectedSecureMessages
+      .mockResolvedValueOnce(5)     // newSecureMessages7d
+      .mockResolvedValueOnce(18)    // newSecureMessages30d
+
     const req = createNextRequest('http://localhost/api/admin/stats')
     const res = await GET(req)
     const body = await res.json()
@@ -76,6 +90,13 @@ describe('GET /api/admin/stats', () => {
       newMessages30d: 120,
       activeBoxes: 30,
       inactiveBoxes: 20,
+      totalSecureMessages: 60,
+      readSecureMessages: 25,
+      destroyedSecureMessages: 10,
+      autoDestructSecureMessages: 8,
+      passwordProtectedSecureMessages: 12,
+      newSecureMessages7d: 5,
+      newSecureMessages30d: 18,
     })
   })
 

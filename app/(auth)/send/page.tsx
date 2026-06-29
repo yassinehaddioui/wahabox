@@ -1,9 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { SecureMessageForm } from '@/components/secure-message-form'
 import { SentMessagesList } from '@/components/sent-messages-list'
 
 export default function SendPage() {
+  const [sentKey, setSentKey] = useState(0)
+
   return (
     <div className="w-full space-y-8">
       <div>
@@ -12,8 +15,8 @@ export default function SendPage() {
           Compose an encrypted message. A secret link will be generated for the recipient.
         </p>
       </div>
-      <SecureMessageForm />
-      <SentMessagesList />
+      <SecureMessageForm onSent={() => setSentKey((k) => k + 1)} />
+      <SentMessagesList key={sentKey} />
     </div>
   )
 }

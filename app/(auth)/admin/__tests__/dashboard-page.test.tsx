@@ -57,6 +57,13 @@ describe('AdminDashboardPage', () => {
     newMessages30d: 45,
     activeBoxes: 10,
     inactiveBoxes: 5,
+    totalSecureMessages: 40,
+    readSecureMessages: 18,
+    destroyedSecureMessages: 3,
+    autoDestructSecureMessages: 6,
+    passwordProtectedSecureMessages: 9,
+    newSecureMessages7d: 4,
+    newSecureMessages30d: 12,
   }
 
   const defaultHealth = {
@@ -85,6 +92,7 @@ describe('AdminDashboardPage', () => {
     render(<AdminDashboardPage />)
     expect(screen.getByText('Overview')).toBeInTheDocument()
     expect(screen.getByText('Activity')).toBeInTheDocument()
+    expect(screen.getByText('Secure Messages')).toBeInTheDocument()
     expect(screen.getByText('Server Health')).toBeInTheDocument()
     expect(screen.getByText('Rate Limits')).toBeInTheDocument()
   })
@@ -110,8 +118,8 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByText('7')).toBeInTheDocument()
 
     // Activity
-    expect(screen.getByText('New This Week')).toBeInTheDocument()
-    expect(screen.getByText('New This Month')).toBeInTheDocument()
+    expect(screen.getAllByText('New This Week')).toHaveLength(2)
+    expect(screen.getAllByText('New This Month')).toHaveLength(2)
     expect(screen.getByText('Box Status')).toBeInTheDocument()
 
     // Health

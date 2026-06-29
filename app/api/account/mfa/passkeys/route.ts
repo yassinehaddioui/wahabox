@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import type { RegistrationResponseJSON } from '@simplewebauthn/server'
 import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
-import { BadRequestError, UnauthorizedError } from '@/lib/errors'
+import { BadRequestError } from '@/lib/errors'
 import { generateRegOptions, verifyRegResponse } from '@/lib/webauthn'
 import prisma from '@/lib/prisma'
 

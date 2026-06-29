@@ -404,7 +404,7 @@ describe('UserDetailPage', () => {
   // ── Action error toast (CSRF failure) ─────────────────────────
 
   it('shows error toast when CSRF fetch fails', async () => {
-    mockFetch.mockImplementation((url: string, _?: RequestInit) => {
+    mockFetch.mockImplementation((url: string, _init?: RequestInit) => {
       if (url === '/api/admin/users/user-1') {
         return mockFetchResponse(200, { success: true, data: defaultUser })
       }

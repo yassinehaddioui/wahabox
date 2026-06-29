@@ -124,7 +124,7 @@ describe('POST /api/secure-messages', () => {
     const body = await res.json()
     expect(res.status).toBe(201)
     expect(body.data.id).toBe('msg-1')
-    expect(body.data.readUrl).toBe('/read/msg-1#abc123')
+    expect(body.data.readUrl).toBe(`${process.env.APP_URL}/read/msg-1#abc123`)
   })
 
   it('verifies CSRF with create-secure-message tag', async () => {

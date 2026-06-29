@@ -17,7 +17,7 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-export function SecureMessageForm() {
+export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -159,6 +159,7 @@ export function SecureMessageForm() {
 
       setResult({ id: data.data.id, readUrl: data.data.readUrl })
       toast.success('Message encrypted and saved')
+      onSent?.()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send message')
     } finally {

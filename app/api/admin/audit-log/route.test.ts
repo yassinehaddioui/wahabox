@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createNextRequest } from '@/test/helpers/request'
-import { ForbiddenError, UnauthorizedError, RateLimitError } from '@/lib/errors'
+import { ForbiddenError, UnauthorizedError } from '@/lib/errors'
 import { GET } from './route'
 
 const { mockGetAdminUser, mockCheckIpRate, mockFindMany, mockCount } = vi.hoisted(() => ({

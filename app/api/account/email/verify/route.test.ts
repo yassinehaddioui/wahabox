@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { prismaMock, resetPrismaMock } from '@/test/helpers/prisma-mock'
 import { resetRedisMock, redisMock } from '@/test/helpers/redis-mock'
 import { POST } from './route'
