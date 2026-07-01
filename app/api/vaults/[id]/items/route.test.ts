@@ -157,13 +157,16 @@ describe('POST /api/vaults/[id]/items', () => {
     expect(res.status).toBe(400)
   })
 
-  it('creates item with base64-decoded Buffers and returns 201', async () => {
+  it('creates item with base64-decoded Buffers and returns 201 with full item', async () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.vault.findFirst.mockResolvedValue(createVault({ id: 'v1' }))
     prismaMock.vaultItem.create.mockResolvedValue({
       id: 'vi-new',
+      ciphertextTitle: Buffer.from('dGVzdA==', 'base64'),
+      ciphertextBody: Buffer.from('Ym9keQ==', 'base64'),
       createdAt: new Date('2025-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2025-01-01T00:00:00.000Z'),
     })
     prismaMock.auditLog.create.mockResolvedValue({})
 
@@ -177,13 +180,17 @@ describe('POST /api/vaults/[id]/items', () => {
     const body = await res.json()
     expect(res.status).toBe(201)
     expect(body.data.id).toBe('vi-new')
+    expect(body.data.ciphertextTitle).toBe('dGVzdA==')
+    expect(body.data.ciphertextBody).toBe('Ym9keQ==')
+    expect(body.data.createdAt).toBe('2025-01-01T00:00:00.000Z')
+    expect(body.data.updatedAt).toBe('2025-01-01T00:00:00.000Z')
     expect(prismaMock.vaultItem.create).toHaveBeenCalledWith({
       data: {
         vaultId: 'v1',
         ciphertextTitle: Buffer.from('dGVzdA==', 'base64'),
         ciphertextBody: Buffer.from('Ym9keQ==', 'base64'),
       },
-      select: { id: true, createdAt: true },
+      select: { id: true, ciphertextTitle: true, ciphertextBody: true, createdAt: true, updatedAt: true },
     })
   })
 
@@ -193,7 +200,10 @@ describe('POST /api/vaults/[id]/items', () => {
     prismaMock.vault.findFirst.mockResolvedValue(createVault({ id: 'v1' }))
     prismaMock.vaultItem.create.mockResolvedValue({
       id: 'vi-new',
+      ciphertextTitle: Buffer.from('dGVzdA==', 'base64'),
+      ciphertextBody: Buffer.from('Ym9keQ==', 'base64'),
       createdAt: new Date('2025-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2025-01-01T00:00:00.000Z'),
     })
     prismaMock.auditLog.create.mockResolvedValue({})
 

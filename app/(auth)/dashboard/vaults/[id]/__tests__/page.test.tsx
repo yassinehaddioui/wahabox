@@ -185,23 +185,19 @@ describe('VaultDetailPage', () => {
         json: () => ({ success: true, data: { csrfToken: 'csrf-1' } }),
         ok: true,
       },
-      // POST to create item
-      { json: () => ({ success: true, data: { id: 'new-item' } }), ok: true, status: 201 },
-      // Refresh items after create
       {
         json: () => ({
           success: true,
-          data: [
-            {
-              id: 'new-item',
-              ciphertextTitle: 'new-enc-title',
-              ciphertextBody: 'new-enc-body',
-              createdAt: '2024-06-03T00:00:00Z',
-              updatedAt: '2024-06-03T00:00:00Z',
-            },
-          ],
+          data: {
+            id: 'new-item',
+            ciphertextTitle: 'new-enc-title',
+            ciphertextBody: 'new-enc-body',
+            createdAt: '2024-06-03T00:00:00Z',
+            updatedAt: '2024-06-03T00:00:00Z',
+          },
         }),
         ok: true,
+        status: 201,
       },
     ])
 
@@ -236,6 +232,10 @@ describe('VaultDetailPage', () => {
       expect(body.ciphertextTitle).toBe('base64-encoded')
       expect(body.ciphertextBody).toBe('base64-encoded')
     }
+
+    await waitFor(() => {
+      expect(screen.getByText('My Secret Note')).toBeInTheDocument()
+    })
   })
 
   it('expands item body on header click', async () => {

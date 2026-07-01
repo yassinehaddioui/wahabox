@@ -71,7 +71,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const item = await prisma.vaultItem.create({
       data: { vaultId: id, ciphertextTitle: titleBuffer, ciphertextBody: bodyBuffer },
-      select: { id: true, createdAt: true },
+      select: {
+        id: true,
+        ciphertextTitle: true,
+        ciphertextBody: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     })
 
     // Fire-and-forget audit log — must not fail the mutation
@@ -89,7 +95,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       })
       .catch(() => {})
 
-    return success(item, 201)
+    return success({
+      id: item.id,
+      ciphertextTitle: b64(item.ciphertextTitle),
+      ciphertextBody: b64(item.ciphertextBody),
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+    }, 201)
   } catch (err) {
     return error(err)
   }
