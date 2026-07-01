@@ -30,10 +30,77 @@ const fontMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Wahabox',
-  description: 'Encrypted virtual PO box messaging',
+  metadataBase: new URL('https://wahabox.org'),
+  title: {
+    default: 'Wahabox — Encrypted Virtual PO Box | Anonymous Secure Messaging',
+    template: '%s | Wahabox',
+  },
+  description:
+    'Receive anonymous, end-to-end encrypted messages with zero-knowledge architecture. Create PO boxes, share secret links, and decrypt messages — your private key never leaves your browser.',
+  keywords: [
+    'encrypted messaging',
+    'anonymous messages',
+    'PO box',
+    'end-to-end encryption',
+    'zero-knowledge',
+    'X25519',
+    'secure messaging',
+    'privacy',
+    'WebAuthn',
+    'passkeys',
+  ],
+  authors: [{ name: 'Wahalabs LLC', url: 'https://wahalabs.com' }],
+  generator: 'Next.js',
+  applicationName: 'Wahabox',
+  referrer: 'origin-when-cross-origin',
+  creator: 'Wahalabs LLC',
+  publisher: 'Wahalabs LLC',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://wahabox.org',
+    siteName: 'Wahabox',
+    title: 'Wahabox — Encrypted Virtual PO Box | Anonymous Secure Messaging',
+    description:
+      'Receive anonymous, end-to-end encrypted messages with zero-knowledge architecture. Create PO boxes, share secret links, and decrypt messages — your private key never leaves your browser.',
+    images: [
+      {
+        url: '/og-image',
+        width: 1200,
+        height: 630,
+        alt: 'Wahabox — Encrypted Virtual PO Box',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Wahabox — Encrypted Virtual PO Box | Anonymous Secure Messaging',
+    description:
+      'Receive anonymous, end-to-end encrypted messages with zero-knowledge architecture. Your private key never leaves your browser.',
+    images: ['/og-image'],
+    creator: '@wahalabs',
+  },
+  alternates: {
+    canonical: 'https://wahabox.org',
+  },
   icons: {
-    icon: [{ url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' }],
+    icon: [
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
   },
   manifest: '/site.webmanifest',
 }

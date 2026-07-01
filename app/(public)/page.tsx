@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 
 const features = [
@@ -121,9 +122,52 @@ const features = [
   },
 ]
 
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Encrypted Virtual PO Box | Anonymous Secure Messaging',
+    description:
+      'Receive anonymous, end-to-end encrypted messages with zero-knowledge architecture. Create PO boxes, share secret links, and decrypt — your private key never leaves your browser.',
+    openGraph: {
+      title: 'Wahabox — Encrypted Virtual PO Box | Anonymous Secure Messaging',
+      description:
+        'Receive anonymous, end-to-end encrypted messages with zero-knowledge architecture. Your private key never leaves your browser.',
+      url: 'https://wahabox.org',
+    },
+    alternates: {
+      canonical: 'https://wahabox.org',
+    },
+  }
+}
+
 export default function HomePage() {
   return (
     <div className="mx-auto w-full max-w-4xl text-center">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'Wahabox',
+            url: 'https://wahabox.org',
+            description:
+              'Encrypted virtual PO box for receiving anonymous, end-to-end encrypted messages with zero-knowledge architecture.',
+            applicationCategory: 'CommunicationApplication',
+            operatingSystem: 'All',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'USD',
+            },
+            author: {
+              '@type': 'Organization',
+              name: 'Wahalabs LLC',
+              url: 'https://wahalabs.com',
+            },
+            browserRequirements: 'Requires a modern browser with JavaScript and WebCrypto support',
+          }),
+        }}
+      />
       <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Encrypted Virtual PO Box</h1>
       <p className="mt-4 text-lg text-muted-foreground">
         Receive anonymous, encrypted messages. Your private key never leaves your browser.
