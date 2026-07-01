@@ -25,7 +25,7 @@ export async function sendVerificationEmail(
   username: string,
   token: string,
 ): Promise<void> {
-  const link = `${ENV.APP_URL}/verify-email?token=${token}`
+  const link = `${ENV.APP_URL.replace(/\/+$/, '')}/verify-email?token=${token}`
 
   if (process.env.APP_MODE === 'development') {
     console.log('[email] Verification link:', link)
@@ -62,7 +62,7 @@ export async function sendVerificationEmail(
 }
 
 export async function sendNewMessageNotification(to: string, boxLabel: string): Promise<void> {
-  const loginLink = `${ENV.APP_URL}/login`
+  const loginLink = `${ENV.APP_URL.replace(/\/+$/, '')}/login`
   const client = getSes()
 
   await client.send(
@@ -91,7 +91,6 @@ export async function sendNewMessageNotification(to: string, boxLabel: string): 
 export async function sendSecureMessageNotification(to: string, readUrl: string): Promise<void> {
   if (process.env.APP_MODE === 'development') {
     console.log('[email] Secure message link:', readUrl)
-    return
   }
 
   const client = getSes()
@@ -171,7 +170,7 @@ export async function sendRecoveryKeyRegeneratedNotification(
   username: string,
   timestamp: Date,
 ): Promise<void> {
-  const loginLink = `${ENV.APP_URL}/login`
+  const loginLink = `${ENV.APP_URL.replace(/\/+$/, '')}/login`
   const formattedTimestamp = formatUtcDate(timestamp)
 
   if (process.env.APP_MODE === 'development') {

@@ -10,6 +10,11 @@ export type AuditAction =
   | 'admin.box_deactivate'
   | 'admin.box_activate'
   | 'admin.box_delete'
+  | 'vault.create'
+  | 'vault.delete'
+  | 'vault_item.create'
+  | 'vault_item.update'
+  | 'vault_item.delete'
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 
@@ -17,7 +22,7 @@ export type AuditParams = {
   actorId: string
   actorUsername: string
   action: AuditAction
-  targetType: 'user' | 'box'
+  targetType: 'user' | 'box' | 'vault' | 'vault_item'
   targetId: string
   targetLabel?: string
   metadata?: { [key: string]: JsonValue }

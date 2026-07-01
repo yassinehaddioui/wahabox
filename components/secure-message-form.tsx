@@ -170,7 +170,7 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
   async function copyReadUrl() {
     if (!result) return
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}${result.readUrl}`)
+      await navigator.clipboard.writeText(result.readUrl)
       setCopied(true)
       toast.success('Read URL copied to clipboard')
       setTimeout(() => setCopied(false), 2000)

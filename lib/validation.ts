@@ -76,6 +76,38 @@ export const deleteBoxSchema = z.object({
   csrfToken: z.string().nullish(),
 })
 
+export const createVaultSchema = z.object({
+  label: z.string().min(1).max(128),
+  csrfToken: z.string().nullish(),
+})
+
+export const updateVaultSchema = z.object({
+  label: z.string().min(1).max(128).optional(),
+  csrfToken: z.string().nullish(),
+})
+
+export const deleteVaultSchema = z.object({
+  csrfToken: z.string().nullish(),
+})
+
+export const createVaultItemSchema = z.object({
+  ciphertextTitle: z.string().min(1).max(50_000),
+  ciphertextBody: z.string().min(1).max(200_000),
+  csrfToken: z.string().nullish(),
+})
+
+export const updateVaultItemSchema = z.object({
+  ciphertextTitle: z.string().min(1).max(50_000).optional(),
+  ciphertextBody: z.string().min(1).max(200_000).optional(),
+  csrfToken: z.string().nullish(),
+}).refine(data => data.ciphertextTitle !== undefined || data.ciphertextBody !== undefined, {
+  message: 'At least one of ciphertextTitle or ciphertextBody must be provided',
+})
+
+export const deleteVaultItemSchema = z.object({
+  csrfToken: z.string().nullish(),
+})
+
 export const submitMessageSchema = z.object({
   ciphertext: z.string().min(1).max(200_000),
   csrfToken: z.string().nullish(),

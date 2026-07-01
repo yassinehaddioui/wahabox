@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Assemble read URL with fragment (urlFragment is NOT stored in DB)
-    const readUrl = `${ENV.APP_URL}/read/${secureMessage.id}#${body.urlFragment}`
+    const readUrl = `${ENV.APP_URL.replace(/\/+$/, '')}/read/${secureMessage.id}#${body.urlFragment}`
 
     // Send email notification if receiver email was provided
     if (body.receiverEmail) {

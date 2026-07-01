@@ -64,6 +64,22 @@ export type FixtureMessage = {
   createdAt: Date
 }
 
+export type FixtureVault = {
+  id: string
+  ownerId: string
+  label: string
+  createdAt: Date
+}
+
+export type FixtureVaultItem = {
+  id: string
+  vaultId: string
+  ciphertextTitle: Buffer
+  ciphertextBody: Buffer
+  updatedAt: Date
+  createdAt: Date
+}
+
 export type FixturePasskeyCredential = {
   id: string
   userId: string
@@ -83,6 +99,8 @@ const USER_ID = '00000000-0000-0000-0000-000000000001'
 const BOX_ID = '00000000-0000-0000-0000-000000000002'
 const MESSAGE_ID = '00000000-0000-0000-0000-000000000003'
 const PASSKEY_ID = '00000000-0000-0000-0000-000000000004'
+const VAULT_ID = '00000000-0000-0000-0000-000000000005'
+const VAULT_ITEM_ID = '00000000-0000-0000-0000-000000000006'
 
 // --- Factories -----------------------------------------------------------
 
@@ -137,6 +155,28 @@ export function createPoBox(overrides: Partial<FixturePoBox> = {}): FixturePoBox
     createdAt: FIXED_DATE,
     owner: { publicKey: Buffer.alloc(32, 0xcc) },
     _count: { messages: 0 },
+    ...overrides,
+  }
+}
+
+export function createVault(overrides: Partial<FixtureVault> = {}): FixtureVault {
+  return {
+    id: VAULT_ID,
+    ownerId: USER_ID,
+    label: 'Test Vault',
+    createdAt: FIXED_DATE,
+    ...overrides,
+  }
+}
+
+export function createVaultItem(overrides: Partial<FixtureVaultItem> = {}): FixtureVaultItem {
+  return {
+    id: VAULT_ITEM_ID,
+    vaultId: VAULT_ID,
+    ciphertextTitle: Buffer.alloc(32, 0xaa),
+    ciphertextBody: Buffer.alloc(256, 0xbb),
+    updatedAt: FIXED_DATE,
+    createdAt: FIXED_DATE,
     ...overrides,
   }
 }

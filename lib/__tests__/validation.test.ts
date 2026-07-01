@@ -8,6 +8,11 @@ import {
   createBoxSchema,
   updateBoxSchema,
   deleteBoxSchema,
+  createVaultSchema,
+  updateVaultSchema,
+  deleteVaultSchema,
+  createVaultItemSchema,
+  updateVaultItemSchema,
   submitMessageSchema,
   mfaSendEmailSchema,
   mfaVerifySchema,
@@ -343,6 +348,176 @@ describe('deleteBoxSchema', () => {
 
   it('rejects a non-string csrfToken', () => {
     expect(deleteBoxSchema.safeParse({ csrfToken: 123 }).success).toBe(false)
+  })
+})
+
+describe('createVaultSchema', () => {
+  it('parses a valid label', () => {
+    const result = createVaultSchema.parse({ label: 'My Vault' })
+    expect(result.label).toBe('My Vault')
+  })
+
+  it('accepts an optional csrfToken', () => {
+    const result = createVaultSchema.parse({
+      label: 'My Vault',
+      csrfToken: 'csrf-token',
+    })
+    expect(result.csrfToken).toBe('csrf-token')
+  })
+
+  it('rejects an empty label', () => {
+    expect(createVaultSchema.safeParse({ label: '' }).success).toBe(false)
+  })
+
+  it('rejects a label longer than 128 chars', () => {
+    expect(createVaultSchema.safeParse({ label: 'x'.repeat(129) }).success).toBe(false)
+  })
+
+  it('rejects a missing label', () => {
+    expect(createVaultSchema.safeParse({}).success).toBe(false)
+  })
+})
+
+describe('updateVaultSchema', () => {
+  it('parses when label is present', () => {
+    const result = updateVaultSchema.parse({ label: 'Updated Vault' })
+    expect(result.label).toBe('Updated Vault')
+  })
+
+  it('parses an empty object (all fields optional)', () => {
+    const result = updateVaultSchema.parse({})
+    expect(result.label).toBeUndefined()
+  })
+
+  it('accepts an optional csrfToken', () => {
+    const result = updateVaultSchema.parse({
+      label: 'Vault',
+      csrfToken: 'csrf-token',
+    })
+    expect(result.csrfToken).toBe('csrf-token')
+  })
+
+  it('rejects an empty label when provided', () => {
+    expect(updateVaultSchema.safeParse({ label: '' }).success).toBe(false)
+  })
+
+  it('rejects a label longer than 128 chars', () => {
+    expect(updateVaultSchema.safeParse({ label: 'x'.repeat(129) }).success).toBe(false)
+  })
+})
+
+describe('deleteVaultSchema', () => {
+  it('parses an empty object', () => {
+    const result = deleteVaultSchema.parse({})
+    expect(result.csrfToken).toBeUndefined()
+  })
+
+  it('accepts a csrfToken', () => {
+    const result = deleteVaultSchema.parse({ csrfToken: 'csrf-token' })
+    expect(result.csrfToken).toBe('csrf-token')
+  })
+})
+
+describe('createVaultItemSchema', () => {
+  it('parses valid ciphertext strings', () => {
+    const result = createVaultItemSchema.parse({
+      ciphertextTitle: 'encrypted-title',
+      ciphertextBody: 'encrypted-body',
+    })
+    expect(result.ciphertextTitle).toBe('encrypted-title')
+    expect(result.ciphertextBody).toBe('encrypted-body')
+  })
+
+  it('accepts an optional csrfToken', () => {
+    const result = createVaultItemSchema.parse({
+      ciphertextTitle: 'title',
+      ciphertextBody: 'body',
+      csrfToken: 'csrf-token',
+    })
+    expect(result.csrfToken).toBe('csrf-token')
+  })
+
+  it('rejects an empty ciphertextTitle', () => {
+    expect(
+      createVaultItemSchema.safeParse({ ciphertextTitle: '', ciphertextBody: 'body' }).success,
+    ).toBe(false)
+  })
+
+  it('rejects an empty ciphertextBody', () => {
+    expect(
+      createVaultItemSchema.safeParse({ ciphertextTitle: 'title', ciphertextBody: '' }).success,
+    ).toBe(false)
+  })
+
+  it('rejects ciphertextTitle longer than 50_000 chars', () => {
+    expect(
+      createVaultItemSchema.safeParse({
+        ciphertextTitle: 'x'.repeat(50_001),
+        ciphertextBody: 'body',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('rejects ciphertextBody longer than 200_000 chars', () => {
+    expect(
+      createVaultItemSchema.safeParse({
+        ciphertextTitle: 'title',
+        ciphertextBody: 'x'.repeat(200_001),
+      }).success,
+    ).toBe(false)
+  })
+
+  it('rejects a missing ciphertextTitle', () => {
+    expect(createVaultItemSchema.safeParse({ ciphertextBody: 'body' }).success).toBe(false)
+  })
+
+  it('rejects a missing ciphertextBody', () => {
+    expect(createVaultItemSchema.safeParse({ ciphertextTitle: 'title' }).success).toBe(false)
+  })
+})
+
+describe('updateVaultItemSchema', () => {
+  it('parses when ciphertextTitle is present alone', () => {
+    const result = updateVaultItemSchema.parse({ ciphertextTitle: 'new-title' })
+    expect(result.ciphertextTitle).toBe('new-title')
+    expect(result.ciphertextBody).toBeUndefined()
+  })
+
+  it('parses when ciphertextBody is present alone', () => {
+    const result = updateVaultItemSchema.parse({ ciphertextBody: 'new-body' })
+    expect(result.ciphertextBody).toBe('new-body')
+    expect(result.ciphertextTitle).toBeUndefined()
+  })
+
+  it('parses when both fields are present', () => {
+    const result = updateVaultItemSchema.parse({
+      ciphertextTitle: 'title',
+      ciphertextBody: 'body',
+    })
+    expect(result.ciphertextTitle).toBe('title')
+    expect(result.ciphertextBody).toBe('body')
+  })
+
+  it('rejects when both fields are missing (refine)', () => {
+    expect(updateVaultItemSchema.safeParse({}).success).toBe(false)
+  })
+
+  it('rejects an empty ciphertextTitle when provided', () => {
+    expect(updateVaultItemSchema.safeParse({ ciphertextTitle: '' }).success).toBe(false)
+  })
+
+  it('rejects ciphertextTitle longer than 50_000 chars', () => {
+    expect(updateVaultItemSchema.safeParse({ ciphertextTitle: 'x'.repeat(50_001) }).success).toBe(
+      false,
+    )
+  })
+
+  it('accepts an optional csrfToken', () => {
+    const result = updateVaultItemSchema.parse({
+      ciphertextTitle: 'title',
+      csrfToken: 'csrf-token',
+    })
+    expect(result.csrfToken).toBe('csrf-token')
   })
 })
 

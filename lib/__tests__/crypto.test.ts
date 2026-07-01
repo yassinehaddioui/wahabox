@@ -128,4 +128,120 @@ describe('crypto module', () => {
     const sameVerifier = crypto.computeAuthVerifier(authKey, verifierSalt)
     expect(sameVerifier).toEqual(verifier)
   })
+
+  describe('vault item encryption', () => {
+    it('encryptVaultItem + decryptVaultItem round-trip', () => {
+      const kp = crypto.generateKeypair()
+      const title = 'My Secret Note'
+      const body = 'This is the encrypted body content.'
+
+      const encrypted = crypto.encryptVaultItem(title, body, kp.publicKey)
+      expect(encrypted.ciphertextTitle).toBeInstanceOf(Uint8Array)
+      expect(encrypted.ciphertextBody).toBeInstanceOf(Uint8Array)
+
+      const decrypted = crypto.decryptVaultItem(
+        encrypted.ciphertextTitle,
+        encrypted.ciphertextBody,
+        kp.publicKey,
+        kp.privateKey,
+      )
+      expect(decrypted.title).toBe(title)
+      expect(decrypted.body).toBe(body)
+    })
+
+    it('throws on tampered ciphertextTitle', () => {
+      const kp = crypto.generateKeypair()
+      const encrypted = crypto.encryptVaultItem('title', 'body', kp.publicKey)
+      encrypted.ciphertextTitle[0] ^= 0xff
+
+      expect(() =>
+        crypto.decryptVaultItem(
+          encrypted.ciphertextTitle,
+          encrypted.ciphertextBody,
+          kp.publicKey,
+          kp.privateKey,
+        ),
+      ).toThrow()
+    })
+
+    it('throws on tampered ciphertextBody', () => {
+      const kp = crypto.generateKeypair()
+      const encrypted = crypto.encryptVaultItem('title', 'body', kp.publicKey)
+      encrypted.ciphertextBody[5] ^= 0xaa
+
+      expect(() =>
+        crypto.decryptVaultItem(
+          encrypted.ciphertextTitle,
+          encrypted.ciphertextBody,
+          kp.publicKey,
+          kp.privateKey,
+        ),
+      ).toThrow()
+    })
+
+    it('throws when decrypting with wrong keypair', () => {
+      const kp1 = crypto.generateKeypair()
+      const kp2 = crypto.generateKeypair()
+      const encrypted = crypto.encryptVaultItem('title', 'body', kp1.publicKey)
+
+      expect(() =>
+        crypto.decryptVaultItem(
+          encrypted.ciphertextTitle,
+          encrypted.ciphertextBody,
+          kp2.publicKey,
+          kp2.privateKey,
+        ),
+      ).toThrow()
+    })
+
+    it('handles empty title and body', () => {
+      const kp = crypto.generateKeypair()
+      const encrypted = crypto.encryptVaultItem('', '', kp.publicKey)
+
+      const decrypted = crypto.decryptVaultItem(
+        encrypted.ciphertextTitle,
+        encrypted.ciphertextBody,
+        kp.publicKey,
+        kp.privateKey,
+      )
+      expect(decrypted.title).toBe('')
+      expect(decrypted.body).toBe('')
+    })
+
+    it('handles Unicode and emoji content', () => {
+      const kp = crypto.generateKeypair()
+      const title = '机密笔记 🔒'
+      const body = 'Hello 世界!\n• List item\n🎉 Party! ✨'
+
+      const encrypted = crypto.encryptVaultItem(title, body, kp.publicKey)
+      const decrypted = crypto.decryptVaultItem(
+        encrypted.ciphertextTitle,
+        encrypted.ciphertextBody,
+        kp.publicKey,
+        kp.privateKey,
+      )
+      expect(decrypted.title).toBe(title)
+      expect(decrypted.body).toBe(body)
+    })
+
+    it('normalizes NFC consistently', () => {
+      const kp = crypto.generateKeypair()
+      // "é" can be NFC (single code point) or NFD (e + combining accent)
+      const titleNfc = 'café'
+      const titleNfd = 'cafe\u0301'
+
+      // Encrypt the NFD form
+      const encrypted = crypto.encryptVaultItem(titleNfd, '', kp.publicKey)
+      const decrypted = crypto.decryptVaultItem(
+        encrypted.ciphertextTitle,
+        encrypted.ciphertextBody,
+        kp.publicKey,
+        kp.privateKey,
+      )
+
+      // Because encryptVaultItem normalizes to NFC, both forms should match NFC
+      expect(decrypted.title).toBe(titleNfc)
+      expect(decrypted.title).not.toBe(titleNfd)
+    })
+  })
 })

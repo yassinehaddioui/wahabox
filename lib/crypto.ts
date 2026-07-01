@@ -125,6 +125,41 @@ export const crypto = {
   },
 
   /**
+   * Encrypt a vault item (title + body) sealed to the owner's public key.
+   * Uses crypto_box_seal (anonymous sealed box) for each field independently.
+   */
+  encryptVaultItem(
+    title: string,
+    body: string,
+    publicKey: Uint8Array,
+  ): { ciphertextTitle: Uint8Array; ciphertextBody: Uint8Array } {
+    const titleBytes = new TextEncoder().encode(title.normalize('NFC'))
+    const bodyBytes = new TextEncoder().encode(body.normalize('NFC'))
+    return {
+      ciphertextTitle: sodium.crypto_box_seal(titleBytes, publicKey),
+      ciphertextBody: sodium.crypto_box_seal(bodyBytes, publicKey),
+    }
+  },
+
+  /**
+   * Decrypt a vault item sealed to the owner's keypair.
+   * Throws on wrong key or tampered ciphertext (sodium does the MAC check).
+   */
+  decryptVaultItem(
+    ciphertextTitle: Uint8Array,
+    ciphertextBody: Uint8Array,
+    publicKey: Uint8Array,
+    privateKey: Uint8Array,
+  ): { title: string; body: string } {
+    const titleBytes = sodium.crypto_box_seal_open(ciphertextTitle, publicKey, privateKey)
+    const bodyBytes = sodium.crypto_box_seal_open(ciphertextBody, publicKey, privateKey)
+    return {
+      title: new TextDecoder().decode(titleBytes),
+      body: new TextDecoder().decode(bodyBytes),
+    }
+  },
+
+  /**
    * Hash an auth_key with a salt for server-side storage and verification.
    */
   computeAuthVerifier(authKey: Uint8Array, salt: Uint8Array): Uint8Array {

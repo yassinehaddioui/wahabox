@@ -125,7 +125,7 @@ describe('AppSidebar', () => {
     render(<AppSidebar />)
     const buttons = screen.getAllByTestId('sidebar-menu-button')
     expect(buttons[0]).toHaveAttribute('data-active', 'false')
-    expect(buttons[2]).toHaveAttribute('data-active', 'true')
+    expect(buttons[3]).toHaveAttribute('data-active', 'true') // Settings is now at index 3 (after Vault added)
   })
 
   it('clears session keys, POSTs to logout, and redirects on logout click', async () => {
