@@ -238,6 +238,50 @@ describe('VaultDetailPage', () => {
     })
   })
 
+  it('creates an item with empty title: defaults title to Untitled', async () => {
+    const fetchSpy = mockFetch([
+      { json: () => ({ success: true, data: vaultsListData }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+      {
+        json: () => ({ success: true, data: { csrfToken: 'csrf-1' } }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            id: 'new-item',
+            ciphertextTitle: 'new-enc-title',
+            ciphertextBody: 'new-enc-body',
+            createdAt: '2024-06-03T00:00:00Z',
+            updatedAt: '2024-06-03T00:00:00Z',
+          },
+        }),
+        ok: true,
+        status: 201,
+      },
+    ])
+
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Item title')).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByTestId('new-body'), {
+      target: { value: '# Content only, no title' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create/i }))
+
+    await waitFor(() => {
+      expect(lastEncryptCall.title).toBe('Untitled')
+      expect(lastEncryptCall.body).toBe('# Content only, no title')
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Untitled')).toBeInTheDocument()
+    })
+  })
+
   it('expands item body on header click', async () => {
     mockFetch([
       { json: () => ({ success: true, data: vaultsListData }), ok: true },
@@ -349,6 +393,63 @@ describe('VaultDetailPage', () => {
       const body = JSON.parse(patchCall[1]!.body as string)
       expect(body.csrfToken).toBe('csrf-2')
     }
+  })
+
+  it('edit item: clearing title defaults to Untitled', async () => {
+    const fetchSpy = mockFetch([
+      { json: () => ({ success: true, data: vaultsListData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+      {
+        json: () => ({ success: true, data: { csrfToken: 'csrf-4' } }),
+        ok: true,
+      },
+      {
+        json: () => ({
+          success: true,
+          data: {
+            id: 'item-1',
+            ciphertextTitle: 'updated-enc-title',
+            ciphertextBody: 'updated-enc-body',
+          },
+        }),
+        ok: true,
+      },
+    ])
+
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getAllByText('Decrypted Title').length).toBe(2)
+    })
+
+    fireEvent.click(screen.getAllByText('Decrypted Title')[0])
+    await waitFor(() => {
+      expect(screen.getByText('Hello Markdown')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getAllByLabelText('Edit item')[0])
+    await waitFor(() => {
+      expect(screen.getByLabelText('Title')).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByLabelText('Title'), {
+      target: { value: '' },
+    })
+    fireEvent.click(screen.getByText('Save'))
+
+    await waitFor(() => {
+      expect(lastEncryptCall.title).toBe('Untitled')
+    })
+
+    const patchCall = fetchSpy.mock.calls.find(
+      (call) =>
+        String(call[0]).includes('/api/vaults/vault-1/items/item-1') &&
+        call[1]?.method === 'PATCH',
+    )
+    expect(patchCall).toBeTruthy()
+
+    await waitFor(() => {
+      expect(screen.getByText('Untitled')).toBeInTheDocument()
+    })
   })
 
   it('cancel edit closes form without saving', async () => {

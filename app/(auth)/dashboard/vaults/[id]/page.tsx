@@ -116,8 +116,8 @@ export default function VaultDetailPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!newTitle.trim()) return
     setCreating(true)
+    const title = newTitle.trim() || 'Untitled'
     try {
       const { crypto } = await import('@/lib/crypto')
       await crypto.ready
@@ -128,7 +128,7 @@ export default function VaultDetailPage() {
       }
 
       const result = crypto.encryptVaultItem(
-        newTitle,
+        title,
         newBody,
         crypto.fromBase64(keys.publicKey),
       )
@@ -150,7 +150,7 @@ export default function VaultDetailPage() {
         setNewBody('')
         setItems((prev) => [createdItem, ...prev])
         setDecryptedMap((prev) => new Map(prev).set(createdItem.id, {
-          title: newTitle,
+          title,
           body: newBody,
         }))
       } else {
@@ -181,8 +181,9 @@ export default function VaultDetailPage() {
   }
 
   async function handleEditSave() {
-    if (!editItem || !editTitle.trim()) return
+    if (!editItem) return
     setSaving(true)
+    const title = editTitle.trim() || 'Untitled'
     try {
       const { crypto } = await import('@/lib/crypto')
       await crypto.ready
@@ -193,7 +194,7 @@ export default function VaultDetailPage() {
       }
 
       const result = crypto.encryptVaultItem(
-        editTitle,
+        title,
         editBody,
         crypto.fromBase64(keys.publicKey),
       )
@@ -224,7 +225,7 @@ export default function VaultDetailPage() {
         )
         setDecryptedMap((prev) => {
           const next = new Map(prev)
-          next.set(editItem.id, { title: editTitle, body: editBody })
+          next.set(editItem.id, { title, body: editBody })
           return next
         })
         setEditItem(null)
@@ -366,7 +367,7 @@ export default function VaultDetailPage() {
                     <div className="flex gap-2">
                       <Button
                         onClick={handleEditSave}
-                        disabled={saving || !editTitle.trim()}
+                        disabled={saving}
                       >
                         {saving ? 'Saving...' : 'Save'}
                       </Button>
@@ -401,7 +402,6 @@ export default function VaultDetailPage() {
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="Item title"
               maxLength={256}
-              required
             />
             <MdEditor
               id="new-body"
@@ -409,7 +409,7 @@ export default function VaultDetailPage() {
               onChange={setNewBody}
               maxLength={50000}
             />
-            <Button type="submit" disabled={creating || !newTitle.trim()}>
+            <Button type="submit" disabled={creating}>
               <Plus className="h-4 w-4" />
               {creating ? 'Creating...' : 'Create'}
             </Button>
