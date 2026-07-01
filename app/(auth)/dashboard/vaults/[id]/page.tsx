@@ -149,7 +149,19 @@ export default function VaultDetailPage() {
         setNewBody('')
         const refresh = await fetch(`/api/vaults/${id}/items`)
         const refreshData = await refresh.json()
-        if (refreshData.success) setItems(refreshData.data)
+        if (refreshData.success) {
+          const refreshedItems: VaultItem[] = refreshData.data
+          setItems(refreshedItems)
+          for (const item of refreshedItems) {
+            if (decryptedMap.has(item.id)) continue
+            try {
+              setDecryptedMap((prev) => new Map(prev).set(item.id, {
+                title: newTitle,
+                body: newBody,
+              }))
+            } catch {}
+          }
+        }
       } else {
         toast.error(data.error ?? 'Failed to create item')
       }
