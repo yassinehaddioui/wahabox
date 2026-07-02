@@ -46,6 +46,7 @@ export default function VaultsPage() {
   const [editVault, setEditVault] = useState<Vault | null>(null)
   const [editLabel, setEditLabel] = useState('')
   const [editPassword, setEditPassword] = useState('')
+  const [editPasswordConfirm, setEditPasswordConfirm] = useState('')
   const [editCurrentPassword, setEditCurrentPassword] = useState('')
   const [editPasswordTouched, setEditPasswordTouched] = useState(false)
   const [deleteConfirmVault, setDeleteConfirmVault] = useState<Vault | null>(null)
@@ -132,6 +133,10 @@ export default function VaultsPage() {
 
   async function updateVault() {
     if (!editVault || !editLabel.trim()) return
+    if (editPassword && editPassword !== editPasswordConfirm) {
+      toast.error('Passwords do not match')
+      return
+    }
     try {
       const csrfToken = await fetchCsrfToken('edit-vault')
       const body: Record<string, unknown> = { label: editLabel }
@@ -262,6 +267,7 @@ export default function VaultsPage() {
                       setEditVault(vault)
                       setEditLabel(vault.label)
                       setEditPassword('')
+                      setEditPasswordConfirm('')
                       setEditCurrentPassword('')
                       setEditPasswordTouched(false)
                     } else {
@@ -342,6 +348,25 @@ export default function VaultsPage() {
                           )}
                         </div>
                       </div>
+                      {editPassword && (
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-password-confirm">Confirm password</Label>
+                          <Input
+                            id="edit-password-confirm"
+                            type="password"
+                            placeholder="Re-enter the password"
+                            value={editPasswordConfirm}
+                            onChange={(e) => setEditPasswordConfirm(e.target.value)}
+                            maxLength={128}
+                          />
+                          {editPassword !== editPasswordConfirm && editPasswordConfirm && (
+                            <p className="text-xs text-destructive">Passwords do not match</p>
+                          )}
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Once set, the vault password will be required to change or remove it. Make sure to remember it — there is no recovery option.
+                      </p>
                     </div>
                     <DialogFooter className="sm:justify-between">
                       <Button
