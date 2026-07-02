@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server'
+import bcrypt from 'bcryptjs'
 import { success, error } from '@/lib/response'
 import { parseBody, updateVaultSchema, deleteVaultSchema } from '@/lib/validation'
 import { getAuthUser } from '@/lib/auth'
-import { BadRequestError, NotFoundError } from '@/lib/errors'
+import { BadRequestError, NotFoundError, InvalidPasswordError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
@@ -23,13 +24,38 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       throw new NotFoundError()
     }
 
+    const data: Record<string, unknown> = {}
+    if (body.label !== undefined) data.label = body.label
+
+    if (body.password !== undefined) {
+      if (body.password === null) {
+        data.passwordHash = null
+      } else {
+        if (vault.passwordHash) {
+          if (!body.currentPassword) {
+            throw new BadRequestError('Current password is required to change the vault password')
+          }
+          const valid = await bcrypt.compare(body.currentPassword, vault.passwordHash)
+          if (!valid) {
+            throw new InvalidPasswordError('Invalid current password')
+          }
+        }
+        data.passwordHash = await bcrypt.hash(body.password, 12)
+      }
+    }
+
     const updated = await prisma.vault.update({
       where: { id },
-      data: { label: body.label },
-      select: { id: true, label: true, createdAt: true },
+      data,
+      select: { id: true, label: true, passwordHash: true, createdAt: true },
     })
 
-    return success(updated)
+    return success({
+      id: updated.id,
+      label: updated.label,
+      hasPassword: !!updated.passwordHash,
+      createdAt: updated.createdAt,
+    })
   } catch (err) {
     return error(err)
   }

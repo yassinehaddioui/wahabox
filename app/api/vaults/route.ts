@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import bcrypt from 'bcryptjs'
 import { success, error } from '@/lib/response'
 import { parseBody, createVaultSchema } from '@/lib/validation'
 import { getAuthUser } from '@/lib/auth'
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         label: true,
+        passwordHash: true,
         createdAt: true,
         _count: { select: { items: true } },
         items: {
@@ -32,6 +34,7 @@ export async function GET(request: NextRequest) {
       vaults.map((vault) => ({
         id: vault.id,
         label: vault.label,
+        hasPassword: !!vault.passwordHash,
         itemCount: vault._count.items,
         createdAt: vault.createdAt.toISOString(),
         updatedAt: vault.items[0]?.updatedAt?.toISOString() ?? vault.createdAt.toISOString(),
@@ -53,8 +56,10 @@ export async function POST(request: NextRequest) {
     const limited = await checkUserRate(`vault:create:${user.id}`, { windowMs: 60_000, max: 20 })
     if (limited) throw new RateLimitError()
 
+    const passwordHash = body.password ? await bcrypt.hash(body.password, 12) : null
+
     const vault = await prisma.vault.create({
-      data: { ownerId: user.id, label: body.label },
+      data: { ownerId: user.id, label: body.label, passwordHash },
       select: { id: true, label: true, createdAt: true },
     })
 

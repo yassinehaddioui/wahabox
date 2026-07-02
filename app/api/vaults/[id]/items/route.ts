@@ -1,8 +1,10 @@
 import { NextRequest } from 'next/server'
+import bcrypt from 'bcryptjs'
 import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
-import { NotFoundError, BadRequestError } from '@/lib/errors'
+import { NotFoundError, BadRequestError, InvalidPasswordError, RateLimitError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
+import { checkUserRate } from '@/lib/rate-limit'
 import { parseBody, createVaultItemSchema } from '@/lib/validation'
 import prisma from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
@@ -18,9 +20,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const vault = await prisma.vault.findFirst({
       where: { id, ownerId: user.id },
+      select: { id: true, passwordHash: true },
     })
     if (!vault) {
       throw new NotFoundError('Vault not found')
+    }
+
+    // Password gate
+    if (vault.passwordHash) {
+      const limited = await checkUserRate(`vault:unlock:${vault.id}`, { windowMs: 60_000, max: 10 })
+      if (limited) throw new RateLimitError()
+
+      const vaultPassword = request.headers.get('X-Vault-Password')
+      if (!vaultPassword) {
+        throw new InvalidPasswordError('Vault password is required')
+      }
+      const valid = await bcrypt.compare(vaultPassword, vault.passwordHash)
+      if (!valid) {
+        throw new InvalidPasswordError('Invalid vault password')
+      }
     }
 
     const items = await prisma.vaultItem.findMany({
