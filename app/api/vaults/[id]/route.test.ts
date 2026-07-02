@@ -185,11 +185,12 @@ describe('PATCH /api/vaults/[id]', () => {
     expect(body.data.hasPassword).toBe(true)
   })
 
-  it('clears password and sets hasPassword: false', async () => {
+  it('clears password with valid currentPassword', async () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     const existingVault = { ...createVault({ id: 'v1', label: 'Secure' }), passwordHash: '$2a$12$h' }
     prismaMock.vault.findFirst.mockResolvedValue(existingVault)
+    vi.mocked(bcrypt.compare).mockResolvedValue(true as never)
     prismaMock.vault.update.mockResolvedValue({
       id: 'v1',
       label: 'Secure',
@@ -199,13 +200,47 @@ describe('PATCH /api/vaults/[id]', () => {
     const res = await PATCH(
       createNextRequest('http://localhost/api/vaults/v1', {
         method: 'PATCH',
-        body: { password: null, csrfToken: 'v' },
+        body: { password: null, currentPassword: 'correct-old-password', csrfToken: 'v' },
       }),
       createRouteContext({ id: 'v1' }),
     )
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.data.hasPassword).toBe(false)
+    expect(bcrypt.compare).toHaveBeenCalledWith('correct-old-password', '$2a$12$h')
+  })
+
+  it('rejects clear password without currentPassword', async () => {
+    mockAuth()
+    vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
+    const existingVault = { ...createVault({ id: 'v1' }), passwordHash: '$2a$12$h' }
+    prismaMock.vault.findFirst.mockResolvedValue(existingVault)
+    const res = await PATCH(
+      createNextRequest('http://localhost/api/vaults/v1', {
+        method: 'PATCH',
+        body: { password: null, csrfToken: 'v' },
+      }),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects clear password with wrong currentPassword', async () => {
+    mockAuth()
+    vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
+    const existingVault = { ...createVault({ id: 'v1' }), passwordHash: '$2a$12$h' }
+    prismaMock.vault.findFirst.mockResolvedValue(existingVault)
+    vi.mocked(bcrypt.compare).mockResolvedValue(false as never)
+    const res = await PATCH(
+      createNextRequest('http://localhost/api/vaults/v1', {
+        method: 'PATCH',
+        body: { password: null, currentPassword: 'wrong', csrfToken: 'v' },
+      }),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(res.status).toBe(401)
+    const body = await res.json()
+    expect(body.code).toBe('INVALID_PASSWORD')
   })
 
   it('updates label without touching password', async () => {

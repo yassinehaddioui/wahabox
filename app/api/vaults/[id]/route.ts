@@ -29,6 +29,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (body.password !== undefined) {
       if (body.password === null) {
+        if (vault.passwordHash) {
+          if (!body.currentPassword) {
+            throw new BadRequestError('Current password is required to remove the vault password')
+          }
+          const valid = await bcrypt.compare(body.currentPassword, vault.passwordHash)
+          if (!valid) {
+            throw new InvalidPasswordError('Invalid current password')
+          }
+        }
         data.passwordHash = null
       } else {
         if (vault.passwordHash) {

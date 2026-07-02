@@ -110,10 +110,14 @@ export default function VaultsPage() {
   async function removePassword() {
     if (!editVault) return
     const csrfToken = await fetchCsrfToken('edit-vault')
+    const body: Record<string, unknown> = { password: null, csrfToken }
+    if (editVault.hasPassword && editCurrentPassword) {
+      body.currentPassword = editCurrentPassword
+    }
     const res = await fetch(`/api/vaults/${editVault.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: null, csrfToken }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     if (data.success) {
