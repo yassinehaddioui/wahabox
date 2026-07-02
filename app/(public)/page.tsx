@@ -120,17 +120,63 @@ const features = [
     description:
       "No analytics, no tracking, no third-party scripts. We can't read your messages because we don't have the keys.",
   },
+  {
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-6"
+      >
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        <circle cx="12" cy="16" r="1" />
+        <line x1="12" y1="8" x2="12" y2="4" />
+        <line x1="9" y1="5" x2="15" y2="5" />
+      </svg>
+    ),
+    title: 'Secure Messages',
+    description:
+      'Compose end-to-end encrypted messages and get a secret shareable link. Add optional password protection, auto-destruct, scheduling, and email notifications. The decryption key travels in the URL — never stored on our servers.',
+  },
+  {
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-6"
+      >
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="8" cy="10" r="1" />
+        <circle cx="8" cy="14" r="1" />
+        <circle cx="8" cy="18" r="1" />
+        <line x1="12" y1="10" x2="20" y2="10" />
+        <line x1="12" y1="14" x2="20" y2="14" />
+        <line x1="12" y1="18" x2="20" y2="18" />
+      </svg>
+    ),
+    title: 'Encrypted Vaults',
+    description:
+      'Securely store passwords, notes, and secrets in zero-knowledge encrypted containers. Every item is sealed with X25519 before leaving your browser. Supports Markdown — only you hold the keys.',
+  },
 ]
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Encrypted Virtual PO Box | Anonymous Secure Messaging',
+    title: 'Encrypted Virtual PO Box | Secure Messages & Encrypted Vaults',
     description:
-      'Receive anonymous, end-to-end encrypted messages with zero-knowledge architecture. Create PO boxes, share secret links, and decrypt — your private key never leaves your browser.',
+      'Receive anonymous messages, send secure encrypted links, and store secrets in zero-knowledge vaults. End-to-end encrypted with X25519 — your private key never leaves your browser.',
     openGraph: {
-      title: 'Wahabox — Encrypted Virtual PO Box | Anonymous Secure Messaging',
+      title: 'Wahabox — Encrypted Virtual PO Box | Secure Messages & Encrypted Vaults',
       description:
-        'Receive anonymous, end-to-end encrypted messages with zero-knowledge architecture. Your private key never leaves your browser.',
+        'Receive anonymous messages, send secure encrypted links, and store secrets in zero-knowledge vaults. Your private key never leaves your browser.',
       url: 'https://wahabox.org',
     },
     alternates: {
@@ -151,7 +197,7 @@ export default function HomePage() {
             name: 'Wahabox',
             url: 'https://wahabox.org',
             description:
-              'Encrypted virtual PO box for receiving anonymous, end-to-end encrypted messages with zero-knowledge architecture.',
+              'Encrypted virtual PO box for anonymous messaging, secure encrypted links, and zero-knowledge vaults for passwords, notes, and secrets.',
             applicationCategory: 'CommunicationApplication',
             operatingSystem: 'All',
             offers: {
@@ -170,7 +216,7 @@ export default function HomePage() {
       />
       <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Encrypted Virtual PO Box</h1>
       <p className="mt-4 text-lg text-muted-foreground">
-        Receive anonymous, encrypted messages. Your private key never leaves your browser.
+        Receive anonymous messages, send secure encrypted links, and store secrets in zero-knowledge vaults. Your private key never leaves your browser.
       </p>
       <div className="mt-8 flex items-center justify-center gap-4">
         <Link
@@ -190,7 +236,7 @@ export default function HomePage() {
       <section className="mt-24">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Why Wahabox?</h2>
         <p className="mt-3 text-muted-foreground">
-          Built so that nobody — not even us — can read your messages.
+          Built so that nobody — not even us — can read your messages, links, or stored secrets.
         </p>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
