@@ -20,7 +20,7 @@ describe('HomePage', () => {
 
   it('renders description text', () => {
     render(<HomePage />)
-    expect(screen.getByText(/Receive anonymous, encrypted messages/)).toBeInTheDocument()
+    expect(screen.getByText(/Receive anonymous messages/)).toBeInTheDocument()
   })
 
   it('renders Create Account link pointing to /signup', () => {
