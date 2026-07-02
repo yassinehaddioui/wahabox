@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Trash2, Plus, Lock } from 'lucide-react'
 import { Markdown } from '@/components/ui/markdown'
 import { MdEditor } from '@/components/ui/md-editor'
 import { toast } from 'sonner'
@@ -65,26 +65,59 @@ export default function VaultDetailPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [expandedSet, setExpandedSet] = useState<Set<string>>(new Set())
+  const [needsPassword, setNeedsPassword] = useState(false)
+  const [vaultPassword, setVaultPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [vaultHasPassword, setVaultHasPassword] = useState(false)
+  const [unlocked, setUnlocked] = useState(false)
 
   useEffect(() => {
     async function load() {
       try {
-        const [vaultsRes, itemsRes] = await Promise.all([
-          fetch('/api/vaults'),
-          fetch(`/api/vaults/${id}/items`),
-        ])
+        // Load vault metadata to check hasPassword
+        const vaultsRes = await fetch('/api/vaults')
         const vaultsData = await vaultsRes.json()
-        const itemsData = await itemsRes.json()
-
+        let hasPassword = false
         if (vaultsData.success) {
           const vault = vaultsData.data.find(
-            (v: { id: string; label: string }) => v.id === id,
+            (v: { id: string; label: string; hasPassword: boolean }) => v.id === id,
           )
-          if (vault) setVaultLabel(vault.label)
+          if (vault) {
+            setVaultLabel(vault.label)
+            hasPassword = vault.hasPassword
+            setVaultHasPassword(vault.hasPassword)
+          }
         }
+
+        // Check sessionStorage for cached password
+        const cachedPassword = sessionStorage.getItem(`vault:${id}:password`)
+
+        if (hasPassword && !cachedPassword) {
+          setNeedsPassword(true)
+          return
+        }
+
+        // Load items with optional password header
+        const headers: Record<string, string> = {}
+        if (cachedPassword) {
+          headers['X-Vault-Password'] = cachedPassword
+        }
+
+        const itemsRes = await fetch(`/api/vaults/${id}/items`, { headers })
+
+        if (itemsRes.status === 401) {
+          // Wrong password or expired — clear cache and show prompt
+          sessionStorage.removeItem(`vault:${id}:password`)
+          setNeedsPassword(true)
+          setPasswordError('Invalid password. Please try again.')
+          return
+        }
+
+        const itemsData = await itemsRes.json()
         if (itemsData.success) {
           const fetchedItems: VaultItem[] = itemsData.data
           setItems(fetchedItems)
+          setUnlocked(true)
           // Auto-decrypt all items on load
           const { crypto } = await import('@/lib/crypto')
           await crypto.ready
@@ -269,12 +302,130 @@ export default function VaultDetailPage() {
     }
   }
 
+  async function handleUnlock() {
+    if (!vaultPassword.trim()) return
+    setPasswordError('')
+
+    try {
+      const headers: Record<string, string> = {
+        'X-Vault-Password': vaultPassword,
+      }
+      const res = await fetch(`/api/vaults/${id}/items`, { headers })
+
+      if (res.status === 429) {
+        setPasswordError('Too many attempts. Please try again later.')
+        return
+      }
+
+      if (res.status === 401) {
+        setPasswordError('Invalid password')
+        return
+      }
+
+      const data = await res.json()
+      if (data.success) {
+        sessionStorage.setItem(`vault:${id}:password`, vaultPassword)
+        setNeedsPassword(false)
+        setUnlocked(true)
+
+        const fetchedItems: VaultItem[] = data.data
+        setItems(fetchedItems)
+
+        const { crypto } = await import('@/lib/crypto')
+        await crypto.ready
+        const keys = getSessionKeys()
+        if (keys) {
+          const decrypted = new Map<string, DecryptedItem>()
+          for (const item of fetchedItems) {
+            try {
+              const result = crypto.decryptVaultItem(
+                crypto.fromBase64(item.ciphertextTitle),
+                crypto.fromBase64(item.ciphertextBody),
+                crypto.fromBase64(keys.publicKey),
+                crypto.fromBase64(keys.privateKey),
+              )
+              decrypted.set(item.id, result)
+            } catch {}
+          }
+          setDecryptedMap(decrypted)
+        }
+      }
+    } catch {
+      setPasswordError('Failed to verify password')
+    }
+  }
+
   return (
     <div className="w-full space-y-6">
+      <Dialog open={needsPassword} onOpenChange={(open) => {
+        if (!open) {
+          setNeedsPassword(false)
+          router.back()
+        }
+      }}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Vault password required</DialogTitle>
+            <DialogDescription>
+              This vault is password-protected. Enter the password to view its contents.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="vault-password">Password</Label>
+              <Input
+                id="vault-password"
+                type="password"
+                value={vaultPassword}
+                onChange={(e) => {
+                  setVaultPassword(e.target.value)
+                  setPasswordError('')
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleUnlock()
+                }}
+                autoFocus
+                maxLength={128}
+              />
+              {passwordError && (
+                <p className="text-sm text-destructive">{passwordError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setNeedsPassword(false)
+              router.back()
+            }}>
+              Go back
+            </Button>
+            <Button onClick={handleUnlock} disabled={!vaultPassword.trim()}>
+              Unlock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
+        {vaultHasPassword && unlocked && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              sessionStorage.removeItem(`vault:${id}:password`)
+              setUnlocked(false)
+              setVaultPassword('')
+              setPasswordError('')
+              setNeedsPassword(true)
+              setDecryptedMap(new Map())
+            }}
+            title="Lock vault"
+          >
+            <Lock className="h-4 w-4" />
+          </Button>
+        )}
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{vaultLabel}</h1>
           {!loading && (

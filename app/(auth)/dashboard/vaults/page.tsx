@@ -20,7 +20,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { Package, Pencil, Trash2 } from 'lucide-react'
+import { Lock, Package, Pencil, Trash2 } from 'lucide-react'
 
 async function fetchCsrfToken(tag: string): Promise<string | null> {
   const res = await fetch(`/api/csrf?tag=${encodeURIComponent(tag)}`)
@@ -31,6 +31,7 @@ async function fetchCsrfToken(tag: string): Promise<string | null> {
 type Vault = {
   id: string
   label: string
+  hasPassword: boolean
   itemCount: number
   createdAt: string
   updatedAt: string
@@ -40,9 +41,13 @@ export default function VaultsPage() {
   const router = useRouter()
   const [vaults, setVaults] = useState<Vault[]>([])
   const [newLabel, setNewLabel] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(true)
   const [editVault, setEditVault] = useState<Vault | null>(null)
   const [editLabel, setEditLabel] = useState('')
+  const [editPassword, setEditPassword] = useState('')
+  const [editCurrentPassword, setEditCurrentPassword] = useState('')
+  const [editPasswordTouched, setEditPasswordTouched] = useState(false)
   const [deleteConfirmVault, setDeleteConfirmVault] = useState<Vault | null>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -86,11 +91,12 @@ export default function VaultsPage() {
       const res = await fetch('/api/vaults', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: newLabel, csrfToken }),
+        body: JSON.stringify({ label: newLabel, password: newPassword || null, csrfToken }),
       })
       const data = await res.json()
       if (data.success) {
         setNewLabel('')
+        setNewPassword('')
         toast.success('Vault created')
         await fetchVaults()
       } else {
@@ -101,14 +107,41 @@ export default function VaultsPage() {
     }
   }
 
+  async function removePassword() {
+    if (!editVault) return
+    const csrfToken = await fetchCsrfToken('edit-vault')
+    const res = await fetch(`/api/vaults/${editVault.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: null, csrfToken }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      toast.success('Password removed')
+      setEditVault(null)
+      setEditPasswordTouched(false)
+      await fetchVaults()
+    } else {
+      toast.error(data.error)
+    }
+  }
+
   async function updateVault() {
     if (!editVault || !editLabel.trim()) return
     try {
       const csrfToken = await fetchCsrfToken('edit-vault')
+      const body: Record<string, unknown> = { label: editLabel }
+      if (editPasswordTouched) {
+        body.password = editPassword || null
+        if (editVault.hasPassword && editPassword) {
+          body.currentPassword = editCurrentPassword
+        }
+      }
+      body.csrfToken = csrfToken
       const res = await fetch(`/api/vaults/${editVault.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: editLabel, csrfToken }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (data.success) {
@@ -188,6 +221,9 @@ export default function VaultsPage() {
                     className="inline-flex items-center gap-2 font-medium min-w-0 hover:underline truncate"
                   >
                     <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    {vault.hasPassword && (
+                      <Lock className="h-3 w-3 text-amber-500 shrink-0" />
+                    )}
                     <span className="truncate">{vault.label}</span>
                   </Link>
                   <Badge variant="secondary" className="shrink-0 text-xs">
@@ -221,8 +257,12 @@ export default function VaultsPage() {
                     if (open) {
                       setEditVault(vault)
                       setEditLabel(vault.label)
+                      setEditPassword('')
+                      setEditCurrentPassword('')
+                      setEditPasswordTouched(false)
                     } else {
                       setEditVault(null)
+                      setEditPasswordTouched(false)
                     }
                   }}
                 >
@@ -252,6 +292,51 @@ export default function VaultsPage() {
                           onChange={(e) => setEditLabel(e.target.value)}
                           maxLength={128}
                         />
+                      </div>
+                      {editVault?.hasPassword && (
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-current-password">Current password</Label>
+                          <Input
+                            id="edit-current-password"
+                            type="password"
+                            placeholder="Enter current password"
+                            value={editCurrentPassword}
+                            onChange={(e) => setEditCurrentPassword(e.target.value)}
+                            maxLength={128}
+                          />
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-password">
+                          {editVault?.hasPassword ? 'New password' : 'Set a password (optional)'}
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="edit-password"
+                            type="password"
+                            placeholder={
+                              editVault?.hasPassword
+                                ? 'Leave blank to keep current'
+                                : 'Require a password to open this vault'
+                            }
+                            value={editPassword}
+                            onChange={(e) => {
+                              setEditPassword(e.target.value)
+                              setEditPasswordTouched(true)
+                            }}
+                            maxLength={128}
+                          />
+                          {editVault?.hasPassword && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
+                              onClick={removePassword}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <DialogFooter className="sm:justify-between">
@@ -310,6 +395,13 @@ export default function VaultsPage() {
               placeholder="Vault name"
               maxLength={128}
               required
+            />
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Optional: set a vault password"
+              maxLength={128}
             />
             <Button type="submit">Create</Button>
           </form>
