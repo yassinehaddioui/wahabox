@@ -78,11 +78,14 @@ export const deleteBoxSchema = z.object({
 
 export const createVaultSchema = z.object({
   label: z.string().min(1).max(128),
+  password: z.string().min(1).max(128).nullable().optional(),
   csrfToken: z.string().nullish(),
 })
 
 export const updateVaultSchema = z.object({
   label: z.string().min(1).max(128).optional(),
+  password: z.string().min(1).max(128).nullable().optional(),
+  currentPassword: z.string().min(1).max(128).optional(),
   csrfToken: z.string().nullish(),
 })
 
