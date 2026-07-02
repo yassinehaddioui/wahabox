@@ -71,6 +71,7 @@ model Vault {
   id        String      @id @default(uuid()) @db.Uuid
   ownerId   String      @map("owner_id") @db.Uuid
   label     String
+  passwordHash String? @map("password_hash")
   createdAt DateTime    @default(now()) @map("created_at")
 
   owner User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
