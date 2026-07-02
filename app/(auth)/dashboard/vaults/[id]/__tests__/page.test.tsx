@@ -76,6 +76,18 @@ vi.mock('@/components/ui/md-editor', () => ({
     }),
 }))
 
+// Mock sessionStorage for password gate tests
+const mockSessionStorage: Record<string, string> = {}
+const sessionStorageMock = {
+  getItem: (key: string) => mockSessionStorage[key] ?? null,
+  setItem: (key: string, value: string) => { mockSessionStorage[key] = value },
+  removeItem: (key: string) => { delete mockSessionStorage[key] },
+  clear: () => { for (const k in mockSessionStorage) delete mockSessionStorage[k] },
+  get length() { return Object.keys(mockSessionStorage).length },
+  key: (_index: number) => '',
+}
+Object.defineProperty(window, 'sessionStorage', { value: sessionStorageMock, configurable: true })
+
 const vaultItemsData = [
   {
     id: 'item-1',
@@ -116,11 +128,13 @@ describe('VaultDetailPage', () => {
     })
     mockFromBase64.mockClear()
     mockToBase64.mockClear()
+    sessionStorageMock.clear()
   })
 
   afterEach(() => {
     resetMockFetch()
     vi.restoreAllMocks()
+    sessionStorageMock.clear()
   })
 
   it('shows loading skeletons initially', () => {
@@ -545,6 +559,136 @@ describe('VaultDetailPage', () => {
     await waitFor(() => {
       expect(screen.queryByText('Delete item')).not.toBeInTheDocument()
       expect(screen.getAllByText('Decrypted Title').length).toBe(2)
+    })
+  })
+
+  it('shows password prompt when vault hasPassword and no cached password', async () => {
+    const vaultWithPasswordData = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: true },
+      { id: 'vault-2', label: 'Other Vault', itemCount: 0, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultWithPasswordData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('Vault password required')).toBeInTheDocument()
+    })
+    expect(screen.getByLabelText('Password')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /unlock/i })).toBeInTheDocument()
+  })
+
+  it('does not show password prompt when vault has no password', async () => {
+    const vaultWithoutPasswordData = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: false },
+      { id: 'vault-2', label: 'Other Vault', itemCount: 0, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultWithoutPasswordData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+      expect(screen.getAllByText('Decrypted Title').length).toBe(2)
+    })
+    expect(screen.queryByText('Vault password required')).not.toBeInTheDocument()
+  })
+
+  it('sends X-Vault-Password header when cached password exists', async () => {
+    mockSessionStorage['vault:vault-1:password'] = 'correct-password'
+    const vaultWithPasswordData = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: true },
+      { id: 'vault-2', label: 'Other Vault', itemCount: 0, hasPassword: false },
+    ]
+    const fetchSpy = mockFetch([
+      { json: () => ({ success: true, data: vaultWithPasswordData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getAllByText('Decrypted Title').length).toBe(2)
+    })
+    const itemsCall = fetchSpy.mock.calls.find(
+      (call) => String(call[0]).includes('/api/vaults/vault-1/items'),
+    )
+    expect(itemsCall).toBeTruthy()
+    if (itemsCall) {
+      const headers = itemsCall[1]?.headers as Record<string, string>
+      expect(headers['X-Vault-Password']).toBe('correct-password')
+    }
+  })
+
+  it('clears cached password and shows error on 401', async () => {
+    mockSessionStorage['vault:vault-1:password'] = 'wrong-password'
+    const vaultWithPasswordData = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: true },
+      { id: 'vault-2', label: 'Other Vault', itemCount: 0, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultWithPasswordData }), ok: true },
+      { status: 401, ok: false },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('Vault password required')).toBeInTheDocument()
+      expect(screen.getByText('Invalid password. Please try again.')).toBeInTheDocument()
+    })
+    expect(sessionStorage.getItem('vault:vault-1:password')).toBeNull()
+  })
+
+  it('shows lock button only when vault has password and is unlocked', async () => {
+    mockSessionStorage['vault:vault-1:password'] = 'correct-password'
+    const vaultWithPasswordData = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: true },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultWithPasswordData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    const { unmount } = render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+    })
+    expect(screen.getByTitle('Lock vault')).toBeInTheDocument()
+
+    // Clean up first render
+    unmount()
+
+    // Render vault without password — lock button should be absent
+    const vaultWithoutPasswordData = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultWithoutPasswordData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+    })
+    expect(screen.queryByTitle('Lock vault')).not.toBeInTheDocument()
+  })
+
+  it('lock vault clears sessionStorage and shows password prompt', async () => {
+    mockSessionStorage['vault:vault-1:password'] = 'correct-password'
+    const vaultWithPasswordData = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: true },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultWithPasswordData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTitle('Lock vault'))
+
+    expect(sessionStorage.getItem('vault:vault-1:password')).toBeNull()
+    await waitFor(() => {
+      expect(screen.getByText('Vault password required')).toBeInTheDocument()
     })
   })
 })

@@ -7,9 +7,11 @@ import { UnauthorizedError } from '@/lib/errors'
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
+vi.mock('bcryptjs', () => ({ default: { compare: vi.fn(), hash: vi.fn() } }))
 
 import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
+import bcrypt from 'bcryptjs'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -49,6 +51,7 @@ describe('GET /api/vaults', () => {
     expect(body.data[0]).toEqual({
       id: 'vault-1',
       label: 'My Vault',
+      hasPassword: false,
       itemCount: 3,
       createdAt: vault.createdAt.toISOString(),
       updatedAt: '2025-06-15T00:00:00.000Z',
@@ -67,6 +70,20 @@ describe('GET /api/vaults', () => {
     const res = await GET(createNextRequest('http://localhost/api/vaults'))
     const body = await res.json()
     expect(body.data[0].updatedAt).toBe('2025-03-01T00:00:00.000Z')
+  })
+
+  it('returns hasPassword for each vault', async () => {
+    mockAuth()
+    const vaultWithoutPw = createVault({ id: 'v1', label: 'No Password' })
+    const vaultWithPw = createVault({ id: 'v2', label: 'With Password' })
+    prismaMock.vault.findMany.mockResolvedValue([
+      { ...vaultWithoutPw, _count: { items: 0 }, items: [] },
+      { ...vaultWithPw, _count: { items: 2 }, items: [{ updatedAt: new Date('2025-06-01T00:00:00.000Z') }] },
+    ])
+    const res = await GET(createNextRequest('http://localhost/api/vaults'))
+    const body = await res.json()
+    expect(body.data[0].hasPassword).toBe(false)
+    expect(body.data[1].hasPassword).toBe(false)
   })
 })
 
@@ -135,6 +152,48 @@ describe('POST /api/vaults', () => {
       }),
     )
     expect(verifyAndConsumeCsrfToken).toHaveBeenCalledWith('create-vault', 't')
+  })
+
+  it('creates a vault with password and returns hasPassword: true', async () => {
+    mockAuth()
+    vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
+    vi.mocked(bcrypt.hash).mockResolvedValue('$2a$12$mocked_hash' as never)
+    prismaMock.vault.create.mockResolvedValue({
+      id: 'vault-pw',
+      label: 'Protected',
+      passwordHash: '$2a$12$mocked_hash',
+      createdAt: new Date('2025-01-01T00:00:00.000Z'),
+    })
+    const res = await POST(
+      createNextRequest('http://localhost/api/vaults', {
+        method: 'POST',
+        body: { label: 'Protected', password: 'secret123', csrfToken: 'valid' },
+      }),
+    )
+    const body = await res.json()
+    expect(res.status).toBe(201)
+    expect(body.data.hasPassword).toBe(true)
+    expect(bcrypt.hash).toHaveBeenCalledWith('secret123', 12)
+  })
+
+  it('creates a vault without password returns hasPassword: false', async () => {
+    mockAuth()
+    vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
+    prismaMock.vault.create.mockResolvedValue({
+      id: 'vault-nopw',
+      label: 'Open',
+      passwordHash: null,
+      createdAt: new Date('2025-01-01T00:00:00.000Z'),
+    })
+    const res = await POST(
+      createNextRequest('http://localhost/api/vaults', {
+        method: 'POST',
+        body: { label: 'Open', csrfToken: 'valid' },
+      }),
+    )
+    const body = await res.json()
+    expect(res.status).toBe(201)
+    expect(body.data.hasPassword).toBe(false)
   })
 
   it('creates an audit log entry on create', async () => {

@@ -7,9 +7,13 @@ import { UnauthorizedError } from '@/lib/errors'
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
+vi.mock('bcryptjs', () => ({ default: { compare: vi.fn(), hash: vi.fn() } }))
+vi.mock('@/lib/rate-limit', () => ({ checkUserRate: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
+import bcrypt from 'bcryptjs'
+import { checkUserRate } from '@/lib/rate-limit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -40,6 +44,7 @@ describe('GET /api/vaults/[id]/items', () => {
     expect(res.status).toBe(404)
     expect(prismaMock.vault.findFirst).toHaveBeenCalledWith({
       where: { id: 'other', ownerId: 'user-1' },
+      select: { id: true, passwordHash: true },
     })
   })
 
@@ -77,6 +82,91 @@ describe('GET /api/vaults/[id]/items', () => {
     expect(body.data[1].id).toBe('vi-1')
     expect(body.data[0].ciphertextTitle).toBe(Buffer.from(newer.ciphertextTitle).toString('base64'))
     expect(body.data[0].ciphertextBody).toBe(Buffer.from(newer.ciphertextBody).toString('base64'))
+  })
+
+  it('returns 200 with items when correct X-Vault-Password header is provided', async () => {
+    mockAuth()
+    prismaMock.vault.findFirst.mockResolvedValue({ id: 'v1', passwordHash: '$2a$12$hash' })
+    vi.mocked(bcrypt.compare).mockResolvedValue(true as never)
+    vi.mocked(checkUserRate).mockResolvedValue(false)
+    const item = createVaultItem({ id: 'vi-1' })
+    prismaMock.vaultItem.findMany.mockResolvedValue([item])
+    const res = await GET(
+      createNextRequest('http://localhost/api/vaults/v1/items', {
+        headers: { 'X-Vault-Password': 'correct' },
+      }),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.data).toHaveLength(1)
+    expect(bcrypt.compare).toHaveBeenCalledWith('correct', '$2a$12$hash')
+  })
+
+  it('returns 401 INVALID_PASSWORD when wrong password is provided', async () => {
+    mockAuth()
+    prismaMock.vault.findFirst.mockResolvedValue({ id: 'v1', passwordHash: '$2a$12$hash' })
+    vi.mocked(bcrypt.compare).mockResolvedValue(false as never)
+    vi.mocked(checkUserRate).mockResolvedValue(false)
+    const res = await GET(
+      createNextRequest('http://localhost/api/vaults/v1/items', {
+        headers: { 'X-Vault-Password': 'wrong' },
+      }),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(res.status).toBe(401)
+    const body = await res.json()
+    expect(body.code).toBe('INVALID_PASSWORD')
+  })
+
+  it('returns 401 when no password header on protected vault', async () => {
+    mockAuth()
+    prismaMock.vault.findFirst.mockResolvedValue({ id: 'v1', passwordHash: '$2a$12$hash' })
+    vi.mocked(checkUserRate).mockResolvedValue(false)
+    const res = await GET(
+      createNextRequest('http://localhost/api/vaults/v1/items'),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(res.status).toBe(401)
+    const body = await res.json()
+    expect(body.code).toBe('INVALID_PASSWORD')
+  })
+
+  it('returns 200 on unprotected vault without password header', async () => {
+    mockAuth()
+    prismaMock.vault.findFirst.mockResolvedValue(createVault({ id: 'v1' }))
+    prismaMock.vaultItem.findMany.mockResolvedValue([])
+    const res = await GET(
+      createNextRequest('http://localhost/api/vaults/v1/items'),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(res.status).toBe(200)
+  })
+
+  it('returns 200 on unprotected vault with extraneous password header', async () => {
+    mockAuth()
+    prismaMock.vault.findFirst.mockResolvedValue(createVault({ id: 'v1' }))
+    prismaMock.vaultItem.findMany.mockResolvedValue([])
+    const res = await GET(
+      createNextRequest('http://localhost/api/vaults/v1/items', {
+        headers: { 'X-Vault-Password': 'ignored' },
+      }),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(res.status).toBe(200)
+  })
+
+  it('returns 429 when rate limited', async () => {
+    mockAuth()
+    prismaMock.vault.findFirst.mockResolvedValue({ id: 'v1', passwordHash: '$2a$12$hash' })
+    vi.mocked(checkUserRate).mockResolvedValue(true)
+    const res = await GET(
+      createNextRequest('http://localhost/api/vaults/v1/items', {
+        headers: { 'X-Vault-Password': 'correct' },
+      }),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(res.status).toBe(429)
   })
 })
 
@@ -192,6 +282,28 @@ describe('POST /api/vaults/[id]/items', () => {
       },
       select: { id: true, ciphertextTitle: true, ciphertextBody: true, createdAt: true, updatedAt: true },
     })
+  })
+
+  it('allows POST on protected vault without password header', async () => {
+    mockAuth()
+    vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
+    prismaMock.vault.findFirst.mockResolvedValue({ ...createVault({ id: 'v1' }), passwordHash: '$2a$12$h' })
+    prismaMock.vaultItem.create.mockResolvedValue({
+      id: 'vi-new',
+      ciphertextTitle: Buffer.from('dGVzdA==', 'base64'),
+      ciphertextBody: Buffer.from('Ym9keQ==', 'base64'),
+      createdAt: new Date('2025-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2025-01-01T00:00:00.000Z'),
+    })
+    prismaMock.auditLog.create.mockResolvedValue({})
+    const res = await POST(
+      createNextRequest('http://localhost/api/vaults/v1/items', {
+        method: 'POST',
+        body: { ciphertextTitle: 'dGVzdA==', ciphertextBody: 'Ym9keQ==', csrfToken: 'v' },
+      }),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(res.status).toBe(201)
   })
 
   it('creates audit log on successful POST', async () => {

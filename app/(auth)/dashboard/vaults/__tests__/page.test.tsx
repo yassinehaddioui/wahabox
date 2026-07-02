@@ -273,4 +273,109 @@ describe('VaultsPage', () => {
       expect(toast.error).toHaveBeenCalledWith('Failed to load vaults')
     })
   })
+
+  it('vault card shows Lock icon when hasPassword is true', async () => {
+    mockFetch({
+      json: () => ({
+        success: true,
+        data: [
+          { id: 'vault-1', label: 'Personal', hasPassword: true, itemCount: 5, createdAt: '2025-01-15T10:00:00Z', updatedAt: '2025-06-28T14:30:00Z' },
+        ],
+      }),
+      ok: true,
+    })
+    render(React.createElement(VaultsPage))
+    await waitFor(() => {
+      expect(screen.getByText('Personal')).toBeInTheDocument()
+    })
+    const lockIcons = document.querySelectorAll('.lucide-lock')
+    expect(lockIcons.length).toBe(1)
+  })
+
+  it('vault card shows no Lock icon when hasPassword is false', async () => {
+    mockFetch({
+      json: () => ({
+        success: true,
+        data: [
+          { id: 'vault-1', label: 'Personal', hasPassword: false, itemCount: 5, createdAt: '2025-01-15T10:00:00Z', updatedAt: '2025-06-28T14:30:00Z' },
+        ],
+      }),
+      ok: true,
+    })
+    render(React.createElement(VaultsPage))
+    await waitFor(() => {
+      expect(screen.getByText('Personal')).toBeInTheDocument()
+    })
+    const lockIcons = document.querySelectorAll('.lucide-lock')
+    expect(lockIcons.length).toBe(0)
+  })
+
+  it('create form includes password input field', async () => {
+    mockFetch({ json: () => ({ success: true, data: [] }), ok: true })
+    render(React.createElement(VaultsPage))
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Optional: set a vault password')).toBeInTheDocument()
+    })
+  })
+
+  it('edit dialog shows password fields for protected vault', async () => {
+    mockFetch({
+      json: () => ({
+        success: true,
+        data: [
+          { id: 'vault-1', label: 'Personal', hasPassword: true, itemCount: 5, createdAt: '2025-01-15T10:00:00Z', updatedAt: '2025-06-28T14:30:00Z' },
+        ],
+      }),
+      ok: true,
+    })
+    render(React.createElement(VaultsPage))
+    await waitFor(() => {
+      expect(screen.getByText('Personal')).toBeInTheDocument()
+    })
+
+    const editButtons = screen.getAllByLabelText('Edit vault')
+    fireEvent.click(editButtons[0])
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit Vault')).toBeInTheDocument()
+    })
+
+    expect(screen.getByLabelText('Current password')).toBeInTheDocument()
+    expect(screen.getByLabelText('New password')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
+  })
+
+  it('remove password button sends PATCH with password null', async () => {
+    const fetchSpy = mockFetch([
+      { json: () => ({ success: true, data: [{ id: 'vault-1', label: 'Personal', hasPassword: true, itemCount: 5, createdAt: '2025-01-15T10:00:00Z', updatedAt: '2025-06-28T14:30:00Z' }] }), ok: true },
+      { json: () => ({ success: true, data: { csrfToken: 'csrf-remove-pw' } }), ok: true },
+      { json: () => ({ success: true }), ok: true },
+      { json: () => ({ success: true, data: [] }), ok: true },
+    ])
+    render(React.createElement(VaultsPage))
+    await waitFor(() => {
+      expect(screen.getByText('Personal')).toBeInTheDocument()
+    })
+
+    const editButtons = screen.getAllByLabelText('Edit vault')
+    fireEvent.click(editButtons[0])
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit Vault')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+
+    await waitFor(() => {
+      const patchCall = fetchSpy.mock.calls.find(
+        (call) => String(call[0]).includes('/api/vaults/') && call[1]?.method === 'PATCH',
+      )
+      expect(patchCall).toBeTruthy()
+      if (patchCall) {
+        const body = JSON.parse(patchCall[1]?.body as string)
+        expect(body.password).toBeNull()
+        expect(body.csrfToken).toBe('csrf-remove-pw')
+      }
+    })
+  })
 })

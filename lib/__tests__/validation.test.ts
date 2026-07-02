@@ -376,6 +376,29 @@ describe('createVaultSchema', () => {
   it('rejects a missing label', () => {
     expect(createVaultSchema.safeParse({}).success).toBe(false)
   })
+
+  it('parses a valid password', () => {
+    const result = createVaultSchema.parse({ label: 'My Vault', password: 's3cret' })
+    expect(result.password).toBe('s3cret')
+  })
+
+  it('accepts an omitted password', () => {
+    const result = createVaultSchema.parse({ label: 'My Vault' })
+    expect(result.password).toBeUndefined()
+  })
+
+  it('accepts a null password', () => {
+    const result = createVaultSchema.parse({ label: 'My Vault', password: null })
+    expect(result.password).toBeNull()
+  })
+
+  it('rejects an empty password', () => {
+    expect(createVaultSchema.safeParse({ label: 'My Vault', password: '' }).success).toBe(false)
+  })
+
+  it('rejects a password longer than 128 chars', () => {
+    expect(createVaultSchema.safeParse({ label: 'My Vault', password: 'x'.repeat(129) }).success).toBe(false)
+  })
 })
 
 describe('updateVaultSchema', () => {
@@ -403,6 +426,36 @@ describe('updateVaultSchema', () => {
 
   it('rejects a label longer than 128 chars', () => {
     expect(updateVaultSchema.safeParse({ label: 'x'.repeat(129) }).success).toBe(false)
+  })
+
+  it('parses a password with currentPassword', () => {
+    const result = updateVaultSchema.parse({
+      label: 'Vault',
+      password: 'new-s3cret',
+      currentPassword: 'old-s3cret',
+    })
+    expect(result.password).toBe('new-s3cret')
+    expect(result.currentPassword).toBe('old-s3cret')
+  })
+
+  it('accepts a null password (clearing)', () => {
+    const result = updateVaultSchema.parse({ label: 'Vault', password: null })
+    expect(result.password).toBeNull()
+  })
+
+  it('accepts an omitted password (no change)', () => {
+    const result = updateVaultSchema.parse({ label: 'Vault' })
+    expect(result.password).toBeUndefined()
+  })
+
+  it('rejects an empty password when provided', () => {
+    expect(updateVaultSchema.safeParse({ label: 'Vault', password: '' }).success).toBe(false)
+  })
+
+  it('rejects a password longer than 128 chars', () => {
+    expect(
+      updateVaultSchema.safeParse({ label: 'Vault', password: 'x'.repeat(129) }).success,
+    ).toBe(false)
   })
 })
 

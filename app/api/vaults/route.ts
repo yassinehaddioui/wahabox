@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     const vault = await prisma.vault.create({
       data: { ownerId: user.id, label: body.label, passwordHash },
-      select: { id: true, label: true, createdAt: true },
+      select: { id: true, label: true, passwordHash: true, createdAt: true },
     })
 
     // Fire-and-forget audit log — must not fail the mutation
@@ -79,7 +79,12 @@ export async function POST(request: NextRequest) {
       })
       .catch(() => {})
 
-    return success(vault, 201)
+    return success({
+      id: vault.id,
+      label: vault.label,
+      hasPassword: !!vault.passwordHash,
+      createdAt: vault.createdAt,
+    }, 201)
   } catch (err) {
     return error(err)
   }
