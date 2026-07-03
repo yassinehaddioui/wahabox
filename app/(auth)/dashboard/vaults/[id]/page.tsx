@@ -531,9 +531,9 @@ export default function VaultDetailPage() {
                     </div>
                   </CardContent>
                 )}
-                {expandedSet.has(item.id) && !isEditing && (
+                {expandedSet.has(item.id) && !isEditing && decrypted && (
                   <CardContent className="pt-0">
-                    <Markdown>{decrypted!.body}</Markdown>
+                    <Markdown>{decrypted.body}</Markdown>
                   </CardContent>
                 )}
               </Card>
