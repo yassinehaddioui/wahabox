@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { createNextRequest } from '@/test/helpers/request'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 
 // ── hoisted mocks ────────────────────────────────────────────────────────────
 const { mockCheckIpRate, mockReportError } = vi.hoisted(() => ({
@@ -19,7 +21,7 @@ vi.mock('@/lib/reporter', () => ({
 // ── import the handler AFTER mocks are registered ────────────────────────────
 import { POST } from '../route'
 
-const BASE = 'https://wahabox.local/api/_report'
+const BASE = 'https://wahabox.local/api/report-error'
 
 function buildRequest(overrides: {
   body?: unknown
@@ -36,7 +38,7 @@ function buildRequest(overrides: {
   })
 }
 
-describe('POST /api/_report', () => {
+describe('POST /api/report-error', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCheckIpRate.mockResolvedValue(false)
@@ -279,5 +281,20 @@ describe('POST /api/_report', () => {
     expect(res.status).toBe(202)
     expect(body.success).toBe(true)
     expect(mockReportError).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ── structural routability ─────────────────────────────────────────────────────
+// Next.js 16 App Router: folders prefixed with `_` are private (excluded from routing).
+// Route group segments like (auth) are allowed; underscore-prefix is the disallowed case.
+// This proves the route folder has no underscore-prefixed segment, so it IS routable.
+describe('structural routability', () => {
+  it('folder is routable: no underscore-prefixed segment (Next private-folder convention)', () => {
+    // Resolve this test file's directory, then go up one level (= the route folder)
+    const dir = path.dirname(fileURLToPath(new URL('..', import.meta.url)))
+    // Split into segments, exclude route-groups (end with ')'), and assert none start with _
+    const segments = dir.split('/').filter(s => s && !s.endsWith(')'))
+    const underscorePrefixed = segments.filter(seg => seg.startsWith('_'))
+    expect(underscorePrefixed).toEqual([])
   })
 })
