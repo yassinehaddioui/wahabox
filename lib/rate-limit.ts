@@ -170,3 +170,10 @@ export async function recordDropIp(ip: string): Promise<void> {
     await multi.exec()
   }, undefined)
 }
+
+export async function checkDedup(key: string, ttlSeconds: number): Promise<boolean> {
+  return withRedis(async (redis) => {
+    const r = await redis.set(`dedup:${key}`, '', 'EX', ttlSeconds, 'NX')
+    return r === 'OK'
+  }, false)
+}
