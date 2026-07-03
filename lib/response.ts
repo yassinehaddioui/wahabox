@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { ApiError } from './errors'
 import { MfaRequiredError } from './errors'
 import { MessageNotAvailableError } from './errors'
+import { logger } from '@/lib/logger'
+import { reportError } from '@/lib/reporter'
 
 type SuccessResponse<T = unknown> = {
   success: true
@@ -51,7 +53,8 @@ export function error(err: unknown): NextResponse<ErrorResponse> {
     )
   }
 
-  console.error('[internal]', err)
+  logger.error(err instanceof Error ? err : String(err), { source: 'server' })
+  void reportError(err, { source: 'server' })
   return NextResponse.json(
     { success: false as const, error: 'Internal server error' },
     { status: 500 },

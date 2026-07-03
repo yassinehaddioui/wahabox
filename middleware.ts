@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { runWithRequestContext } from '@/lib/request-context'
 
 const ONE_YEAR = 31_536_000
 const IS_PROD = process.env.NODE_ENV === 'production'
@@ -16,54 +17,65 @@ function plausibleOrigin(scriptSrc: string | undefined): string | null {
 const SCRIPT_ORIGIN = plausibleOrigin(process.env.PLAUSIBLE_SCRIPT_SRC)
 
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next()
+  const ctx = {
+    requestId: globalThis.crypto.randomUUID(),
+    route: request.nextUrl.pathname,
+    ip:
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown',
+  }
+  return runWithRequestContext(ctx, () => {
+    const response = NextResponse.next()
 
-  if (IS_PROD) {
-    const scriptSrc = [
-      "'self'",
-      "'unsafe-inline'",
-      "'unsafe-eval'",
-      'https://challenges.cloudflare.com',
-      SCRIPT_ORIGIN,
-    ]
-      .filter(Boolean)
-      .join(' ')
+    if (IS_PROD) {
+      const scriptSrc = [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        'https://challenges.cloudflare.com',
+        SCRIPT_ORIGIN,
+      ]
+        .filter(Boolean)
+        .join(' ')
 
-    const connectSrc = [
-      "'self'",
-      'https://challenges.cloudflare.com',
-      SCRIPT_ORIGIN,
-    ]
-      .filter(Boolean)
-      .join(' ')
+      const connectSrc = [
+        "'self'",
+        'https://challenges.cloudflare.com',
+        SCRIPT_ORIGIN,
+      ]
+        .filter(Boolean)
+        .join(' ')
+
+      response.headers.set(
+        'Content-Security-Policy',
+        [
+          "default-src 'self'",
+          `script-src ${scriptSrc}`,
+          "style-src 'self' 'unsafe-inline'",
+          `connect-src ${connectSrc}`,
+          "img-src 'self' data: https://api.qrserver.com",
+          "frame-src 'self' https://challenges.cloudflare.com",
+          "frame-ancestors 'none'",
+          "form-action 'self'",
+        ].join('; '),
+      )
+    }
 
     response.headers.set(
-      'Content-Security-Policy',
-      [
-        "default-src 'self'",
-        `script-src ${scriptSrc}`,
-        "style-src 'self' 'unsafe-inline'",
-        `connect-src ${connectSrc}`,
-        "img-src 'self' data: https://api.qrserver.com",
-        "frame-src 'self' https://challenges.cloudflare.com",
-        "frame-ancestors 'none'",
-        "form-action 'self'",
-      ].join('; '),
+      'Strict-Transport-Security',
+      `max-age=${ONE_YEAR}; includeSubDomains; preload`,
     )
-  }
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('Referrer-Policy', 'no-referrer')
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
 
-  response.headers.set(
-    'Strict-Transport-Security',
-    `max-age=${ONE_YEAR}; includeSubDomains; preload`,
-  )
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('Referrer-Policy', 'no-referrer')
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-
-  return response
+    return response
+  })
 }
 
 export const config = {
+  runtime: 'nodejs',
   matcher: '/((?!_next|__nextjs|favicon.ico).*)',
 }
