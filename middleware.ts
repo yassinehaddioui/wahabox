@@ -34,6 +34,7 @@ export function middleware(request: NextRequest) {
         "'unsafe-inline'",
         "'unsafe-eval'",
         'https://challenges.cloudflare.com',
+        'https://static.cloudflareinsights.com',
         SCRIPT_ORIGIN,
       ]
         .filter(Boolean)

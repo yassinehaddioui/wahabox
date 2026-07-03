@@ -56,7 +56,7 @@ describe('logger', () => {
   })
 
   it('does not throw on circular context and writes fallback line', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any — test-only circular object
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test-only circular object
     const o: any = { a: {} }
     o.a = o
 
