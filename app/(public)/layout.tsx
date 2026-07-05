@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import Footer from '@/components/landing/footer'
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -61,6 +62,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         </nav>
       </header>
       <main className="flex flex-1 items-start justify-center px-6 pt-16 pb-12">{children}</main>
+      <Footer />
     </div>
   )
 }

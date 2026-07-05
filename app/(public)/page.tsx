@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import HeroIllustration from '@/components/landing/hero-illustration'
+import HowItWorks from '@/components/landing/how-it-works'
+import SocialProof from '@/components/landing/social-proof'
+import Comparison from '@/components/landing/comparison'
+import ScrollReveal from '@/components/landing/scroll-reveal'
 
 const features = [
   {
@@ -111,48 +116,6 @@ const features = [
         strokeLinejoin="round"
         className="size-6"
       >
-        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-        <line x1="1" y1="1" x2="23" y2="23" />
-      </svg>
-    ),
-    title: 'Privacy by Design',
-    description:
-      "No analytics, no tracking, no third-party scripts. We can't read your messages because we don't have the keys.",
-  },
-  {
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="size-6"
-      >
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        <circle cx="12" cy="16" r="1" />
-        <line x1="12" y1="8" x2="12" y2="4" />
-        <line x1="9" y1="5" x2="15" y2="5" />
-      </svg>
-    ),
-    title: 'Secure Messages',
-    description:
-      'Compose end-to-end encrypted messages and get a secret shareable link. Add optional password protection, auto-destruct, scheduling, and email notifications. The decryption key travels in the URL — never stored on our servers.',
-  },
-  {
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="size-6"
-      >
         <rect x="3" y="4" width="18" height="16" rx="2" />
         <circle cx="8" cy="10" r="1" />
         <circle cx="8" cy="14" r="1" />
@@ -187,7 +150,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function HomePage() {
   return (
-    <div className="mx-auto w-full max-w-4xl text-center">
+    <div className="mx-auto w-full max-w-6xl">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -214,46 +177,98 @@ export default function HomePage() {
           }),
         }}
       />
-      <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Encrypted Virtual PO Box</h1>
-      <p className="mt-4 text-lg text-muted-foreground">
-        Receive anonymous messages, send secure encrypted links, and store secrets in zero-knowledge vaults. Your private key never leaves your browser.
-      </p>
-      <div className="mt-8 flex items-center justify-center gap-4">
-        <Link
-          href="/signup"
-          className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-8 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          Create Account
-        </Link>
-        <Link
-          href="/login"
-          className="inline-flex h-11 items-center justify-center rounded-lg border bg-background px-8 text-sm font-medium hover:bg-accent transition-colors"
-        >
-          Sign In
-        </Link>
-      </div>
 
-      <section className="mt-24">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Why Wahabox?</h2>
-        <p className="mt-3 text-muted-foreground">
-          Built so that nobody — not even us — can read your messages, links, or stored secrets.
-        </p>
-
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="flex flex-col items-start rounded-xl border bg-card px-6 py-6 text-left transition-colors hover:border-primary/40"
+      {/* ── Hero ── */}
+      <section className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+        <div className="text-center lg:text-left">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            Encrypted Virtual PO Box
+          </h1>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Receive anonymous messages, send secure encrypted links, and store secrets in
+            zero-knowledge vaults. Your private key never leaves your browser.
+          </p>
+          <div className="mt-8 flex items-center justify-center gap-4 lg:justify-start">
+            <Link
+              href="/signup"
+              className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                {f.icon}
-              </div>
-              <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.description}</p>
-            </div>
-          ))}
+              Create Account
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex h-11 items-center justify-center rounded-lg border bg-background px-8 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              Sign In
+            </Link>
+          </div>
+        </div>
+        <div className="flex justify-center lg:justify-end">
+          <HeroIllustration className="h-64 w-auto sm:h-80" />
         </div>
       </section>
+
+      {/* ── How It Works ── */}
+      <ScrollReveal>
+        <HowItWorks />
+      </ScrollReveal>
+
+      {/* ── Features ── */}
+      <ScrollReveal>
+        <section className="mt-24">
+          <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
+            Why Wahabox?
+          </h2>
+          <p className="mt-3 text-center text-muted-foreground">
+            Built so that nobody — not even us — can read your messages, links, or stored secrets.
+          </p>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {features.map((f) => (
+              <div
+                key={f.title}
+                className="flex flex-col items-start rounded-xl border bg-card px-6 py-6 text-left transition-colors hover:border-primary/40"
+              >
+                <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  {f.icon}
+                </div>
+                <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {f.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* ── Social Proof ── */}
+      <ScrollReveal>
+        <SocialProof />
+      </ScrollReveal>
+
+      {/* ── Comparison ── */}
+      <ScrollReveal>
+        <Comparison />
+      </ScrollReveal>
+
+      {/* ── Bottom CTA ── */}
+      <ScrollReveal>
+        <section className="mt-24 rounded-2xl bg-primary/5 px-6 py-14 text-center sm:px-12">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Ready to protect your messages?
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            Start your free encrypted PO box in 30 seconds. No credit card, no strings attached.
+          </p>
+          <Link
+            href="/signup"
+            className="mt-6 inline-flex h-11 items-center justify-center rounded-lg bg-primary px-10 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Get Started Free
+          </Link>
+        </section>
+      </ScrollReveal>
     </div>
   )
 }
