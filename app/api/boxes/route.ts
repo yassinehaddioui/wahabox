@@ -7,6 +7,7 @@ import { getAuthUser } from '@/lib/auth'
 import { BadRequestError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function generateSlug(): string {
   return crypto.randomBytes(16).toString('base64url')
@@ -94,6 +95,17 @@ export async function POST(request: NextRequest) {
         passwordHash: body.password ? await bcrypt.hash(body.password, 12) : null,
       },
       select: { id: true, slug: true, label: true, greeting: true },
+    })
+
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'box.create',
+      targetType: 'box',
+      targetId: box.id,
+      targetLabel: box.label,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
     })
 
     return success(box, 201)

@@ -8,10 +8,12 @@ import { UnauthorizedError } from '@/lib/errors'
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
 vi.mock('bcryptjs', () => ({ default: { compare: vi.fn(), hash: vi.fn() } }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import bcrypt from 'bcryptjs'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -212,17 +214,15 @@ describe('POST /api/vaults', () => {
     )
     // Fire-and-forget audit log — wait for microtask flush
     await vi.waitFor(() => {
-      expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
-        data: {
-          actorId: 'user-1',
-          actorUsername: 'testuser',
-          action: 'vault.create',
-          targetType: 'vault',
-          targetId: 'vault-1',
-          targetLabel: 'My Vault',
-          metadata: expect.any(Object) as unknown,
-          ip: null,
-        },
+      expect(writeAuditLog).toHaveBeenCalledWith({
+        actorId: 'user-1',
+        actorUsername: 'testuser',
+        action: 'vault.create',
+        targetType: 'vault',
+        targetId: 'vault-1',
+        targetLabel: 'My Vault',
+        metadata: { hasPassword: false },
+        ip: undefined,
       })
     })
   })

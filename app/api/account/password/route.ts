@@ -6,6 +6,7 @@ import { BadRequestError, UnauthorizedError, RateLimitError } from '@/lib/errors
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { clearSessionCookie } from '@/lib/session'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 import { checkIpRate, checkGlobalRate } from '@/lib/rate-limit'
 
 function b64(s: string) {
@@ -116,6 +117,16 @@ export async function POST(request: NextRequest) {
         pwNonce: b64(newPwNonce),
         tokenVersion: { increment: 1 },
       },
+    })
+
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'auth.password_change',
+      targetType: 'user',
+      targetId: user.id,
+      ip: ip === 'unknown' ? undefined : ip,
     })
 
     await clearSessionCookie()

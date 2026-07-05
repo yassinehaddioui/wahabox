@@ -5,6 +5,7 @@ import { BadRequestError, ConflictError, RateLimitError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { checkTurnstile, TURNSTILE_PROOF_COOKIE } from '@/lib/turnstile'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 import { checkIpRate, checkGlobalRate } from '@/lib/rate-limit'
 
 function b64(s: string) {
@@ -70,6 +71,16 @@ export async function POST(request: NextRequest) {
       }
       throw err
     }
+
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: body.username,
+      actorUsername: body.username,
+      action: 'auth.signup',
+      targetType: 'user',
+      targetId: body.username,
+      ip: ip === 'unknown' ? undefined : ip,
+    })
 
     const res = success({ username: body.username }, 201)
     if (proofToken) {

@@ -7,9 +7,11 @@ import { UnauthorizedError } from '@/lib/errors'
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -86,7 +88,7 @@ describe('PATCH /api/vaults/[id]/items/[itemId]', () => {
       updatedAt: new Date('2025-01-02T00:00:00.000Z'),
     })
     prismaMock.vaultItem.update.mockResolvedValue(updated)
-    prismaMock.auditLog.create.mockResolvedValue({})
+
 
     const res = await PATCH(
       createNextRequest('http://localhost/api/vaults/v1/items/vi-1', {
@@ -122,7 +124,7 @@ describe('PATCH /api/vaults/[id]/items/[itemId]', () => {
       updatedAt: new Date('2025-01-02T00:00:00.000Z'),
     })
     prismaMock.vaultItem.update.mockResolvedValue(updated)
-    prismaMock.auditLog.create.mockResolvedValue({})
+
 
     const res = await PATCH(
       createNextRequest('http://localhost/api/vaults/v1/items/vi-1', {
@@ -147,7 +149,7 @@ describe('PATCH /api/vaults/[id]/items/[itemId]', () => {
       updatedAt: new Date('2025-01-02T00:00:00.000Z'),
     })
     prismaMock.vaultItem.update.mockResolvedValue(updated)
-    prismaMock.auditLog.create.mockResolvedValue({})
+
 
     const res = await PATCH(
       createNextRequest('http://localhost/api/vaults/v1/items/vi-1', {
@@ -181,7 +183,7 @@ describe('PATCH /api/vaults/[id]/items/[itemId]', () => {
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.vaultItem.findFirst.mockResolvedValue(createVaultItem({ id: 'vi-1' }))
     prismaMock.vaultItem.update.mockResolvedValue(createVaultItem({ id: 'vi-1' }))
-    prismaMock.auditLog.create.mockResolvedValue({})
+
 
     await PATCH(
       createNextRequest('http://localhost/api/vaults/v1/items/vi-1', {
@@ -191,16 +193,14 @@ describe('PATCH /api/vaults/[id]/items/[itemId]', () => {
       createRouteContext({ id: 'v1', itemId: 'vi-1' }),
     )
 
-    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
-      data: {
-        actorId: 'user-1',
-        actorUsername: 'testuser',
-        action: 'vault_item.update',
-        targetType: 'vault_item',
-        targetId: 'vi-1',
-        metadata: expect.any(Object) as unknown,
-        ip: null,
-      },
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: 'user-1',
+      actorUsername: 'testuser',
+      action: 'vault_item.update',
+      targetType: 'vault_item',
+      targetId: 'vi-1',
+      metadata: { changedFields: ['ciphertextTitle'] },
+      ip: undefined,
     })
   })
 })
@@ -258,7 +258,7 @@ describe('DELETE /api/vaults/[id]/items/[itemId]', () => {
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.vaultItem.findFirst.mockResolvedValue(createVaultItem({ id: 'vi-1' }))
     prismaMock.vaultItem.delete.mockResolvedValue({})
-    prismaMock.auditLog.create.mockResolvedValue({})
+
 
     const res = await DELETE(
       createNextRequest('http://localhost/api/vaults/v1/items/vi-1', {
@@ -278,7 +278,7 @@ describe('DELETE /api/vaults/[id]/items/[itemId]', () => {
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.vaultItem.findFirst.mockResolvedValue(createVaultItem({ id: 'vi-1' }))
     prismaMock.vaultItem.delete.mockResolvedValue({})
-    prismaMock.auditLog.create.mockResolvedValue({})
+
 
     await DELETE(
       createNextRequest('http://localhost/api/vaults/v1/items/vi-1', {
@@ -288,16 +288,13 @@ describe('DELETE /api/vaults/[id]/items/[itemId]', () => {
       createRouteContext({ id: 'v1', itemId: 'vi-1' }),
     )
 
-    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
-      data: {
-        actorId: 'user-1',
-        actorUsername: 'testuser',
-        action: 'vault_item.delete',
-        targetType: 'vault_item',
-        targetId: 'vi-1',
-        metadata: expect.any(Object) as unknown,
-        ip: null,
-      },
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: 'user-1',
+      actorUsername: 'testuser',
+      action: 'vault_item.delete',
+      targetType: 'vault_item',
+      targetId: 'vi-1',
+      ip: undefined,
     })
   })
 })

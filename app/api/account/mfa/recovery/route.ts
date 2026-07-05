@@ -4,6 +4,7 @@ import { getAuthUser } from '@/lib/auth'
 import { BadRequestError } from '@/lib/errors'
 import { generateRecoveryCodes } from '@/lib/totp'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +27,16 @@ export async function POST(request: NextRequest) {
         mfaRecoveryCodes: new Uint8Array(Buffer.from(JSON.stringify(hashed))),
         mfaRecoveryCodesCreatedAt: new Date(),
       },
+    })
+
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'mfa.recovery_codes_regenerate',
+      targetType: 'user',
+      targetId: user.id,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
     })
 
     return success({ recoveryCodes: plain })

@@ -14,10 +14,12 @@ vi.mock('@/lib/rate-limit', () => ({
   checkGlobalRate: vi.fn(),
 }))
 vi.mock('@/lib/email', () => ({ sendVerificationEmail: vi.fn() }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { checkIpRate, checkUserRate, checkGlobalRate } from '@/lib/rate-limit'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -153,6 +155,14 @@ describe('PUT /api/account/email', () => {
     expect(body.success).toBe(true)
     expect(prismaMock.user.update).toHaveBeenCalled()
     expect(await redisMock.exists('email-resend-cooldown:user-1')).toBe(1)
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'account.email_set',
+      targetType: 'user',
+      targetId: expect.any(String),
+      ip: undefined,
+    })
   })
 })
 
@@ -238,6 +248,14 @@ describe('DELETE /api/account/email', () => {
       where: { id: 'user-1' },
       data: { emailEncrypted: null, emailNonce: null, emailKeyVersion: null, emailVerified: false },
     })
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'account.email_remove',
+      targetType: 'user',
+      targetId: expect.any(String),
+      ip: undefined,
+    })
   })
 })
 
@@ -273,6 +291,15 @@ describe('PATCH /api/account/email', () => {
     expect(prismaMock.user.update).toHaveBeenCalledWith({
       where: { id: 'user-1' },
       data: { notificationsEnabled: false },
+    })
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'account.notifications_toggle',
+      targetType: 'user',
+      targetId: expect.any(String),
+      metadata: { notificationsEnabled: expect.any(Boolean) },
+      ip: undefined,
     })
   })
 })

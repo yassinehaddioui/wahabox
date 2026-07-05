@@ -7,6 +7,7 @@ import { getAuthUser } from '@/lib/auth'
 import { BadRequestError, NotFoundError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -56,6 +57,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     })
 
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'box.update',
+      targetType: 'box',
+      targetId: updated.id,
+      targetLabel: updated.label,
+      metadata: { changedFields: Object.keys(data) },
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+    })
+
     return success({
       id: updated.id,
       label: updated.label,
@@ -92,6 +105,17 @@ export async function DELETE(
     }
 
     await prisma.poBox.delete({ where: { id } })
+
+    // Fire-and-forget audit log — audit AFTER successful delete (box is already fetched)
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'box.delete',
+      targetType: 'box',
+      targetId: box.id,
+      targetLabel: box.label,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+    })
 
     return success({ id })
   } catch (err) {

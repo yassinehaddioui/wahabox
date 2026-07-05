@@ -6,8 +6,10 @@ import { createNextRequest, createRouteContext } from '@/test/helpers/request'
 import { UnauthorizedError } from '@/lib/errors'
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -68,6 +70,15 @@ describe('DELETE /api/account/mfa/passkeys/[id]', () => {
       where: { id: 'user-1' },
       data: { mfaPasskey: false },
     })
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'mfa.passkey_remove',
+      targetType: 'user',
+      targetId: expect.any(String),
+      metadata: { credentialId: expect.any(String), mfaPasskeyDisabled: expect.any(Boolean) },
+      ip: undefined,
+    })
   })
 
   it('deletes without disabling flag when others remain', async () => {
@@ -82,5 +93,14 @@ describe('DELETE /api/account/mfa/passkeys/[id]', () => {
     )
     expect(res.status).toBe(200)
     expect(prismaMock.user.update).not.toHaveBeenCalled()
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'mfa.passkey_remove',
+      targetType: 'user',
+      targetId: expect.any(String),
+      metadata: { credentialId: expect.any(String), mfaPasskeyDisabled: expect.any(Boolean) },
+      ip: undefined,
+    })
   })
 })

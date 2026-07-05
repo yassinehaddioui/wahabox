@@ -3,6 +3,7 @@ import { createNextRequest } from '@/test/helpers/request'
 import '@/test/helpers/prisma-mock'
 import { resetRedisMock } from '@/test/helpers/redis-mock'
 import { POST } from './route'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 const {
   mockVerifyCsrf,
@@ -45,6 +46,7 @@ vi.mock('@/lib/session', () => ({
   createSession: mockCreateSession,
   setSessionCookie: mockSetSessionCookie,
 }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 const baseBody = {
   username: 'testuser',
@@ -113,6 +115,14 @@ describe('POST /api/auth/login', () => {
     expect(mockCreateSession).toHaveBeenCalledWith('user-1', 'testuser')
     expect(mockSetSessionCookie).toHaveBeenCalledWith('session-token')
     expect(mockClearFailures).toHaveBeenCalledWith('testuser')
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'auth.login',
+      targetType: 'user',
+      targetId: expect.any(String),
+      ip: undefined,
+    })
   })
 
   it('returns 401 when auth verifier does not match', async () => {

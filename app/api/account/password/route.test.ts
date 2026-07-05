@@ -9,11 +9,13 @@ vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
 vi.mock('@/lib/session', () => ({ clearSessionCookie: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkIpRate: vi.fn(), checkGlobalRate: vi.fn() }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { clearSessionCookie } from '@/lib/session'
 import { checkIpRate, checkGlobalRate } from '@/lib/rate-limit'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -165,5 +167,13 @@ describe('POST /api/account/password', () => {
       },
     })
     expect(clearSessionCookie).toHaveBeenCalled()
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'auth.password_change',
+      targetType: 'user',
+      targetId: expect.any(String),
+      ip: undefined,
+    })
   })
 })

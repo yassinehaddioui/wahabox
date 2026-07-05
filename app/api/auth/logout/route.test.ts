@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createNextRequest } from '@/test/helpers/request'
 import '@/test/helpers/prisma-mock'
 import { POST } from './route'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 const { mockGetAuthUser, mockClearSessionCookie } = vi.hoisted(() => ({
   mockGetAuthUser: vi.fn<(...args: unknown[]) => Promise<{ id: string; username: string }>>(),
@@ -10,6 +11,7 @@ const { mockGetAuthUser, mockClearSessionCookie } = vi.hoisted(() => ({
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: mockGetAuthUser }))
 vi.mock('@/lib/session', () => ({ clearSessionCookie: mockClearSessionCookie }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 describe('POST /api/auth/logout', () => {
   beforeEach(() => {
@@ -34,6 +36,14 @@ describe('POST /api/auth/logout', () => {
       data: { tokenVersion: { increment: 1 } },
     })
     expect(mockClearSessionCookie).toHaveBeenCalled()
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'auth.logout',
+      targetType: 'user',
+      targetId: expect.any(String),
+      ip: undefined,
+    })
   })
 
   it('still clears session and returns success even when unauthed', async () => {

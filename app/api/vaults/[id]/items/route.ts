@@ -7,7 +7,7 @@ import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { checkUserRate } from '@/lib/rate-limit'
 import { parseBody, createVaultItemSchema } from '@/lib/validation'
 import prisma from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function b64(u: Uint8Array): string {
   return Buffer.from(u).toString('base64')
@@ -99,19 +99,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })
 
     // Fire-and-forget audit log — must not fail the mutation
-    prisma.auditLog
-      .create({
-        data: {
-          actorId: user.id,
-          actorUsername: user.username,
-          action: 'vault_item.create',
-          targetType: 'vault_item',
-          targetId: item.id,
-          metadata: Prisma.JsonNull,
-          ip: null,
-        },
-      })
-      .catch(() => {})
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'vault_item.create',
+      targetType: 'vault_item',
+      targetId: item.id,
+      targetLabel: vault.label,
+      ip,
+    })
 
     return success({
       id: item.id,

@@ -6,6 +6,7 @@ import { BadRequestError, UnauthorizedError } from '@/lib/errors'
 import { getRedis } from '@/lib/redis'
 import { generateTotpSecret, getTotpUri, verifyTotp, generateRecoveryCodes } from '@/lib/totp'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,10 +54,28 @@ export async function POST(request: NextRequest) {
           throw new BadRequestError('A verified email is required to enable email 2FA')
         }
         await prisma.user.update({ where: { id: authUser.id }, data: { mfaEmail: true } })
+        // Fire-and-forget audit log
+        writeAuditLog({
+          actorId: authUser.id,
+          actorUsername: authUser.username,
+          action: 'mfa.email_enable',
+          targetType: 'user',
+          targetId: authUser.id,
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+        })
         return success({ mfaEmail: true })
       }
       if (body.action === 'disable') {
         await prisma.user.update({ where: { id: authUser.id }, data: { mfaEmail: false } })
+        // Fire-and-forget audit log
+        writeAuditLog({
+          actorId: authUser.id,
+          actorUsername: authUser.username,
+          action: 'mfa.email_disable',
+          targetType: 'user',
+          targetId: authUser.id,
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+        })
         return success({ mfaEmail: false })
       }
     }
@@ -97,6 +116,15 @@ export async function POST(request: NextRequest) {
           },
         })
 
+        // Fire-and-forget audit log
+        writeAuditLog({
+          actorId: authUser.id,
+          actorUsername: authUser.username,
+          action: 'mfa.totp_confirm',
+          targetType: 'user',
+          targetId: authUser.id,
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+        })
         return success({ mfaTotp: true, recoveryCodes: plain })
       }
       if (body.action === 'disable') {
@@ -115,6 +143,16 @@ export async function POST(request: NextRequest) {
             ...(hasOtherMfa ? {} : { mfaRecoveryCodes: null, mfaRecoveryCodesCreatedAt: null }),
           },
         })
+        // Fire-and-forget audit log
+        writeAuditLog({
+          actorId: authUser.id,
+          actorUsername: authUser.username,
+          action: 'mfa.totp_disable',
+          targetType: 'user',
+          targetId: authUser.id,
+          metadata: { hadOtherMfa: hasOtherMfa },
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+        })
         return success({ mfaTotp: false })
       }
     }
@@ -123,6 +161,16 @@ export async function POST(request: NextRequest) {
       if (body.action === 'disable') {
         await prisma.passkeyCredential.deleteMany({ where: { userId: authUser.id } })
         await prisma.user.update({ where: { id: authUser.id }, data: { mfaPasskey: false } })
+        // Fire-and-forget audit log
+        writeAuditLog({
+          actorId: authUser.id,
+          actorUsername: authUser.username,
+          action: 'mfa.passkey_remove',
+          targetType: 'user',
+          targetId: authUser.id,
+          metadata: { allRemoved: true },
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+        })
         return success({ mfaPasskey: false })
       }
     }

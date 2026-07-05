@@ -7,7 +7,7 @@ import { BadRequestError, RateLimitError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { checkUserRate } from '@/lib/rate-limit'
 import prisma from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,20 +64,17 @@ export async function POST(request: NextRequest) {
     })
 
     // Fire-and-forget audit log — must not fail the mutation
-    prisma.auditLog
-      .create({
-        data: {
-          actorId: user.id,
-          actorUsername: user.username,
-          action: 'vault.create',
-          targetType: 'vault',
-          targetId: vault.id,
-          targetLabel: vault.label,
-          metadata: Prisma.JsonNull,
-          ip: null,
-        },
-      })
-      .catch(() => {})
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'vault.create',
+      targetType: 'vault',
+      targetId: vault.id,
+      targetLabel: vault.label,
+      metadata: { hasPassword: !!vault.passwordHash },
+      ip,
+    })
 
     return success({
       id: vault.id,

@@ -13,9 +13,11 @@ vi.mock('@/lib/totp', () => ({
   verifyTotp: vi.fn(),
   generateRecoveryCodes: vi.fn(),
 }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { generateTotpSecret, getTotpUri, verifyTotp, generateRecoveryCodes } from '@/lib/totp'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -132,6 +134,14 @@ describe('POST /api/account/mfa', () => {
       expect(body.data.mfaTotp).toBe(true)
       expect(body.data.recoveryCodes).toEqual(['CODE1'])
       expect(await redisMock.get('mfa:setup:user-1')).toBeNull()
+      expect(writeAuditLog).toHaveBeenCalledWith({
+        actorId: expect.any(String),
+        actorUsername: expect.any(String),
+        action: 'mfa.totp_confirm',
+        targetType: 'user',
+        targetId: expect.any(String),
+        ip: undefined,
+      })
     })
   })
 
@@ -154,6 +164,15 @@ describe('POST /api/account/mfa', () => {
           mfaRecoveryCodes: null,
           mfaRecoveryCodesCreatedAt: null,
         },
+      })
+      expect(writeAuditLog).toHaveBeenCalledWith({
+        actorId: expect.any(String),
+        actorUsername: expect.any(String),
+        action: 'mfa.totp_disable',
+        targetType: 'user',
+        targetId: expect.any(String),
+        metadata: { hadOtherMfa: undefined },
+        ip: undefined,
       })
     })
   })
@@ -185,6 +204,14 @@ describe('POST /api/account/mfa', () => {
         }),
       )
       expect(res.status).toBe(200)
+      expect(writeAuditLog).toHaveBeenCalledWith({
+        actorId: expect.any(String),
+        actorUsername: expect.any(String),
+        action: 'mfa.email_enable',
+        targetType: 'user',
+        targetId: expect.any(String),
+        ip: undefined,
+      })
     })
   })
 
@@ -200,6 +227,15 @@ describe('POST /api/account/mfa', () => {
       expect(res.status).toBe(200)
       expect(prismaMock.passkeyCredential.deleteMany).toHaveBeenCalledWith({
         where: { userId: 'user-1' },
+      })
+      expect(writeAuditLog).toHaveBeenCalledWith({
+        actorId: expect.any(String),
+        actorUsername: expect.any(String),
+        action: 'mfa.passkey_remove',
+        targetType: 'user',
+        targetId: expect.any(String),
+        metadata: { allRemoved: true },
+        ip: undefined,
       })
     })
   })

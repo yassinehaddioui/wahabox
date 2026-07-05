@@ -8,10 +8,12 @@ import { UnauthorizedError } from '@/lib/errors'
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
 vi.mock('bcryptjs', () => ({ default: { compare: vi.fn(), hash: vi.fn() } }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import bcrypt from 'bcryptjs'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -81,6 +83,35 @@ describe('PATCH /api/vaults/[id]', () => {
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.data.label).toBe('Updated')
+  })
+
+  it('creates an audit log entry on update', async () => {
+    mockAuth()
+    vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
+    prismaMock.vault.findFirst.mockResolvedValue(createVault({ id: 'v1', label: 'Old' }))
+    prismaMock.vault.update.mockResolvedValue({
+      id: 'v1',
+      label: 'Updated',
+      passwordHash: null,
+      createdAt: new Date('2025-01-01T00:00:00.000Z'),
+    })
+    await PATCH(
+      createNextRequest('http://localhost/api/vaults/v1', {
+        method: 'PATCH',
+        body: { label: 'Updated', csrfToken: 'v' },
+      }),
+      createRouteContext({ id: 'v1' }),
+    )
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: 'user-1',
+      actorUsername: 'testuser',
+      action: 'vault.update',
+      targetType: 'vault',
+      targetId: 'v1',
+      targetLabel: 'Updated',
+      metadata: { changedFields: ['label'], hasPassword: false },
+      ip: undefined,
+    })
   })
 
   it('checks CSRF with edit-vault tag', async () => {
@@ -365,17 +396,14 @@ describe('DELETE /api/vaults/[id]', () => {
       createRouteContext({ id: 'v1' }),
     )
     await vi.waitFor(() => {
-      expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
-        data: {
-          actorId: 'user-1',
-          actorUsername: 'testuser',
-          action: 'vault.delete',
-          targetType: 'vault',
-          targetId: 'v1',
-          targetLabel: 'My Vault',
-          metadata: expect.any(Object) as unknown,
-          ip: null,
-        },
+      expect(writeAuditLog).toHaveBeenCalledWith({
+        actorId: 'user-1',
+        actorUsername: 'testuser',
+        action: 'vault.delete',
+        targetType: 'vault',
+        targetId: 'v1',
+        targetLabel: 'My Vault',
+        ip: undefined,
       })
     })
   })

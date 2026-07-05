@@ -7,9 +7,11 @@ import { UnauthorizedError } from '@/lib/errors'
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -78,6 +80,16 @@ describe('PATCH /api/boxes/[id]', () => {
     expect(res.status).toBe(200)
     expect(body.data.hasPassword).toBe(false)
     expect(body.data.passwordHash).toBeUndefined()
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'box.update',
+      targetType: 'box',
+      targetId: expect.any(String),
+      targetLabel: expect.any(String),
+      metadata: { changedFields: expect.any(Array) },
+      ip: undefined,
+    })
   })
 
   it('rotates slug', async () => {
@@ -149,5 +161,14 @@ describe('DELETE /api/boxes/[id]', () => {
     )
     expect((await res.json()).data.id).toBe('b1')
     expect(prismaMock.poBox.delete).toHaveBeenCalledWith({ where: { id: 'b1' } })
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'box.delete',
+      targetType: 'box',
+      targetId: expect.any(String),
+      targetLabel: expect.any(String),
+      ip: undefined,
+    })
   })
 })

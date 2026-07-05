@@ -5,6 +5,7 @@ import { parseBody, loginSchema } from '@/lib/validation'
 import { UnauthorizedError, BadRequestError, RateLimitError, MfaRequiredError, SuspendedError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 import { createSession, setSessionCookie } from '@/lib/session'
 import { checkAuthRateLimit, recordAuthFailure, clearFailures } from '@/lib/rate-limit'
 import { getRedis } from '@/lib/redis'
@@ -144,6 +145,16 @@ export async function POST(request: NextRequest) {
 
     const token = await createSession(user.id, user.username)
     await setSessionCookie(token)
+
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'auth.login',
+      targetType: 'user',
+      targetId: user.id,
+      ip: ip === 'unknown' ? undefined : ip,
+    })
 
     const res = success({
       encPrivPw: b64(user.encPrivPw),

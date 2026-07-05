@@ -7,9 +7,11 @@ import { UnauthorizedError } from '@/lib/errors'
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: vi.fn() }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -112,6 +114,15 @@ describe('POST /api/boxes', () => {
     const body = await res.json()
     expect(res.status).toBe(201)
     expect(body.data.slug).toBe('generated')
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'box.create',
+      targetType: 'box',
+      targetId: expect.any(String),
+      targetLabel: expect.any(String),
+      ip: undefined,
+    })
   })
 
   it('creates box with greeting and password', async () => {

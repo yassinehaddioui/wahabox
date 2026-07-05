@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth'
 import { BadRequestError } from '@/lib/errors'
 import { generateRegOptions, verifyRegResponse } from '@/lib/webauthn'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -62,6 +63,17 @@ export async function POST(request: NextRequest) {
       await prisma.user.update({
         where: { id: user.id },
         data: { mfaPasskey: true },
+      })
+
+      // Fire-and-forget audit log
+      writeAuditLog({
+        actorId: user.id,
+        actorUsername: user.username,
+        action: 'mfa.passkey_register',
+        targetType: 'user',
+        targetId: user.id,
+        metadata: { deviceName },
+        ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
       })
 
       return success({ registered: true, deviceName })

@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth'
 import { BadRequestError, NotFoundError, InvalidPasswordError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import prisma from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -59,6 +59,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       select: { id: true, label: true, passwordHash: true, createdAt: true },
     })
 
+    // Fire-and-forget audit log — must not fail the mutation
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'vault.update',
+      targetType: 'vault',
+      targetId: updated.id,
+      targetLabel: updated.label,
+      metadata: {
+        changedFields: Object.keys(data),
+        hasPassword: !!updated.passwordHash,
+      },
+      ip,
+    })
+
     return success({
       id: updated.id,
       label: updated.label,
@@ -92,20 +108,16 @@ export async function DELETE(
     await prisma.vault.delete({ where: { id } })
 
     // Fire-and-forget audit log — must not fail the mutation
-    prisma.auditLog
-      .create({
-        data: {
-          actorId: user.id,
-          actorUsername: user.username,
-          action: 'vault.delete',
-          targetType: 'vault',
-          targetId: vault.id,
-          targetLabel: vault.label,
-          metadata: Prisma.JsonNull,
-          ip: null,
-        },
-      })
-      .catch(() => {})
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'vault.delete',
+      targetType: 'vault',
+      targetId: vault.id,
+      targetLabel: vault.label,
+      ip,
+    })
 
     return success({ id })
   } catch (err) {

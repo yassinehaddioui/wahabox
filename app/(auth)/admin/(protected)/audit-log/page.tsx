@@ -46,28 +46,86 @@ const ACTION_LABELS: Record<string, string> = {
   'admin.promote': 'Promoted user',
   'admin.demote': 'Demoted user',
   'admin.force_logout': 'Force logged out user',
+  'admin.suspend': 'Suspended user',
+  'admin.unsuspend': 'Unsuspended user',
   'admin.box_deactivate': 'Deactivated box',
   'admin.box_activate': 'Activated box',
   'admin.box_delete': 'Deleted box',
+  'vault.create': 'Created vault',
+  'vault.update': 'Updated vault',
+  'vault.delete': 'Deleted vault',
+  'vault_item.create': 'Created vault item',
+  'vault_item.update': 'Updated vault item',
+  'vault_item.delete': 'Deleted vault item',
+  'auth.signup': 'Account created',
+  'auth.login': 'Logged in',
+  'auth.logout': 'Logged out',
+  'auth.password_change': 'Changed password',
+  'box.create': 'Created box',
+  'box.update': 'Updated box',
+  'box.delete': 'Deleted box',
+  'account.email_set': 'Set email',
+  'account.email_remove': 'Removed email',
+  'account.notifications_toggle': 'Toggled notifications',
+  'mfa.email_enable': 'Enabled email 2FA',
+  'mfa.email_disable': 'Disabled email 2FA',
+  'mfa.totp_confirm': 'Enabled TOTP 2FA',
+  'mfa.totp_disable': 'Disabled TOTP 2FA',
+  'mfa.passkey_register': 'Registered passkey',
+  'mfa.passkey_remove': 'Removed passkey',
+  'mfa.recovery_codes_regenerate': 'Regenerated recovery codes',
 }
 
 function getActionBadge(
   action: string,
-): { variant: 'default' | 'destructive' | 'secondary'; className?: string } {
+): { variant: 'default' | 'destructive' | 'secondary' | 'outline'; className?: string } {
   switch (action) {
+    // Success/green: creation, promote, activate, unsuspend
     case 'admin.promote':
+    case 'admin.unsuspend':
     case 'admin.box_activate':
+    case 'vault.create':
+    case 'vault_item.create':
+    case 'auth.signup':
+    case 'box.create':
+    case 'account.email_set':
+    case 'mfa.email_enable':
+    case 'mfa.totp_confirm':
+    case 'mfa.passkey_register':
       return { variant: 'default' }
+    // Destructive/red: deletion, demote, suspend, force_logout
     case 'admin.demote':
-    case 'admin.box_delete':
-      return { variant: 'destructive' }
+    case 'admin.suspend':
     case 'admin.force_logout':
-      return { variant: 'secondary' }
+    case 'admin.box_delete':
+    case 'vault.delete':
+    case 'vault_item.delete':
+    case 'auth.logout':
+    case 'box.delete':
+    case 'account.email_remove':
+    case 'mfa.email_disable':
+    case 'mfa.totp_disable':
+    case 'mfa.passkey_remove':
+      return { variant: 'destructive' }
+    // Warning/amber: deactivate
     case 'admin.box_deactivate':
       return {
         variant: 'secondary',
         className:
           'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400',
+      }
+    // Info/blue: updates
+    case 'vault.update':
+    case 'vault_item.update':
+    case 'auth.login':
+    case 'auth.password_change':
+    case 'box.update':
+    case 'account.notifications_toggle':
+    case 'mfa.recovery_codes_regenerate':
+      return {
+        variant: 'outline',
+        className:
+          'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400',
       }
     default:
       return { variant: 'secondary' }
@@ -202,9 +260,34 @@ export default function AuditLogPage() {
           <SelectItem value="admin.promote">Promoted user</SelectItem>
           <SelectItem value="admin.demote">Demoted user</SelectItem>
           <SelectItem value="admin.force_logout">Force logged out user</SelectItem>
+          <SelectItem value="admin.suspend">Suspended user</SelectItem>
+          <SelectItem value="admin.unsuspend">Unsuspended user</SelectItem>
           <SelectItem value="admin.box_deactivate">Deactivated box</SelectItem>
           <SelectItem value="admin.box_activate">Activated box</SelectItem>
           <SelectItem value="admin.box_delete">Deleted box</SelectItem>
+          <SelectItem value="vault.create">Created vault</SelectItem>
+          <SelectItem value="vault.update">Updated vault</SelectItem>
+          <SelectItem value="vault.delete">Deleted vault</SelectItem>
+          <SelectItem value="vault_item.create">Created vault item</SelectItem>
+          <SelectItem value="vault_item.update">Updated vault item</SelectItem>
+          <SelectItem value="vault_item.delete">Deleted vault item</SelectItem>
+          <SelectItem value="auth.signup">Account created</SelectItem>
+          <SelectItem value="auth.login">Logged in</SelectItem>
+          <SelectItem value="auth.logout">Logged out</SelectItem>
+          <SelectItem value="auth.password_change">Changed password</SelectItem>
+          <SelectItem value="box.create">Created box</SelectItem>
+          <SelectItem value="box.update">Updated box</SelectItem>
+          <SelectItem value="box.delete">Deleted box</SelectItem>
+          <SelectItem value="account.email_set">Set email</SelectItem>
+          <SelectItem value="account.email_remove">Removed email</SelectItem>
+          <SelectItem value="account.notifications_toggle">Toggled notifications</SelectItem>
+          <SelectItem value="mfa.email_enable">Enabled email 2FA</SelectItem>
+          <SelectItem value="mfa.email_disable">Disabled email 2FA</SelectItem>
+          <SelectItem value="mfa.totp_confirm">Enabled TOTP 2FA</SelectItem>
+          <SelectItem value="mfa.totp_disable">Disabled TOTP 2FA</SelectItem>
+          <SelectItem value="mfa.passkey_register">Registered passkey</SelectItem>
+          <SelectItem value="mfa.passkey_remove">Removed passkey</SelectItem>
+          <SelectItem value="mfa.recovery_codes_regenerate">Regenerated recovery codes</SelectItem>
         </SelectContent>
       </Select>
 
@@ -246,8 +329,21 @@ export default function AuditLogPage() {
                         {entry.targetLabel || entry.targetId}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={entry.targetType === 'user' ? 'secondary' : 'outline'}>
-                          {entry.targetType === 'user' ? 'User' : 'Box'}
+                        <Badge variant={
+                          entry.targetType === 'user' ? 'secondary' :
+                          entry.targetType === 'box' ? 'outline' :
+                          entry.targetType === 'vault' ? 'default' :
+                          'secondary'
+                        }>
+                          {entry.targetType === 'user'
+                            ? 'User'
+                            : entry.targetType === 'box'
+                            ? 'Box'
+                            : entry.targetType === 'vault'
+                            ? 'Vault'
+                            : entry.targetType === 'vault_item'
+                            ? 'Vault Item'
+                            : entry.targetType}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">

@@ -101,9 +101,34 @@ describe('writeAuditLog', () => {
       'admin.promote',
       'admin.demote',
       'admin.force_logout',
+      'admin.suspend',
+      'admin.unsuspend',
       'admin.box_deactivate',
       'admin.box_activate',
       'admin.box_delete',
+      'vault.create',
+      'vault.update',
+      'vault.delete',
+      'vault_item.create',
+      'vault_item.update',
+      'vault_item.delete',
+      'auth.signup',
+      'auth.login',
+      'auth.logout',
+      'auth.password_change',
+      'box.create',
+      'box.update',
+      'box.delete',
+      'account.email_set',
+      'account.email_remove',
+      'account.notifications_toggle',
+      'mfa.email_enable',
+      'mfa.email_disable',
+      'mfa.totp_confirm',
+      'mfa.totp_disable',
+      'mfa.passkey_register',
+      'mfa.passkey_remove',
+      'mfa.recovery_codes_regenerate',
     ] as const
 
     for (const action of actions) {
@@ -112,8 +137,14 @@ describe('writeAuditLog', () => {
         actorId: 'admin-1',
         actorUsername: 'admin',
         action,
-        targetType: 'user',
-        targetId: 'user-2',
+        targetType: action.startsWith('admin.') || action.startsWith('auth.') || action.startsWith('account.') || action.startsWith('mfa.')
+        ? 'user'
+        : action.includes('item')
+        ? 'vault_item'
+        : action.startsWith('box.')
+        ? 'box'
+        : 'vault',
+        targetId: 'target-1',
       })
 
       expect(mockPrismaAuditLogCreate).toHaveBeenCalledTimes(1)

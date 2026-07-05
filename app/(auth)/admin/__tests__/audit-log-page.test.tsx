@@ -156,9 +156,9 @@ describe('AuditLogPage', () => {
       const deactivateBadge = screen.getByText('Deactivated box')
       expect(deactivateBadge.className).toMatch(/amber/)
 
-      // admin.force_logout → secondary variant
+      // admin.force_logout → destructive variant
       const logoutBadge = screen.getByText('Force logged out user')
-      expect(logoutBadge).toHaveClass('bg-secondary')
+      expect(logoutBadge).toHaveClass('bg-destructive/10')
     })
   })
 

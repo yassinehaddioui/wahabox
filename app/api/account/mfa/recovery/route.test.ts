@@ -7,9 +7,11 @@ import { UnauthorizedError } from '@/lib/errors'
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/totp', () => ({ generateRecoveryCodes: vi.fn() }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { generateRecoveryCodes } from '@/lib/totp'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -47,5 +49,13 @@ describe('POST /api/account/mfa/recovery', () => {
     )
     const body = await res.json()
     expect(body.data.recoveryCodes).toEqual(['CODE1'])
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'mfa.recovery_codes_regenerate',
+      targetType: 'user',
+      targetId: expect.any(String),
+      ip: undefined,
+    })
   })
 })

@@ -7,9 +7,11 @@ import { UnauthorizedError } from '@/lib/errors'
 
 vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
 vi.mock('@/lib/webauthn', () => ({ generateRegOptions: vi.fn(), verifyRegResponse: vi.fn() }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 import { getAuthUser } from '@/lib/auth'
 import { generateRegOptions, verifyRegResponse } from '@/lib/webauthn'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function mockAuth(): void {
   vi.mocked(getAuthUser).mockResolvedValue({ id: 'user-1', username: 'testuser', role: 'user' })
@@ -104,6 +106,15 @@ describe('POST /api/account/mfa/passkeys', () => {
     expect(body.data.registered).toBe(true)
     expect(body.data.deviceName).toBe('Unknown device')
     expect(prismaMock.passkeyCredential.create).toHaveBeenCalled()
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: expect.any(String),
+      actorUsername: expect.any(String),
+      action: 'mfa.passkey_register',
+      targetType: 'user',
+      targetId: expect.any(String),
+      metadata: { deviceName: expect.any(String) },
+      ip: undefined,
+    })
   })
 
   it('returns 400 for unknown action', async () => {

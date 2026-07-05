@@ -5,7 +5,7 @@ import { NotFoundError, BadRequestError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { parseBody, updateVaultItemSchema, deleteVaultItemSchema } from '@/lib/validation'
 import prisma from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 function b64(u: Uint8Array): string {
   return Buffer.from(u).toString('base64')
@@ -52,19 +52,16 @@ export async function PATCH(
     })
 
     // Fire-and-forget audit log — must not fail the mutation
-    prisma.auditLog
-      .create({
-        data: {
-          actorId: user.id,
-          actorUsername: user.username,
-          action: 'vault_item.update',
-          targetType: 'vault_item',
-          targetId: itemId,
-          metadata: Prisma.JsonNull,
-          ip: null,
-        },
-      })
-      .catch(() => {})
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'vault_item.update',
+      targetType: 'vault_item',
+      targetId: itemId,
+      metadata: { changedFields: Object.keys(data) },
+      ip,
+    })
 
     return success({
       id: updated.id,
@@ -100,19 +97,15 @@ export async function DELETE(
     await prisma.vaultItem.delete({ where: { id: itemId } })
 
     // Fire-and-forget audit log — must not fail the mutation
-    prisma.auditLog
-      .create({
-        data: {
-          actorId: user.id,
-          actorUsername: user.username,
-          action: 'vault_item.delete',
-          targetType: 'vault_item',
-          targetId: itemId,
-          metadata: Prisma.JsonNull,
-          ip: null,
-        },
-      })
-      .catch(() => {})
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'vault_item.delete',
+      targetType: 'vault_item',
+      targetId: itemId,
+      ip,
+    })
 
     return success({ id: itemId })
   } catch (err) {

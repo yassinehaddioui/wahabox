@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createNextRequest } from '@/test/helpers/request'
 import '@/test/helpers/prisma-mock'
 import { POST } from './route'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 const { mockVerifyCsrf, mockCheckTurnstile, mockCheckIpRate, mockCheckGlobalRate } = vi.hoisted(
   () => ({
@@ -24,6 +25,7 @@ vi.mock('@/lib/rate-limit', () => ({
   checkIpRate: mockCheckIpRate,
   checkGlobalRate: mockCheckGlobalRate,
 }))
+vi.mock('@/lib/admin-audit', () => ({ writeAuditLog: vi.fn() }))
 
 const validBody = {
   username: 'newuser',
@@ -64,6 +66,14 @@ describe('POST /api/auth/signup', () => {
     expect(res.status).toBe(201)
     expect(body.success).toBe(true)
     expect(body.data.username).toBe('newuser')
+    expect(writeAuditLog).toHaveBeenCalledWith({
+      actorId: 'newuser',
+      actorUsername: 'newuser',
+      action: 'auth.signup',
+      targetType: 'user',
+      targetId: 'newuser',
+      ip: undefined,
+    })
     expect(prismaMock.user.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ username: 'newuser' }),
     })

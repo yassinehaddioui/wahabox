@@ -8,6 +8,7 @@ import { encryptEmail, decryptEmail } from '@/lib/email-crypto'
 import { sendVerificationEmail } from '@/lib/email'
 import { getRedis } from '@/lib/redis'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 import { checkIpRate, checkUserRate, checkGlobalRate } from '@/lib/rate-limit'
 
 function maskEmail(email: string): string {
@@ -103,6 +104,16 @@ export async function PUT(request: NextRequest) {
         emailKeyVersion: keyVersion,
         emailVerified: false,
       },
+    })
+
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'account.email_set',
+      targetType: 'user',
+      targetId: user.id,
+      ip: ip === 'unknown' ? undefined : ip,
     })
 
     await redis.set(`verify:${tokenHash}`, user.id, 'EX', 3600)
@@ -212,6 +223,16 @@ export async function DELETE(request: NextRequest) {
       },
     })
 
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'account.email_remove',
+      targetType: 'user',
+      targetId: user.id,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+    })
+
     return success({ message: 'Email removed' })
   } catch (err) {
     return error(err)
@@ -236,6 +257,17 @@ export async function PATCH(request: NextRequest) {
     await prisma.user.update({
       where: { id: user.id },
       data: { notificationsEnabled },
+    })
+
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'account.notifications_toggle',
+      targetType: 'user',
+      targetId: user.id,
+      metadata: { notificationsEnabled },
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
     })
 
     return success({ notificationsEnabled })
