@@ -236,7 +236,7 @@ Server-side PoW (`lib/pow.ts`) is fully implemented but never triggered. The dro
 - Server-side difficulty adjustment based on load
 
 ### 22. Honeypot Field
-**Priority:** Low | **Effort:** Trivial | **Status:** 🟡 Wired but unused
+**Priority:** Low | **Effort:** Trivial | **Status:** ✅ Implemented
 
 The `submitMessageSchema` defines a `honeypot` field (rejects if non-empty), but the drop form never renders a hidden honeypot input. Trivial to add — renders a visually hidden field that bots will fill but humans won't.
 
@@ -246,7 +246,7 @@ The `submitMessageSchema` defines a `honeypot` field (rejects if non-empty), but
 
 | Effort | Features |
 |--------|----------|
-| **Trivial** | Honeypot field, Dark mode toggle |
+| **Trivial** | ~~Honeypot field~~ ✅, Dark mode toggle |
 | **Small** | Read receipts, Webhook notifications, Message templates, CI/CD, Message auto-destruct, PoW activation |
 | **Medium** | Bulk operations, Export/backup, API keys, Real-time notifications, Custom forms, PWA, Analytics, Message threading |
 | **Large** | Reply system, File attachments, Box sharing, i18n |
