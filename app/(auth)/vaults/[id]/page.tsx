@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Trash2, Plus, Lock } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Trash2, Plus, Lock, Search } from 'lucide-react'
 import { Markdown } from '@/components/ui/markdown'
 import { MdEditor } from '@/components/ui/md-editor'
 import { Switch } from '@/components/ui/switch'
@@ -66,6 +66,7 @@ export default function VaultDetailPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [expandedSet, setExpandedSet] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
   const [needsPassword, setNeedsPassword] = useState(false)
   const [vaultPassword, setVaultPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
@@ -79,6 +80,16 @@ export default function VaultDetailPage() {
       return false
     }
   })
+
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return items
+    const q = searchQuery.trim().toLowerCase()
+    return items.filter((item) => {
+      const decrypted = decryptedMap.get(item.id)
+      if (!decrypted) return false
+      return decrypted.title.toLowerCase().includes(q) || decrypted.body.toLowerCase().includes(q)
+    })
+  }, [items, decryptedMap, searchQuery])
 
   useEffect(() => {
     async function load() {
@@ -126,6 +137,7 @@ export default function VaultDetailPage() {
         if (itemsData.success) {
           const fetchedItems: VaultItem[] = itemsData.data
           setItems(fetchedItems)
+          if (autoExpand) setExpandedSet(new Set(fetchedItems.map((i) => i.id)))
           setUnlocked(true)
           // Auto-decrypt all items on load
           const { crypto } = await import('@/lib/crypto')
@@ -155,15 +167,6 @@ export default function VaultDetailPage() {
     }
     load()
   }, [id])
-
-  useEffect(() => {
-    if (items.length === 0) return
-    if (autoExpand) {
-      setExpandedSet(new Set(items.map((i) => i.id)))
-    } else {
-      setExpandedSet(new Set())
-    }
-  }, [autoExpand, items])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -200,6 +203,7 @@ export default function VaultDetailPage() {
         setNewTitle('')
         setNewBody('')
         setItems((prev) => [createdItem, ...prev])
+        if (autoExpand) setExpandedSet((prev) => new Set(prev).add(createdItem.id))
         setDecryptedMap((prev) => new Map(prev).set(createdItem.id, {
           title,
           body: newBody,
@@ -229,6 +233,11 @@ export default function VaultDetailPage() {
       try {
         localStorage.setItem(autoExpandKey, String(next))
       } catch {}
+      if (next) {
+        setExpandedSet(new Set(items.map((i) => i.id)))
+      } else {
+        setExpandedSet(new Set())
+      }
       return next
     })
   }
@@ -358,6 +367,7 @@ export default function VaultDetailPage() {
 
         const fetchedItems: VaultItem[] = data.data
         setItems(fetchedItems)
+        if (autoExpand) setExpandedSet(new Set(fetchedItems.map((i) => i.id)))
 
         const { crypto } = await import('@/lib/crypto')
         await crypto.ready
@@ -458,7 +468,9 @@ export default function VaultDetailPage() {
           <h1 className="text-xl font-semibold tracking-tight">{vaultLabel}</h1>
           {!loading && (
             <p className="text-sm text-muted-foreground">
-              {items.length} item{items.length !== 1 ? 's' : ''}
+              {searchQuery.trim()
+                ? `Showing ${filteredItems.length} of ${items.length} item${items.length !== 1 ? 's' : ''}`
+                : `${items.length} item${items.length !== 1 ? 's' : ''}`}
             </p>
           )}
         </div>
@@ -475,6 +487,17 @@ export default function VaultDetailPage() {
         </div>
       </div>
 
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search items..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+          aria-label="Search items"
+        />
+      </div>
+
       {loading ? (
         <div className="space-y-3">
           <Skeleton className="h-16 w-full" />
@@ -487,9 +510,15 @@ export default function VaultDetailPage() {
             No items yet. Create one below.
           </CardContent>
         </Card>
+      ) : searchQuery.trim() && filteredItems.length === 0 ? (
+        <Card className="bg-canvas-soft">
+          <CardContent className="py-16 text-center text-sm text-muted-foreground">
+            No items match your search.
+          </CardContent>
+        </Card>
       ) : (
         <div className="max-h-[600px] overflow-y-auto space-y-3 rounded-lg border p-3">
-          {items.map((item) => {
+          {filteredItems.map((item) => {
             const decrypted = decryptedMap.get(item.id)
             const isEditing = editItem?.id === item.id
 

@@ -353,4 +353,116 @@ describe('MessagesPage', () => {
     fireEvent.click(backButton!)
     expect(mockBack).toHaveBeenCalled()
   })
+
+  // --- search / filter ---
+  it('renders search input', async () => {
+    mockFetch(twoMessages)
+    render(React.createElement(MessagesPage))
+    await waitFor(() => {
+      expect(screen.getByText('2 messages')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByLabelText('Search messages')
+    expect(searchInput).toBeInTheDocument()
+    expect(searchInput).toHaveAttribute('placeholder', 'Search messages...')
+  })
+
+  it('filters messages by decrypted content', async () => {
+    const msgA = mockDecryptedMessage()
+    const msgB = mockMessage({ id: 'msg-4', plaintext: 'Another note' })
+    const msgC = mockMessage({ id: 'msg-5' })
+    mockFetch({
+      json: () => ({
+        success: true,
+        data: [msgA, msgB, msgC],
+      }),
+      ok: true,
+    })
+    render(React.createElement(MessagesPage))
+    await waitFor(() => {
+      expect(screen.getByText('3 messages')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByLabelText('Search messages')
+    fireEvent.change(searchInput, { target: { value: 'Hello' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Showing 1 of 3 messages')).toBeInTheDocument()
+      expect(screen.getByTestId('markdown')).toBeInTheDocument()
+    })
+  })
+
+  it('shows no results message when search has no matches', async () => {
+    const msg = mockDecryptedMessage()
+    mockFetch({
+      json: () => ({
+        success: true,
+        data: [msg],
+      }),
+      ok: true,
+    })
+    render(React.createElement(MessagesPage))
+    await waitFor(() => {
+      expect(screen.getByText('1 message')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByLabelText('Search messages')
+    fireEvent.change(searchInput, { target: { value: 'nonexistent' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('No messages match your search.')).toBeInTheDocument()
+    })
+  })
+
+  it('search is case-insensitive', async () => {
+    const msg = mockDecryptedMessage() // plaintext: 'Hello'
+    mockFetch({
+      json: () => ({
+        success: true,
+        data: [msg],
+      }),
+      ok: true,
+    })
+    render(React.createElement(MessagesPage))
+    await waitFor(() => {
+      expect(screen.getByText('1 message')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByLabelText('Search messages')
+
+    // uppercase
+    fireEvent.change(searchInput, { target: { value: 'HELLO' } })
+    await waitFor(() => {
+      expect(screen.getByText('Showing 1 of 1 message')).toBeInTheDocument()
+    })
+
+    // lowercase
+    fireEvent.change(searchInput, { target: { value: 'hello' } })
+    await waitFor(() => {
+      expect(screen.getByText('Showing 1 of 1 message')).toBeInTheDocument()
+    })
+  })
+
+  it('excludes undecrypted messages from search', async () => {
+    const decrypted = mockDecryptedMessage()
+    const encrypted = mockMessage({ id: 'msg-6' }) // no plaintext
+    mockFetch({
+      json: () => ({
+        success: true,
+        data: [decrypted, encrypted],
+      }),
+      ok: true,
+    })
+    render(React.createElement(MessagesPage))
+    await waitFor(() => {
+      expect(screen.getByText('2 messages')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByLabelText('Search messages')
+    fireEvent.change(searchInput, { target: { value: 'Hello' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Showing 1 of 2 messages')).toBeInTheDocument()
+    })
+  })
 })

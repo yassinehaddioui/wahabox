@@ -691,6 +691,108 @@ describe('VaultDetailPage', () => {
       expect(screen.getByText('Vault password required')).toBeInTheDocument()
     })
   })
+
+  it('renders search input', async () => {
+    mockFetch([
+      { json: () => ({ success: true, data: vaultsListData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+    })
+    expect(screen.getByLabelText('Search items')).toBeInTheDocument()
+  })
+
+  it('filters items by title content', async () => {
+    mockDecryptVaultItem
+      .mockReturnValueOnce({ title: 'Alpha Note', body: '# Content Alpha' })
+      .mockReturnValueOnce({ title: 'Beta Report', body: '# Content Beta' })
+    mockFetch([
+      { json: () => ({ success: true, data: vaultsListData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Note')).toBeInTheDocument()
+      expect(screen.getByText('Beta Report')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByLabelText('Search items')
+    fireEvent.change(searchInput, { target: { value: 'Alpha' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Note')).toBeInTheDocument()
+      expect(screen.queryByText('Beta Report')).not.toBeInTheDocument()
+      expect(screen.getByText('Showing 1 of 2 items')).toBeInTheDocument()
+    })
+  })
+
+  it('filters items by body content', async () => {
+    mockDecryptVaultItem
+      .mockReturnValueOnce({ title: 'Alpha Note', body: '# Content Alpha' })
+      .mockReturnValueOnce({ title: 'Beta Report', body: '# Content Beta' })
+    mockFetch([
+      { json: () => ({ success: true, data: vaultsListData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Note')).toBeInTheDocument()
+      expect(screen.getByText('Beta Report')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByLabelText('Search items')
+    fireEvent.change(searchInput, { target: { value: 'Content Beta' } })
+
+    await waitFor(() => {
+      expect(screen.queryByText('Alpha Note')).not.toBeInTheDocument()
+      expect(screen.getByText('Beta Report')).toBeInTheDocument()
+    })
+  })
+
+  it('shows no results message when search has no matches', async () => {
+    mockDecryptVaultItem
+      .mockReturnValueOnce({ title: 'Alpha Note', body: '# Content Alpha' })
+      .mockReturnValueOnce({ title: 'Beta Report', body: '# Content Beta' })
+    mockFetch([
+      { json: () => ({ success: true, data: vaultsListData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Note')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByLabelText('Search items')
+    fireEvent.change(searchInput, { target: { value: 'zzzNOTFOUNDzzz' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('No items match your search.')).toBeInTheDocument()
+    })
+  })
+
+  it('search is case-insensitive', async () => {
+    mockDecryptVaultItem
+      .mockReturnValueOnce({ title: 'Alpha Note', body: '# Content Alpha' })
+      .mockReturnValueOnce({ title: 'Beta Report', body: '# Content Beta' })
+    mockFetch([
+      { json: () => ({ success: true, data: vaultsListData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Note')).toBeInTheDocument()
+    })
+
+    const searchInput = screen.getByLabelText('Search items')
+    fireEvent.change(searchInput, { target: { value: 'alpha' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Note')).toBeInTheDocument()
+      expect(screen.queryByText('Beta Report')).not.toBeInTheDocument()
+    })
+  })
 })
 
 const mockLocalStorage: Record<string, string> = {}

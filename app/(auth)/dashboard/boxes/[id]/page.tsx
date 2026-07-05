@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,10 +13,11 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, Download, Eye, EyeOff, Trash2 } from 'lucide-react'
+import { ArrowLeft, Download, Eye, EyeOff, Search, Trash2 } from 'lucide-react'
 import { Markdown } from '@/components/ui/markdown'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { getSessionKeys } from '@/lib/session-keys'
@@ -57,6 +58,7 @@ export default function MessagesPage() {
     return false
   })
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   function toggleAutoDecrypt() {
     setAutoDecrypt((prev) => {
@@ -194,6 +196,12 @@ export default function MessagesPage() {
 
   const unreadCount = messages.filter((m) => !m.readAt).length
 
+  const filteredMessages = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return messages
+    return messages.filter((msg) => msg.plaintext?.toLowerCase().includes(q))
+  }, [messages, searchQuery])
+
   return (
     <div className="w-full space-y-6">
       <div className="flex items-center gap-3">
@@ -204,8 +212,12 @@ export default function MessagesPage() {
           <h1 className="text-xl font-semibold tracking-tight">Messages</h1>
           {!loading && (
             <p className="text-sm text-muted-foreground">
-              {messages.length} message{messages.length !== 1 ? 's' : ''}
-              {unreadCount > 0 && <span className="ml-1 text-foreground">({unreadCount} new)</span>}
+              {searchQuery.trim()
+                ? `Showing ${filteredMessages.length} of ${messages.length} message${messages.length !== 1 ? 's' : ''}`
+                : `${messages.length} message${messages.length !== 1 ? 's' : ''}`}
+              {!searchQuery.trim() && unreadCount > 0 && (
+                <span className="ml-1 text-foreground">({unreadCount} new)</span>
+              )}
             </p>
           )}
         </div>
@@ -227,6 +239,17 @@ export default function MessagesPage() {
         </div>
       </div>
 
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search messages..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+          aria-label="Search messages"
+        />
+      </div>
+
       {loading ? (
         <div className="space-y-3">
           <Skeleton className="h-28 w-full" />
@@ -239,8 +262,14 @@ export default function MessagesPage() {
             No messages yet.
           </CardContent>
         </Card>
+      ) : searchQuery.trim() && filteredMessages.length === 0 ? (
+        <Card className="bg-canvas-soft">
+          <CardContent className="py-16 text-center text-sm text-muted-foreground">
+            No messages match your search.
+          </CardContent>
+        </Card>
       ) : (
-        messages.map((msg) => (
+        filteredMessages.map((msg) => (
           <Card key={msg.id} className={cn(!msg.readAt && 'ring-2 ring-amber-400')}>
             <CardHeader className="bg-muted -mt-(--card-spacing) py-2.5">
               <CardTitle className="text-xs font-mono font-normal text-muted-foreground">
