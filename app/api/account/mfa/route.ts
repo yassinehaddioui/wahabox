@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
           action: 'mfa.totp_disable',
           targetType: 'user',
           targetId: authUser.id,
-          metadata: { hadOtherMfa: hasOtherMfa },
+          metadata: { hadOtherMfa: hasOtherMfa ?? false },
           ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
         })
         return success({ mfaTotp: false })

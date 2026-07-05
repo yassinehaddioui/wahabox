@@ -171,7 +171,7 @@ describe('POST /api/account/mfa', () => {
         action: 'mfa.totp_disable',
         targetType: 'user',
         targetId: expect.any(String),
-        metadata: { hadOtherMfa: undefined },
+        metadata: { hadOtherMfa: false },
         ip: undefined,
       })
     })
