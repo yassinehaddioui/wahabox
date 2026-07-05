@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Trash2, Plus, Lock } from 'lucide-react'
 import { Markdown } from '@/components/ui/markdown'
 import { MdEditor } from '@/components/ui/md-editor'
+import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { getSessionKeys } from '@/lib/session-keys'
 import {
@@ -70,6 +71,14 @@ export default function VaultDetailPage() {
   const [passwordError, setPasswordError] = useState('')
   const [vaultHasPassword, setVaultHasPassword] = useState(false)
   const [unlocked, setUnlocked] = useState(false)
+  const autoExpandKey = `vault:${id}:auto-expand`
+  const [autoExpand, setAutoExpand] = useState(() => {
+    try {
+      return typeof window !== 'undefined' && localStorage.getItem(autoExpandKey) === 'true'
+    } catch {
+      return false
+    }
+  })
 
   useEffect(() => {
     async function load() {
@@ -147,6 +156,15 @@ export default function VaultDetailPage() {
     load()
   }, [id])
 
+  useEffect(() => {
+    if (items.length === 0) return
+    if (autoExpand) {
+      setExpandedSet(new Set(items.map((i) => i.id)))
+    } else {
+      setExpandedSet(new Set())
+    }
+  }, [autoExpand, items])
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setCreating(true)
@@ -201,6 +219,16 @@ export default function VaultDetailPage() {
       const next = new Set(prev)
       if (next.has(item.id)) next.delete(item.id)
       else next.add(item.id)
+      return next
+    })
+  }
+
+  function toggleAutoExpand() {
+    setAutoExpand((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem(autoExpandKey, String(next))
+      } catch {}
       return next
     })
   }
@@ -433,6 +461,17 @@ export default function VaultDetailPage() {
               {items.length} item{items.length !== 1 ? 's' : ''}
             </p>
           )}
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <Switch
+            id="auto-expand"
+            checked={autoExpand}
+            onCheckedChange={toggleAutoExpand}
+            aria-label="Auto-expand all entries"
+          />
+          <Label htmlFor="auto-expand" className="text-xs text-muted-foreground cursor-pointer">
+            Auto-expand
+          </Label>
         </div>
       </div>
 

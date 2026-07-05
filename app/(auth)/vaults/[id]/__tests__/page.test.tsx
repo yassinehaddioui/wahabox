@@ -692,3 +692,210 @@ describe('VaultDetailPage', () => {
     })
   })
 })
+
+const mockLocalStorage: Record<string, string> = {}
+const localStorageMock = {
+  getItem: (key: string) => mockLocalStorage[key] ?? null,
+  setItem: (key: string, value: string) => { mockLocalStorage[key] = value },
+  removeItem: (key: string) => { delete mockLocalStorage[key] },
+  clear: () => { for (const k in mockLocalStorage) delete mockLocalStorage[k] },
+  get length() { return Object.keys(mockLocalStorage).length },
+  key: (_index: number) => '',
+}
+Object.defineProperty(window, 'localStorage', { value: localStorageMock, configurable: true })
+
+describe('VaultDetailPage auto-expand', () => {
+  beforeEach(() => {
+    localStorageMock.clear()
+    sessionStorageMock.clear()
+    mockBack.mockClear()
+    lastEncryptCall = { title: '', body: '' }
+    mockEncryptVaultItem.mockClear()
+    mockEncryptVaultItem.mockReturnValue({
+      ciphertextTitle: new Uint8Array([4, 5, 6]),
+      ciphertextBody: new Uint8Array([7, 8, 9]),
+    })
+    mockDecryptVaultItem.mockClear()
+    mockDecryptVaultItem.mockReturnValue({
+      title: 'Decrypted Title',
+      body: '# Hello Markdown',
+    })
+    mockFromBase64.mockClear()
+    mockToBase64.mockClear()
+  })
+
+  afterEach(() => {
+    resetMockFetch()
+    vi.restoreAllMocks()
+    localStorageMock.clear()
+    sessionStorageMock.clear()
+  })
+
+  it('renders auto-expand toggle (Switch) in header', async () => {
+    mockFetch([
+      { json: () => ({ success: true, data: vaultsListData }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+    })
+    expect(screen.getByLabelText('Auto-expand all entries')).toBeInTheDocument()
+  })
+
+  it('auto-expand toggle persists preference to localStorage', async () => {
+    const vaultList = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultList }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+    })
+
+    const toggle = screen.getByLabelText('Auto-expand all entries')
+    fireEvent.click(toggle)
+
+    await waitFor(() => {
+      expect(localStorage.getItem('vault:vault-1:auto-expand')).toBe('true')
+    })
+  })
+
+  it('reads auto-expand preference from localStorage on mount', async () => {
+    localStorage.setItem('vault:vault-1:auto-expand', 'true')
+    const vaultList = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultList }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+    })
+
+    const toggle = screen.getByLabelText('Auto-expand all entries')
+    await waitFor(() => {
+      expect(toggle).toHaveAttribute('data-checked')
+    })
+  })
+
+  it('items auto-expand on load when autoExpand is enabled', async () => {
+    localStorage.setItem('vault:vault-1:auto-expand', 'true')
+    const vaultList = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultList }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getAllByText('Hello Markdown').length).toBe(2)
+    })
+  })
+
+  it('items remain collapsed when autoExpand is disabled', async () => {
+    const vaultList = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultList }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+    })
+    expect(screen.queryByText('Hello Markdown')).not.toBeInTheDocument()
+  })
+
+  it('toggling auto-expand ON expands all items', async () => {
+    const vaultList = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultList }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByText('My Vault')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByText('Hello Markdown')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Auto-expand all entries'))
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Hello Markdown').length).toBe(2)
+    })
+  })
+
+  it('toggling auto-expand OFF collapses all items', async () => {
+    localStorage.setItem('vault:vault-1:auto-expand', 'true')
+    const vaultList = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 2, hasPassword: false },
+    ]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultList }), ok: true },
+      { json: () => ({ success: true, data: vaultItemsData }), ok: true },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getAllByText('Hello Markdown').length).toBe(2)
+    })
+
+    fireEvent.click(screen.getByLabelText('Auto-expand all entries'))
+
+    await waitFor(() => {
+      expect(screen.queryByText('Hello Markdown')).not.toBeInTheDocument()
+    })
+  })
+
+  it('new item auto-expands when autoExpand is enabled', async () => {
+    localStorage.setItem('vault:vault-1:auto-expand', 'true')
+    const vaultList = [
+      { id: 'vault-1', label: 'My Vault', itemCount: 1, hasPassword: false },
+    ]
+    const singleItem = [vaultItemsData[0]]
+    mockFetch([
+      { json: () => ({ success: true, data: vaultList }), ok: true },
+      { json: () => ({ success: true, data: singleItem }), ok: true },
+      // CSRF for create
+      { json: () => ({ success: true, data: { csrfToken: 'csrf-x' } }), ok: true },
+      // POST response
+      {
+        json: () => ({
+          success: true,
+          data: {
+            id: 'new-item',
+            ciphertextTitle: 'new-enc-title',
+            ciphertextBody: 'new-enc-body',
+            createdAt: '2024-06-03T00:00:00Z',
+            updatedAt: '2024-06-03T00:00:00Z',
+          },
+        }),
+        ok: true,
+        status: 201,
+      },
+    ])
+    render(React.createElement(VaultDetailPage))
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Item title')).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByPlaceholderText('Item title'), {
+      target: { value: 'New Auto Expanded Item' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('New Auto Expanded Item')).toBeInTheDocument()
+    })
+  })
+})
