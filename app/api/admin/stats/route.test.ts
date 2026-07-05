@@ -59,15 +59,16 @@ describe('GET /api/admin/stats', () => {
       .mockResolvedValueOnce(30)    // newMessages7d
       .mockResolvedValueOnce(120)   // newMessages30d
 
-    // SecureMessage count called 7 times: totalSecureMessages, readSecureMessages,
+    // SecureMessage count called 8 times: totalSecureMessages, readSecureMessages,
     // destroyedSecureMessages, autoDestructSecureMessages, passwordProtectedSecureMessages,
-    // newSecureMessages7d, newSecureMessages30d
+    // pendingSecureMessages, newSecureMessages7d, newSecureMessages30d
     mockPrismaSecureMessageCount
       .mockResolvedValueOnce(60)    // totalSecureMessages
       .mockResolvedValueOnce(25)    // readSecureMessages
       .mockResolvedValueOnce(10)    // destroyedSecureMessages
       .mockResolvedValueOnce(8)     // autoDestructSecureMessages
       .mockResolvedValueOnce(12)    // passwordProtectedSecureMessages
+      .mockResolvedValueOnce(27)    // pendingSecureMessages (direct count: read+destroyed are independent, do not subtract)
       .mockResolvedValueOnce(5)     // newSecureMessages7d
       .mockResolvedValueOnce(18)    // newSecureMessages30d
 
@@ -95,9 +96,42 @@ describe('GET /api/admin/stats', () => {
       destroyedSecureMessages: 10,
       autoDestructSecureMessages: 8,
       passwordProtectedSecureMessages: 12,
+      pendingSecureMessages: 27,
       newSecureMessages7d: 5,
       newSecureMessages30d: 18,
     })
+  })
+
+  it('returns pendingSecureMessages as a direct count so overlap between read and destroyed never yields a negative', async () => {
+    // Reproduces the "-3 pending" bug: auto-destruct messages are counted in BOTH
+    // readSecureMessages (readAt set) AND destroyedSecureMessages (isDestroyed set)
+    // when revealed. Arithmetic `total - read - destroyed` double-counts them.
+    // Here: total=10, read=8, destroyed=5 (3 shared) -> arithmetic = -3, real pending = 1.
+    mockGetAdminUser.mockResolvedValue({ id: '1', username: 'admin', role: 'admin' })
+    mockPrismaUserCount.mockResolvedValue(0)
+    mockPrismaPoBoxCount.mockResolvedValue(0)
+    mockPrismaMessageCount.mockResolvedValue(0)
+    mockPrismaSecureMessageCount
+      .mockResolvedValueOnce(10) // totalSecureMessages
+      .mockResolvedValueOnce(8)  // readSecureMessages (includes 3 auto-destruct)
+      .mockResolvedValueOnce(5)  // destroyedSecureMessages (includes same 3 auto-destruct)
+      .mockResolvedValueOnce(3)  // autoDestructSecureMessages
+      .mockResolvedValueOnce(0)  // passwordProtectedSecureMessages
+      .mockResolvedValueOnce(1)  // pendingSecureMessages
+      .mockResolvedValueOnce(0)  // newSecureMessages7d
+      .mockResolvedValueOnce(0)  // newSecureMessages30d
+
+    const req = createNextRequest('http://localhost/api/admin/stats')
+    const res = await GET(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(body.data.totalSecureMessages).toBe(10)
+    expect(body.data.readSecureMessages).toBe(8)
+    expect(body.data.destroyedSecureMessages).toBe(5)
+    expect(body.data.pendingSecureMessages).toBe(1)
+    expect(body.data.totalSecureMessages - body.data.readSecureMessages - body.data.destroyedSecureMessages).toBe(-3)
   })
 
   it('returns 403 for non-admin user', async () => {

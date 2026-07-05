@@ -24,6 +24,7 @@ type Stats = {
   destroyedSecureMessages: number
   autoDestructSecureMessages: number
   passwordProtectedSecureMessages: number
+  pendingSecureMessages: number
   newSecureMessages7d: number
   newSecureMessages30d: number
 }
@@ -291,11 +292,7 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatCard icon={Hash} label="Total" value={stats.totalSecureMessages} />
               <StatCard icon={Eye} label="Read" value={stats.readSecureMessages} />
-              <StatCard
-                icon={Clock}
-                label="Pending"
-                value={stats.totalSecureMessages - stats.readSecureMessages - stats.destroyedSecureMessages}
-              />
+              <StatCard icon={Clock} label="Pending" value={stats.pendingSecureMessages} />
               <StatCard icon={Trash2} label="Destroyed" value={stats.destroyedSecureMessages} />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

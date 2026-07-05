@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
 
     const [totalUsers, totalBoxes, totalMessages, adminCount,
            totalSecureMessages, readSecureMessages, destroyedSecureMessages,
-           autoDestructSecureMessages, passwordProtectedSecureMessages] = await Promise.all([
+           autoDestructSecureMessages, passwordProtectedSecureMessages,
+           pendingSecureMessages] = await Promise.all([
       prisma.user.count(),
       prisma.poBox.count(),
       prisma.message.count(),
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
       prisma.secureMessage.count({ where: { isDestroyed: true } }),
       prisma.secureMessage.count({ where: { autoDestruct: true } }),
       prisma.secureMessage.count({ where: { passwordHash: { not: null } } }),
+      prisma.secureMessage.count({ where: { readAt: null, isDestroyed: false } }),
     ])
 
     const now = new Date()
@@ -68,6 +70,7 @@ export async function GET(request: NextRequest) {
       destroyedSecureMessages,
       autoDestructSecureMessages,
       passwordProtectedSecureMessages,
+      pendingSecureMessages,
       newSecureMessages7d,
       newSecureMessages30d,
     })

@@ -62,6 +62,7 @@ describe('AdminDashboardPage', () => {
     destroyedSecureMessages: 3,
     autoDestructSecureMessages: 6,
     passwordProtectedSecureMessages: 9,
+    pendingSecureMessages: 22,
     newSecureMessages7d: 4,
     newSecureMessages30d: 12,
   }
@@ -200,6 +201,36 @@ describe('AdminDashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Failed to load dashboard')).toBeInTheDocument()
     })
+  })
+
+  it('renders pending count from pendingSecureMessages even when read+destroyed overlap exceeds total', async () => {
+    // Overlap scenario: 3 auto-destruct messages reveal sets both readAt and isDestroyed,
+    // so they appear in readSecureMessages AND destroyedSecureMessages.
+    // total=10, read=8, destroyed=5 -> arithmetic = -3 (bug), direct pending = 1.
+    const overlapStats = {
+      ...defaultStats,
+      totalSecureMessages: 10,
+      readSecureMessages: 8,
+      destroyedSecureMessages: 5,
+      pendingSecureMessages: 1,
+    }
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/admin/stats') return mockStatsResponse(overlapStats)
+      if (url === '/api/admin/health') return mockHealthResponse(defaultHealth)
+      if (url === '/api/admin/rate-limits') return mockRateLimitsResponse(defaultRateLimits)
+      return mockErrorResponse(404)
+    })
+
+    render(<AdminDashboardPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Pending')).toBeInTheDocument()
+    })
+
+    const pendingCard = screen.getByText('Pending').closest('div')?.parentElement
+    expect(pendingCard).not.toBeNull()
+    expect(pendingCard?.textContent).toContain('1')
+    expect(pendingCard?.textContent).not.toContain('-3')
   })
 
   it('shows partial data when only stats succeeds', async () => {
