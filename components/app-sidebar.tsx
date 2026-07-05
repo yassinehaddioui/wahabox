@@ -24,7 +24,7 @@ import { clearSessionKeys } from '@/lib/session-keys'
 
 const navItems = [
   { href: '/dashboard', label: 'Boxes', icon: Package },
-  { href: '/dashboard/vaults', label: 'Vault', icon: Vault },
+  { href: '/vaults', label: 'Vault', icon: Vault },
   { href: '/send', label: 'Send', icon: Send },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
@@ -72,7 +72,7 @@ export function AppSidebar() {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   render={<Link href={item.href} />}
-                  isActive={item.href === '/dashboard/vaults' ? pathname.startsWith('/dashboard/vaults') : pathname === item.href}
+                  isActive={item.href === '/vaults' ? pathname.startsWith('/vaults') : pathname === item.href}
                 >
                   {item.icon && <item.icon className="mr-2 h-4 w-4" />}
                   {item.label}

@@ -45,16 +45,15 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     restart: unless-stopped
-    mem_limit: 8g
+    mem_limit: 4g
     expose:
       - '3000'
     env_file: .env.local
     environment:
-      CI: 'true'
       PNPM_CONFIRM_MODULES_PURGE: 'false'
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/wahabox?schema=public
       REDIS_URL: redis://redis:6379
-      NODE_OPTIONS: '--max-old-space-size=7168'
+      NODE_OPTIONS: '--max-old-space-size=2048'
     volumes:
       - .:/app
       - node_modules_dev:/app/node_modules

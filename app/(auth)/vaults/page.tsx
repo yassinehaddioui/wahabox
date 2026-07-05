@@ -226,7 +226,7 @@ export default function VaultsPage() {
               <CardContent className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <Link
-                    href={`/dashboard/vaults/${vault.id}`}
+                    href={`/vaults/${vault.id}`}
                     className="inline-flex items-center gap-2 font-medium min-w-0 hover:underline truncate"
                   >
                     <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -251,7 +251,7 @@ export default function VaultsPage() {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => router.push(`/dashboard/vaults/${vault.id}`)}
+                        onClick={() => router.push(`/vaults/${vault.id}`)}
                         aria-label="View vault"
                       >
                         <Package className="h-3.5 w-3.5" />

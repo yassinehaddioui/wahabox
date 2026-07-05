@@ -10,7 +10,7 @@ test('full vault CRUD cycle: create, rename, open, create item, decrypt, edit, d
   await signupAndLogin(page, 'vault')
 
   // Step 2: Navigate to vaults
-  await page.goto('/dashboard/vaults')
+  await page.goto('/vaults')
   await expect(page.locator('h1')).toHaveText('Vaults')
   await expect(page.getByText('No vaults yet')).toBeVisible()
 
@@ -32,7 +32,7 @@ test('full vault CRUD cycle: create, rename, open, create item, decrypt, edit, d
 
   // Step 5: Click vault card → detail page
   await page.getByRole('link', { name: 'Renamed Vault' }).click()
-  await page.waitForURL(/\/dashboard\/vaults\//)
+  await page.waitForURL(/\/\/vaults\//)
   await expect(page.locator('h1')).toHaveText('Renamed Vault')
   await expect(page.getByText('0 items')).toBeVisible()
 
@@ -70,7 +70,7 @@ test('full vault CRUD cycle: create, rename, open, create item, decrypt, edit, d
   await expect(page.getByText('No items yet')).toBeVisible({ timeout: 5000 })
 
   // Step 10b: Navigate back, delete vault — confirm, assert vault gone
-  await page.goto('/dashboard/vaults')
+  await page.goto('/vaults')
   await page.getByRole('button', { name: 'Delete vault' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.locator('#delete-confirm').fill('DELETE')
@@ -86,7 +86,7 @@ test('should protect vault with password', async ({ page }) => {
   await signupAndLogin(page, 'vaultpass')
 
   // Step 2: Navigate to vaults
-  await page.goto('/dashboard/vaults')
+  await page.goto('/vaults')
   await expect(page.locator('h1')).toHaveText('Vaults')
 
   // Step 3: Create vault with password
@@ -105,7 +105,7 @@ test('should protect vault with password', async ({ page }) => {
 
   // Step 4: Navigate into vault — password prompt appears
   await vaultLink.click()
-  await page.waitForURL(/\/dashboard\/vaults\//)
+  await page.waitForURL(/\/\/vaults\//)
   await expect(page.getByRole('dialog')).toBeVisible()
   await expect(page.getByText('Vault password required')).toBeVisible()
 
@@ -150,12 +150,12 @@ test('should protect vault with password', async ({ page }) => {
 
   // Refresh the page — password is cached, items should load without prompt
   await page.reload()
-  await page.waitForURL(/\/dashboard\/vaults\//)
+  await page.waitForURL(/\/\/vaults\//)
   await expect(page.getByText('Secure Note')).toBeVisible({ timeout: 10000 })
   await expect(page.getByRole('dialog')).not.toBeVisible()
 
   // Step 9: Navigate back to vaults and change the vault password
-  await page.goto('/dashboard/vaults')
+  await page.goto('/vaults')
   await expect(page.locator('h1')).toHaveText('Vaults')
 
   // Wait for the password-protected vault card to appear
@@ -173,7 +173,7 @@ test('should protect vault with password', async ({ page }) => {
 
   // Step 10: Navigate into vault — old cached password fails (401), prompts for new one
   await page.getByRole('link', { name: 'Password Vault' }).click()
-  await page.waitForURL(/\/dashboard\/vaults\//)
+  await page.waitForURL(/\/\/vaults\//)
   await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 })
   await expect(page.getByText('Vault password required')).toBeVisible()
 

@@ -110,7 +110,7 @@ const vaultsListData = [
   { id: 'vault-2', label: 'Other Vault', itemCount: 0 },
 ]
 
-import VaultDetailPage from '@/app/(auth)/dashboard/vaults/[id]/page'
+import VaultDetailPage from '@/app/(auth)/vaults/[id]/page'
 
 describe('VaultDetailPage', () => {
   beforeEach(() => {

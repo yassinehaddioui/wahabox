@@ -20,7 +20,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
-import VaultsPage from '@/app/(auth)/dashboard/vaults/page'
+import VaultsPage from '@/app/(auth)/vaults/page'
 
 describe('VaultsPage', () => {
   beforeEach(() => {
@@ -235,7 +235,7 @@ describe('VaultsPage', () => {
     })
 
     const links = screen.getAllByRole('link', { name: /Personal/ })
-    expect(links[0]).toHaveAttribute('href', '/dashboard/vaults/vault-1')
+    expect(links[0]).toHaveAttribute('href', '/vaults/vault-1')
   })
 
   it('navigates to vault detail on view button click', async () => {
@@ -247,7 +247,7 @@ describe('VaultsPage', () => {
 
     const viewButtons = screen.getAllByLabelText('View vault')
     fireEvent.click(viewButtons[0])
-    expect(mockPush).toHaveBeenCalledWith('/dashboard/vaults/vault-1')
+    expect(mockPush).toHaveBeenCalledWith('/vaults/vault-1')
   })
 
   it('polls vaults every 30 seconds', async () => {
