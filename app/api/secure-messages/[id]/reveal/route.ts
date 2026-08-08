@@ -10,18 +10,20 @@ import {
 } from '@/lib/errors'
 import { verifyMessagePassword } from '@/lib/secure-message-crypto'
 import { checkIpRate } from '@/lib/rate-limit'
+import { writeAuditLog } from '@/lib/admin-audit'
 import prisma from '@/lib/prisma'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  try {
-    const { id } = await params
+  const { id } = await params
 
-    // Rate limit by IP
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  // Rate limit by IP — hoisted above try so catch can use ip
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+
+  try {
     const rateLimited = await checkIpRate(`reveal:${id}:${ip}`, {
       windowMs: 30_000,
       max: 5,
@@ -92,8 +94,31 @@ export async function POST(
       })
     }
 
+    // Fire-and-forget audit log — must not block the response
+    writeAuditLog({
+      actorId: null,
+      actorUsername: 'system',
+      action: 'secure_message.read',
+      targetType: 'secure_message',
+      targetId: id,
+      ip,
+    })
+
     return success({ ciphertext })
   } catch (err) {
+    if (err instanceof InvalidPasswordError || err instanceof MessageNotAvailableError) {
+      writeAuditLog({
+        actorId: null,
+        actorUsername: 'system',
+        action: 'secure_message.read_failed',
+        targetType: 'secure_message',
+        targetId: id,
+        metadata: {
+          reason: err instanceof InvalidPasswordError ? 'invalid_password' : 'not_available',
+        },
+        ip,
+      })
+    }
     return error(err)
   }
 }
