@@ -24,7 +24,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 type AuditEntry = {
   id: string
   actorId: string
-  actorUsername: string
+  actorUsername: string | null
   action: string
   targetType: string
   targetId: string
@@ -74,6 +74,13 @@ const ACTION_LABELS: Record<string, string> = {
   'mfa.passkey_register': 'Registered passkey',
   'mfa.passkey_remove': 'Removed passkey',
   'mfa.recovery_codes_regenerate': 'Regenerated recovery codes',
+  'secure_message.create': 'Secure message sent',
+  'secure_message.read': 'Secure message read',
+  'secure_message.read_failed': 'Secure message read failed',
+  'secure_message.destroy': 'Secure message destroyed',
+  'message.create': 'Message submitted',
+  'message.read': 'Message marked read',
+  'message.delete': 'Message deleted',
 }
 
 function getActionBadge(
@@ -92,6 +99,8 @@ function getActionBadge(
     case 'mfa.email_enable':
     case 'mfa.totp_confirm':
     case 'mfa.passkey_register':
+    case 'secure_message.create':
+    case 'message.create':
       return { variant: 'default' }
     // Destructive/red: deletion, demote, suspend, force_logout
     case 'admin.demote':
@@ -106,9 +115,12 @@ function getActionBadge(
     case 'mfa.email_disable':
     case 'mfa.totp_disable':
     case 'mfa.passkey_remove':
+    case 'secure_message.destroy':
+    case 'message.delete':
       return { variant: 'destructive' }
-    // Warning/amber: deactivate
+    // Warning/amber: deactivate, read failed
     case 'admin.box_deactivate':
+    case 'secure_message.read_failed':
       return {
         variant: 'secondary',
         className:
@@ -122,6 +134,8 @@ function getActionBadge(
     case 'box.update':
     case 'account.notifications_toggle':
     case 'mfa.recovery_codes_regenerate':
+    case 'secure_message.read':
+    case 'message.read':
       return {
         variant: 'outline',
         className:
@@ -288,6 +302,13 @@ export default function AuditLogPage() {
           <SelectItem value="mfa.passkey_register">Registered passkey</SelectItem>
           <SelectItem value="mfa.passkey_remove">Removed passkey</SelectItem>
           <SelectItem value="mfa.recovery_codes_regenerate">Regenerated recovery codes</SelectItem>
+          <SelectItem value="secure_message.create">Secure message sent</SelectItem>
+          <SelectItem value="secure_message.read">Secure message read</SelectItem>
+          <SelectItem value="secure_message.read_failed">Secure message read failed</SelectItem>
+          <SelectItem value="secure_message.destroy">Secure message destroyed</SelectItem>
+          <SelectItem value="message.create">Message submitted</SelectItem>
+          <SelectItem value="message.read">Message marked read</SelectItem>
+          <SelectItem value="message.delete">Message deleted</SelectItem>
         </SelectContent>
       </Select>
 
@@ -319,7 +340,7 @@ export default function AuditLogPage() {
                       <TableCell className="text-muted-foreground">
                         {new Date(entry.createdAt).toLocaleString()}
                       </TableCell>
-                      <TableCell className="font-medium">{entry.actorUsername}</TableCell>
+                      <TableCell className="font-medium">{entry.actorUsername ?? 'System'}</TableCell>
                       <TableCell>
                         <Badge variant={badge.variant} className={badge.className}>
                           {ACTION_LABELS[entry.action] || entry.action}
@@ -333,6 +354,8 @@ export default function AuditLogPage() {
                           entry.targetType === 'user' ? 'secondary' :
                           entry.targetType === 'box' ? 'outline' :
                           entry.targetType === 'vault' ? 'default' :
+                          entry.targetType === 'secure_message' ? 'default' :
+                          entry.targetType === 'message' ? 'outline' :
                           'secondary'
                         }>
                           {entry.targetType === 'user'
@@ -343,6 +366,10 @@ export default function AuditLogPage() {
                             ? 'Vault'
                             : entry.targetType === 'vault_item'
                             ? 'Vault Item'
+                            : entry.targetType === 'secure_message'
+                            ? 'Secure Message'
+                            : entry.targetType === 'message'
+                            ? 'Message'
                             : entry.targetType}
                         </Badge>
                       </TableCell>
