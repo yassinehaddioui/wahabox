@@ -133,7 +133,7 @@ export default function AdminMessagesPage() {
             setError(true)
           }
         }
-      } catch (err) {
+      } catch {
         if (!controller.signal.aborted) {
           setError(true)
         }

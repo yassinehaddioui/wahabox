@@ -267,6 +267,7 @@ describe('AdminDashboardPage', () => {
   })
 
   it('renders without crashing when new message stat fields are absent (old-payload tolerance)', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { secureReadRate, secureSent24h, messageSent24h, avgSecureReadHours, avgDropReadHours, ...oldPayload } = defaultStats
     mockFetch.mockImplementation((url: string) => {
       if (url === '/api/admin/stats') return mockStatsResponse(oldPayload)
