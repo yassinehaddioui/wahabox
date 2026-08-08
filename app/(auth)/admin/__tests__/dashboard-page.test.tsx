@@ -65,6 +65,11 @@ describe('AdminDashboardPage', () => {
     pendingSecureMessages: 22,
     newSecureMessages7d: 4,
     newSecureMessages30d: 12,
+    secureReadRate: 42,
+    secureSent24h: 5,
+    messageSent24h: 8,
+    avgSecureReadHours: 3.0,
+    avgDropReadHours: 1.5,
   }
 
   const defaultHealth = {
@@ -129,6 +134,15 @@ describe('AdminDashboardPage', () => {
     const configuredBadges = screen.getAllByText('Configured')
     expect(configuredBadges.length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Not configured')).toBeInTheDocument()
+
+    // Secure Messages — new stat cards
+    expect(screen.getByText('Read Rate')).toBeInTheDocument()
+    expect(screen.getByText('Sent 24h')).toBeInTheDocument()
+    expect(screen.getByText('Drops 24h')).toBeInTheDocument()
+    expect(screen.getByText('Avg Time to Read')).toBeInTheDocument()
+    expect(screen.getByText('42%')).toBeInTheDocument()
+    expect(screen.getByText('3.0h')).toBeInTheDocument()
+    expect(screen.getByText('1.5h')).toBeInTheDocument()
 
     // Rate limits
     expect(screen.getByText('IP Rate Limit Keys')).toBeInTheDocument()
@@ -250,5 +264,27 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByText('Health data unavailable')).toBeInTheDocument()
     expect(screen.getByText('Rate limit data unavailable')).toBeInTheDocument()
     expect(screen.queryByText('Failed to load dashboard')).not.toBeInTheDocument()
+  })
+
+  it('renders without crashing when new message stat fields are absent (old-payload tolerance)', async () => {
+    const { secureReadRate, secureSent24h, messageSent24h, avgSecureReadHours, avgDropReadHours, ...oldPayload } = defaultStats
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/admin/stats') return mockStatsResponse(oldPayload)
+      if (url === '/api/admin/health') return mockHealthResponse(defaultHealth)
+      if (url === '/api/admin/rate-limits') return mockRateLimitsResponse(defaultRateLimits)
+      return mockErrorResponse(404)
+    })
+
+    render(<AdminDashboardPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Total')).toBeInTheDocument()
+    })
+
+    // Must NOT crash — existing cards should still render
+    expect(screen.getByText('Read')).toBeInTheDocument()
+    expect(screen.getByText('Pending')).toBeInTheDocument()
+    expect(screen.getByText('Destroyed')).toBeInTheDocument()
+    expect(screen.getByText('Password Protected')).toBeInTheDocument()
   })
 })

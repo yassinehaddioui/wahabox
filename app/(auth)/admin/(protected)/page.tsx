@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Users, Package, Mail, Shield, Activity, Server, Database, Gauge, Key, Check, X, Lock, Trash2, Clock, Eye, Hash } from 'lucide-react'
+import { Users, Package, Mail, Shield, Activity, Server, Database, Gauge, Key, Check, X, Lock, Trash2, Clock, Eye, Hash, Percent } from 'lucide-react'
 
 type Stats = {
   totalUsers: number
@@ -27,6 +27,11 @@ type Stats = {
   pendingSecureMessages: number
   newSecureMessages7d: number
   newSecureMessages30d: number
+  secureReadRate: number
+  secureSent24h: number
+  messageSent24h: number
+  avgSecureReadHours: number
+  avgDropReadHours: number
 }
 
 type Health = {
@@ -294,6 +299,9 @@ export default function AdminDashboardPage() {
               <StatCard icon={Eye} label="Read" value={stats.readSecureMessages} />
               <StatCard icon={Clock} label="Pending" value={stats.pendingSecureMessages} />
               <StatCard icon={Trash2} label="Destroyed" value={stats.destroyedSecureMessages} />
+              <StatCard icon={Percent} label="Read Rate" value={`${stats.secureReadRate ?? 0}%`} />
+              <StatCard icon={Mail} label="Sent 24h" value={stats.secureSent24h ?? 0} />
+              <StatCard icon={Package} label="Drops 24h" value={stats.messageSent24h ?? 0} />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Card>
@@ -329,6 +337,21 @@ export default function AdminDashboardPage() {
                       New This Month
                     </span>
                     <span className="tabular-nums font-semibold">{stats.newSecureMessages30d}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Avg Time to Read</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 py-4 pt-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Secure</span>
+                    <span className="tabular-nums font-semibold">{`${(stats.avgSecureReadHours ?? 0).toFixed(1)}h`}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Drops</span>
+                    <span className="tabular-nums font-semibold">{`${(stats.avgDropReadHours ?? 0).toFixed(1)}h`}</span>
                   </div>
                 </CardContent>
               </Card>
