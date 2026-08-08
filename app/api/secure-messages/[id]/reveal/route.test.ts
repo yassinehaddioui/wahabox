@@ -74,6 +74,16 @@ describe('POST /api/secure-messages/[id]/reveal', () => {
       where: { id: ID },
       data: { readAt: expect.any(Date) },
     })
+    // audit: secure_message.read
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'secure_message.read',
+        actorId: null,
+        actorUsername: 'system',
+        targetType: 'secure_message',
+        targetId: ID,
+      }),
+    })
   })
 
   it('passes correct id to findUnique', async () => {
@@ -254,5 +264,74 @@ describe('POST /api/secure-messages/[id]/reveal', () => {
     expect(res.status).toBe(429)
     // findUnique must NOT be called when rate-limited
     expect(prismaMock.secureMessage.findUnique).not.toHaveBeenCalled()
+  })
+
+  // --- Audit logging -------------------------------------------------------
+
+  it('logs secure_message.read_failed when password is invalid', async () => {
+    mockMessage({ passwordHash: '$2a$12$hash' })
+    vi.mocked(verifyMessagePassword).mockResolvedValue(false)
+
+    const res = await POST(
+      createNextRequest(`http://localhost/api/secure-messages/${ID}/reveal`, {
+        method: 'POST',
+        body: { password: 'wrong' },
+      }),
+      createRouteContext({ id: ID }),
+    )
+
+    expect(res.status).toBe(401)
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'secure_message.read_failed',
+        actorId: null,
+        actorUsername: 'system',
+        targetType: 'secure_message',
+        targetId: ID,
+        metadata: { reason: 'invalid_password' },
+      }),
+    })
+  })
+
+  it('logs secure_message.read_failed when message is expired', async () => {
+    mockMessage({ endDate: PAST_DATE })
+
+    const res = await POST(
+      createNextRequest(`http://localhost/api/secure-messages/${ID}/reveal`, {
+        method: 'POST',
+        body: {},
+      }),
+      createRouteContext({ id: ID }),
+    )
+
+    expect(res.status).toBe(403)
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'secure_message.read_failed',
+        actorId: null,
+        actorUsername: 'system',
+        targetType: 'secure_message',
+        targetId: ID,
+        metadata: { reason: 'not_available' },
+      }),
+    })
+  })
+
+  it('does NOT log audit when message is not found', async () => {
+    prismaMock.secureMessage.findUnique.mockResolvedValue(null)
+
+    const res = await POST(
+      createNextRequest(
+        'http://localhost/api/secure-messages/missing/reveal',
+        {
+          method: 'POST',
+          body: {},
+        },
+      ),
+      createRouteContext({ id: 'missing' }),
+    )
+
+    expect(res.status).toBe(404)
+    expect(prismaMock.auditLog.create).not.toHaveBeenCalled()
   })
 })

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
 import { NotFoundError } from '@/lib/errors'
+import { writeAuditLog } from '@/lib/admin-audit'
 import prisma from '@/lib/prisma'
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -11,6 +12,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const message = await prisma.message.findFirst({
       where: { id, poBox: { ownerId: user.id } },
+      select: { id: true, poBox: { select: { label: true } } },
     })
     if (!message) {
       throw new NotFoundError('Message not found')
@@ -19,6 +21,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     await prisma.message.update({
       where: { id, readAt: null },
       data: { readAt: new Date() },
+    })
+
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'message.read',
+      targetType: 'message',
+      targetId: id,
+      targetLabel: message.poBox.label,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
     })
 
     return success({ id })
@@ -37,12 +49,23 @@ export async function DELETE(
 
     const message = await prisma.message.findFirst({
       where: { id, poBox: { ownerId: user.id } },
+      select: { id: true, poBox: { select: { label: true } } },
     })
     if (!message) {
       throw new NotFoundError('Message not found')
     }
 
     await prisma.message.delete({ where: { id } })
+
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'message.delete',
+      targetType: 'message',
+      targetId: id,
+      targetLabel: message.poBox.label,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+    })
 
     return success({ id })
   } catch (err) {

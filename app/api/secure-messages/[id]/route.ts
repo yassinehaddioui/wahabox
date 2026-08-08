@@ -3,6 +3,7 @@ import { success, error } from '@/lib/response'
 import { getAuthUser } from '@/lib/auth'
 import { NotFoundError } from '@/lib/errors'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 export async function GET(
   _request: NextRequest,
@@ -75,6 +76,16 @@ export async function DELETE(
         isDestroyed: true,
         ciphertext: null,
       },
+    })
+
+    // Fire-and-forget audit log
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'secure_message.destroy',
+      targetType: 'secure_message',
+      targetId: id,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
     })
 
     return success({ id })

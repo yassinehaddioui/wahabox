@@ -129,6 +129,13 @@ describe('writeAuditLog', () => {
       'mfa.passkey_register',
       'mfa.passkey_remove',
       'mfa.recovery_codes_regenerate',
+      'secure_message.create',
+      'secure_message.read',
+      'secure_message.read_failed',
+      'secure_message.destroy',
+      'message.create',
+      'message.read',
+      'message.delete',
     ] as const
 
     for (const action of actions) {
@@ -143,6 +150,10 @@ describe('writeAuditLog', () => {
         ? 'vault_item'
         : action.startsWith('box.')
         ? 'box'
+        : action.startsWith('secure_message.')
+        ? 'secure_message'
+        : action.startsWith('message.')
+        ? 'message'
         : 'vault',
         targetId: 'target-1',
       })
@@ -154,5 +165,28 @@ describe('writeAuditLog', () => {
         }),
       )
     }
+  })
+
+  it('supports anonymous actors (actorId null)', async () => {
+    await writeAuditLog({
+      actorId: null,
+      actorUsername: 'system',
+      action: 'message.create',
+      targetType: 'message',
+      targetId: 'm1',
+    })
+
+    expect(mockPrismaAuditLogCreate).toHaveBeenCalledWith({
+      data: {
+        actorId: null,
+        actorUsername: 'system',
+        action: 'message.create',
+        targetType: 'message',
+        targetId: 'm1',
+        targetLabel: null,
+        metadata: expect.anything(),
+        ip: null,
+      },
+    })
   })
 })

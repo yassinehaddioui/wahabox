@@ -48,6 +48,8 @@ describe('POST /api/secure-messages', () => {
       }),
     )
     expect(res.status).toBe(401)
+    // No audit entry when the request never authenticates
+    expect(prismaMock.auditLog.create).not.toHaveBeenCalled()
   })
 
   it('returns 400 when ciphertext is missing', async () => {
@@ -108,6 +110,7 @@ describe('POST /api/secure-messages', () => {
     mockAuth()
     vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
     prismaMock.secureMessage.create.mockResolvedValue({ id: 'msg-1' })
+    prismaMock.auditLog.create.mockResolvedValue({})
 
     const res = await POST(
       createNextRequest('http://localhost/api/secure-messages', {
@@ -116,7 +119,10 @@ describe('POST /api/secure-messages', () => {
           ciphertext: 'dGVzdA==',
           msgNonce: 'bm9uY2U=',
           urlFragment: 'abc123',
-          autoDestruct: false,
+          autoDestruct: true,
+          passwordHash: '$2a$12$hash',
+          startDate: '2025-02-01T00:00:00.000Z',
+          endDate: '2025-03-01T00:00:00.000Z',
           csrfToken: 'valid',
         },
       }),
@@ -125,6 +131,26 @@ describe('POST /api/secure-messages', () => {
     expect(res.status).toBe(201)
     expect(body.data.id).toBe('msg-1')
     expect(body.data.readUrl).toBe(`${process.env.APP_URL}/read/msg-1#abc123`)
+
+    expect(prismaMock.auditLog.create).toHaveBeenCalledTimes(1)
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          actorId: 'user-1',
+          actorUsername: 'testuser',
+          action: 'secure_message.create',
+          targetType: 'secure_message',
+          targetId: 'msg-1',
+          metadata: {
+            hasPassword: true,
+            autoDestruct: true,
+            hasReceiverEmail: false,
+            hasStartDate: true,
+            hasEndDate: true,
+          },
+        }),
+      }),
+    )
   })
 
   it('verifies CSRF with create-secure-message tag', async () => {

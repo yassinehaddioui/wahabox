@@ -48,8 +48,32 @@ const defaultEntries = {
         ip: '10.0.0.5',
         createdAt: '2025-06-01T08:00:00.000Z',
       },
+      {
+        id: 'e4',
+        actorId: null,
+        actorUsername: null,
+        action: 'secure_message.read',
+        targetType: 'secure_message',
+        targetId: 'sm-1',
+        targetLabel: null,
+        metadata: {},
+        ip: '10.0.0.9',
+        createdAt: '2025-07-15T12:00:00.000Z',
+      },
+      {
+        id: 'e5',
+        actorId: 'u1',
+        actorUsername: 'admin_user',
+        action: 'future.action',
+        targetType: 'unknown_type',
+        targetId: 'x-99',
+        targetLabel: null,
+        metadata: {},
+        ip: null,
+        createdAt: '2025-08-01T09:00:00.000Z',
+      },
     ],
-    total: 3,
+    total: 5,
     page: 1,
     limit: 50,
     totalPages: 1,
@@ -99,7 +123,8 @@ describe('AuditLogPage', () => {
       render(<AuditLogPage />)
 
       await waitFor(() => {
-        expect(screen.getByText('admin_user')).toBeInTheDocument()
+        const admins = screen.getAllByText('admin_user')
+        expect(admins.length).toBeGreaterThanOrEqual(1)
       })
 
       expect(screen.getByText('mod_user')).toBeInTheDocument()
@@ -114,10 +139,16 @@ describe('AuditLogPage', () => {
       const userBadges = screen.getAllByText('User')
       expect(userBadges).toHaveLength(2)
       expect(screen.getByText('Box')).toBeInTheDocument()
+      // secure_message entry — System actor, read label, Secure Message type badge
+      expect(screen.getByText('System')).toBeInTheDocument()
+      expect(screen.getByText('Secure message read')).toBeInTheDocument()
+      expect(screen.getByText('Secure Message')).toBeInTheDocument()
+      // unknown action falls back to raw string
+      expect(screen.getByText('future.action')).toBeInTheDocument()
       // IP column
       expect(screen.getByText('192.168.1.1')).toBeInTheDocument()
       expect(screen.getByText('10.0.0.5')).toBeInTheDocument()
-      expect(screen.getByText('\u2014')).toBeInTheDocument()
+      expect(screen.getAllByText('\u2014').length).toBeGreaterThanOrEqual(1)
     })
   })
 
@@ -160,6 +191,19 @@ describe('AuditLogPage', () => {
       const logoutBadge = screen.getByText('Force logged out user')
       expect(logoutBadge).toHaveClass('bg-destructive/10')
     })
+
+    it('falls back to raw action string when unknown action has no label', async () => {
+      setupDefaultMock(mockFetch)
+
+      render(<AuditLogPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('future.action')).toBeInTheDocument()
+      })
+
+      // Verify a known action label IS present (not a total label failure)
+      expect(screen.getByText('Promoted user')).toBeInTheDocument()
+    })
   })
 
   // ── Action filter ────────────────────────────────────
@@ -171,7 +215,8 @@ describe('AuditLogPage', () => {
       render(<AuditLogPage />)
 
       await waitFor(() => {
-        expect(screen.getByText('admin_user')).toBeInTheDocument()
+        const admins = screen.getAllByText('admin_user')
+        expect(admins.length).toBeGreaterThanOrEqual(1)
       })
 
       mockFetch.mockClear()
@@ -194,7 +239,8 @@ describe('AuditLogPage', () => {
       render(<AuditLogPage />)
 
       await waitFor(() => {
-        expect(screen.getByText('admin_user')).toBeInTheDocument()
+        const admins = screen.getAllByText('admin_user')
+        expect(admins.length).toBeGreaterThanOrEqual(1)
       })
 
       // Initial call: page=1, no action filter
@@ -202,6 +248,34 @@ describe('AuditLogPage', () => {
         expect.stringContaining('page=1'),
         expect.anything(),
       )
+    })
+
+    it('contains the 7 new message/secure_message filter items', async () => {
+      setupDefaultMock(mockFetch)
+
+      render(<AuditLogPage />)
+
+      await waitFor(() => {
+        const admins = screen.getAllByText('admin_user')
+        expect(admins.length).toBeGreaterThanOrEqual(1)
+      })
+
+      const trigger = screen.getByLabelText('Filter by action')
+      await userEvent.click(trigger)
+
+      const newLabels = [
+        'Secure message sent',
+        'Secure message read',
+        'Secure message read failed',
+        'Secure message destroyed',
+        'Message submitted',
+        'Message marked read',
+        'Message deleted',
+      ]
+
+      for (const label of newLabels) {
+        expect(screen.getByRole('option', { name: label })).toBeInTheDocument()
+      }
     })
 
     it('selects "All actions" sends no action param', async () => {
@@ -420,7 +494,8 @@ describe('AuditLogPage', () => {
       await userEvent.click(screen.getByText('Retry'))
 
       await waitFor(() => {
-        expect(screen.getByText('admin_user')).toBeInTheDocument()
+        const admins = screen.getAllByText('admin_user')
+        expect(admins.length).toBeGreaterThanOrEqual(1)
       })
     })
   })

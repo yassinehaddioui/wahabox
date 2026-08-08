@@ -8,6 +8,7 @@ import { verifyPow, consumeChallenge } from '@/lib/pow'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { checkTurnstile, TURNSTILE_PROOF_COOKIE } from '@/lib/turnstile'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 import bcrypt from 'bcryptjs'
 
 const MAX_CIPHERTEXT_SIZE = 100 * 1024
@@ -88,6 +89,7 @@ export async function POST(
       where: { slug },
       select: {
         id: true,
+        label: true,
         isActive: true,
         expiresAt: true,
         maxMessages: true,
@@ -170,11 +172,22 @@ export async function POST(
       throw new BadRequestError('Message too large')
     }
 
-    await prisma.message.create({
+    const msg = await prisma.message.create({
       data: {
         poBoxId: box.id,
         ciphertext,
       },
+    })
+
+    writeAuditLog({
+      actorId: null,
+      actorUsername: 'system',
+      action: 'message.create',
+      targetType: 'message',
+      targetId: msg.id,
+      targetLabel: box.label,
+      metadata: { boxSlug: slug },
+      ip,
     })
 
     recordDropIp(ip).catch(() => {})
