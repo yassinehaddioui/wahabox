@@ -33,14 +33,21 @@ export type AuditAction =
   | 'mfa.passkey_register'
   | 'mfa.passkey_remove'
   | 'mfa.recovery_codes_regenerate'
+  | 'secure_message.create'
+  | 'secure_message.read'
+  | 'secure_message.read_failed'
+  | 'secure_message.destroy'
+  | 'message.create'
+  | 'message.read'
+  | 'message.delete'
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 
 export type AuditParams = {
-  actorId: string
-  actorUsername: string
+  actorId: string | null
+  actorUsername: string | null
   action: AuditAction
-  targetType: 'user' | 'box' | 'vault' | 'vault_item'
+  targetType: 'user' | 'box' | 'vault' | 'vault_item' | 'secure_message' | 'message'
   targetId: string
   targetLabel?: string
   metadata?: { [key: string]: JsonValue }
