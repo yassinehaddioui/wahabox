@@ -45,7 +45,7 @@ function buildBoxWhere(status: string): Prisma.MessageWhereInput {
       return { readAt: { not: null } }
     case 'destroyed':
       // Box messages have no destroyed state — impossible where yields []
-      return { id: 'none' }
+      return { id: '00000000-0000-0000-0000-000000000000' }
     default:
       return {}
   }
@@ -78,8 +78,8 @@ export async function GET(request: NextRequest) {
     const shouldQuerySecure = type === '' || type === 'secure'
     const shouldQueryBox = type === '' || type === 'box'
 
-    const secureWhere = shouldQuerySecure ? buildSecureWhere(status) : { id: 'none' }
-    const boxWhere = shouldQueryBox ? buildBoxWhere(status) : { id: 'none' }
+    const secureWhere = shouldQuerySecure ? buildSecureWhere(status) : { id: '00000000-0000-0000-0000-000000000000' }
+    const boxWhere = shouldQueryBox ? buildBoxWhere(status) : { id: '00000000-0000-0000-0000-000000000000' }
 
     const take = page * limit
 

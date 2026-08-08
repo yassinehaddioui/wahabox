@@ -192,10 +192,10 @@ describe('GET /api/admin/messages', () => {
 
     // Box query suppressed
     expect(mockBoxFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'none' } }),
+      expect.objectContaining({ where: { id: '00000000-0000-0000-0000-000000000000' } }),
     )
     expect(mockBoxCount).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'none' } }),
+      expect.objectContaining({ where: { id: '00000000-0000-0000-0000-000000000000' } }),
     )
   })
 
@@ -219,10 +219,10 @@ describe('GET /api/admin/messages', () => {
 
     // Box query uses impossible where
     expect(mockBoxFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'none' } }),
+      expect.objectContaining({ where: { id: '00000000-0000-0000-0000-000000000000' } }),
     )
     expect(mockBoxCount).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'none' } }),
+      expect.objectContaining({ where: { id: '00000000-0000-0000-0000-000000000000' } }),
     )
 
     // Secure uses destroyed filter
