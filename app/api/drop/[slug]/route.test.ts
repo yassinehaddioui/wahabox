@@ -295,6 +295,66 @@ describe('POST /api/drop/[slug]', () => {
     expect(notifyNewMessage).toHaveBeenCalled()
   })
 
+  it('writes a message.create audit log on successful drop', async () => {
+    vi.mocked(checkDropRateLimit).mockResolvedValue(false)
+    vi.mocked(getDropIpCounts).mockResolvedValue({ hourly: 0, daily: 0 })
+    vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
+    vi.mocked(checkTurnstile).mockResolvedValue({ verified: true, setProofCookie: null })
+    prismaMock.poBox.findUnique.mockResolvedValue(createPoBox())
+    prismaMock.message.count.mockResolvedValue(0)
+    prismaMock.message.create.mockResolvedValueOnce({ id: 'msg-1' } as never)
+    const res = await POST(
+      createNextRequest(`http://localhost/api/drop/${SLUG}`, {
+        method: 'POST',
+        body: { ciphertext: CIPHER, csrfToken: 't', turnstileToken: 't' },
+      }),
+      createRouteContext({ slug: SLUG }),
+    )
+    expect(res.status).toBe(201)
+    expect(prismaMock.auditLog.create).toHaveBeenCalledTimes(1)
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'message.create',
+          actorId: null,
+          actorUsername: 'system',
+          targetType: 'message',
+          targetId: 'msg-1',
+          targetLabel: 'Test Box',
+          metadata: { boxSlug: SLUG },
+        }),
+      }),
+    )
+  })
+
+  it('does not write an audit log when box not found', async () => {
+    vi.mocked(checkDropRateLimit).mockResolvedValue(false)
+    vi.mocked(getDropIpCounts).mockResolvedValue({ hourly: 0, daily: 0 })
+    prismaMock.poBox.findUnique.mockResolvedValue(null)
+    const res = await POST(
+      createNextRequest(`http://localhost/api/drop/${SLUG}`, {
+        method: 'POST',
+        body: { ciphertext: CIPHER },
+      }),
+      createRouteContext({ slug: SLUG }),
+    )
+    expect(res.status).toBe(404)
+    expect(prismaMock.auditLog.create).not.toHaveBeenCalled()
+  })
+
+  it('does not write an audit log when rate limited', async () => {
+    vi.mocked(checkDropRateLimit).mockResolvedValue(true)
+    const res = await POST(
+      createNextRequest(`http://localhost/api/drop/${SLUG}`, {
+        method: 'POST',
+        body: { ciphertext: CIPHER },
+      }),
+      createRouteContext({ slug: SLUG }),
+    )
+    expect(res.status).toBe(429)
+    expect(prismaMock.auditLog.create).not.toHaveBeenCalled()
+  })
+
   it('binds CSRF to slug', async () => {
     vi.mocked(checkDropRateLimit).mockResolvedValue(false)
     vi.mocked(getDropIpCounts).mockResolvedValue({ hourly: 0, daily: 0 })
