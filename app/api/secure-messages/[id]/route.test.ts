@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prismaMock, resetPrismaMock } from '@/test/helpers/prisma-mock'
-import { GET } from './route'
+import { DELETE, GET } from './route'
 import { createNextRequest, createRouteContext } from '@/test/helpers/request'
+
+vi.mock('@/lib/auth', () => ({ getAuthUser: vi.fn() }))
+
+import { getAuthUser } from '@/lib/auth'
 
 // ---------------------------------------------------------------------------
 // GET /api/secure-messages/[id]  (public — no auth)
@@ -107,5 +111,69 @@ describe('GET /api/secure-messages/[id]', () => {
         senderPublicKeySign: true,
       }),
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// DELETE /api/secure-messages/[id]  (owner only)
+// ---------------------------------------------------------------------------
+describe('DELETE /api/secure-messages/[id]', () => {
+  beforeEach(() => {
+    resetPrismaMock()
+    vi.clearAllMocks()
+  })
+
+  const ID = 'msg-abc-123'
+
+  function mockAuth(): void {
+    vi.mocked(getAuthUser).mockResolvedValue({
+      id: 'user-1',
+      username: 'testuser',
+      role: 'user',
+    })
+  }
+
+  it('destroys a message and writes a secure_message.destroy audit log', async () => {
+    mockAuth()
+    prismaMock.secureMessage.findFirst.mockResolvedValue({ id: ID })
+    prismaMock.secureMessage.update.mockResolvedValue({ id: ID })
+    prismaMock.auditLog.create.mockResolvedValue({})
+
+    const res = await DELETE(
+      createNextRequest(`http://localhost/api/secure-messages/${ID}`, {
+        method: 'DELETE',
+      }),
+      createRouteContext({ id: ID }),
+    )
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.data.id).toBe(ID)
+
+    expect(prismaMock.auditLog.create).toHaveBeenCalledTimes(1)
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          actorId: 'user-1',
+          actorUsername: 'testuser',
+          action: 'secure_message.destroy',
+          targetType: 'secure_message',
+          targetId: ID,
+        }),
+      }),
+    )
+  })
+
+  it('does not write an audit log when the message is not found', async () => {
+    mockAuth()
+    prismaMock.secureMessage.findFirst.mockResolvedValue(null)
+
+    const res = await DELETE(
+      createNextRequest(`http://localhost/api/secure-messages/${ID}`, {
+        method: 'DELETE',
+      }),
+      createRouteContext({ id: ID }),
+    )
+    expect(res.status).toBe(404)
+    expect(prismaMock.auditLog.create).not.toHaveBeenCalled()
   })
 })

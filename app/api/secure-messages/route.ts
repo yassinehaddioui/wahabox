@@ -11,6 +11,7 @@ import {
 import { sendSecureMessageNotification } from '@/lib/email'
 import ENV from '@/lib/env'
 import prisma from '@/lib/prisma'
+import { writeAuditLog } from '@/lib/admin-audit'
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,6 +76,23 @@ export async function POST(request: NextRequest) {
 
     // Assemble read URL with fragment (urlFragment is NOT stored in DB)
     const readUrl = `${ENV.APP_URL.replace(/\/+$/, '')}/read/${secureMessage.id}#${body.urlFragment}`
+
+    // Fire-and-forget audit log — booleans only, never ciphertext/emails
+    writeAuditLog({
+      actorId: user.id,
+      actorUsername: user.username,
+      action: 'secure_message.create',
+      targetType: 'secure_message',
+      targetId: secureMessage.id,
+      metadata: {
+        hasPassword: !!body.passwordHash,
+        autoDestruct: !!body.autoDestruct,
+        hasReceiverEmail: !!body.receiverEmail,
+        hasStartDate: !!body.startDate,
+        hasEndDate: !!body.endDate,
+      },
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+    })
 
     // Send email notification if receiver email was provided
     if (body.receiverEmail) {
