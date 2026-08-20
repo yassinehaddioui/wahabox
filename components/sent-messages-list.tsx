@@ -16,6 +16,7 @@ type SentMessage = {
   readAt: string | null
   isDestroyed: boolean
   autoDestruct: boolean
+  allowReaderDelete: boolean
   startDate: string | null
   endDate: string | null
   hasPassword: boolean
@@ -163,6 +164,11 @@ export function SentMessagesList() {
                   {msg.autoDestruct && (
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                       auto-destruct
+                    </Badge>
+                  )}
+                  {msg.allowReaderDelete && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      reader can delete
                     </Badge>
                   )}
                 </div>

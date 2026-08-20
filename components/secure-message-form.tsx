@@ -26,6 +26,7 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
   const [endDate, setEndDate] = useState('')
   const [endTime, setEndTime] = useState('')
   const [autoDestruct, setAutoDestruct] = useState(false)
+  const [allowReaderDelete, setAllowReaderDelete] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{ id: string; readUrl: string } | null>(null)
   const [copied, setCopied] = useState(false)
@@ -135,6 +136,7 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
         msgNonce: sodium.to_base64(msgNonce, sodium.base64_variants.ORIGINAL),
         urlFragment,
         autoDestruct,
+        allowReaderDelete,
         csrfToken,
       }
 
@@ -198,7 +200,7 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
             </Button>
           </div>
           <p className="font-bold">Make sure to save this link somewhere because it is not stored on the server.</p>
-          <Button variant="outline" onClick={() => { setResult(null); setMessage(''); setEmail(''); setPassword(''); setStartDate(''); setStartTime(''); setEndDate(''); setEndTime(''); setAutoDestruct(false) }}>
+          <Button variant="outline" onClick={() => { setResult(null); setMessage(''); setEmail(''); setPassword(''); setStartDate(''); setStartTime(''); setEndDate(''); setEndTime(''); setAutoDestruct(false); setAllowReaderDelete(false) }}>
             Send Another
           </Button>
         </CardContent>
@@ -296,6 +298,22 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
           id="autoDestruct"
           checked={autoDestruct}
           onCheckedChange={setAutoDestruct}
+        />
+      </div>
+
+      <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <Label htmlFor="allowReaderDelete" className="text-sm font-medium cursor-pointer">
+            Allow reader to delete
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Reader can delete this message after reading.
+          </p>
+        </div>
+        <Switch
+          id="allowReaderDelete"
+          checked={allowReaderDelete}
+          onCheckedChange={setAllowReaderDelete}
         />
       </div>
 

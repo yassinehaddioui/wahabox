@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
         startDate,
         endDate,
         autoDestruct: body.autoDestruct,
+        allowReaderDelete: body.allowReaderDelete,
         signature: body.signature
           ? Buffer.from(body.signature, 'base64')
           : undefined,
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         hasPassword: !!body.passwordHash,
         autoDestruct: !!body.autoDestruct,
+        allowReaderDelete: !!body.allowReaderDelete,
         hasReceiverEmail: !!body.receiverEmail,
         hasStartDate: !!body.startDate,
         hasEndDate: !!body.endDate,
@@ -118,6 +120,7 @@ export async function GET(request: NextRequest) {
         readAt: true,
         isDestroyed: true,
         autoDestruct: true,
+        allowReaderDelete: true,
         startDate: true,
         endDate: true,
         passwordHash: true,
@@ -152,6 +155,7 @@ export async function GET(request: NextRequest) {
           readAt: m.readAt?.toISOString() ?? null,
           isDestroyed: m.isDestroyed,
           autoDestruct: m.autoDestruct,
+          allowReaderDelete: m.allowReaderDelete,
           startDate: m.startDate?.toISOString() ?? null,
           endDate: m.endDate?.toISOString() ?? null,
           hasPassword: !!m.passwordHash,

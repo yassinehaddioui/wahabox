@@ -22,6 +22,7 @@ export async function GET(
         endDate: true,
         isDestroyed: true,
         autoDestruct: true,
+        allowReaderDelete: true,
         readAt: true,
         signature: true,
         senderPublicKeySign: true,
@@ -42,6 +43,7 @@ export async function GET(
       endDate: message.endDate?.toISOString() ?? null,
       isDestroyed: message.isDestroyed,
       autoDestruct: message.autoDestruct,
+      allowReaderDelete: message.allowReaderDelete,
       readAt: message.readAt?.toISOString() ?? null,
       signature: message.signature
         ? Buffer.from(message.signature).toString('base64')

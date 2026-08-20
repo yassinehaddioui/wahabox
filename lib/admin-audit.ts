@@ -37,6 +37,7 @@ export type AuditAction =
   | 'secure_message.read'
   | 'secure_message.read_failed'
   | 'secure_message.destroy'
+  | 'secure_message.reader_destroy'
   | 'message.create'
   | 'message.read'
   | 'message.delete'

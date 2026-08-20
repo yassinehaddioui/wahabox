@@ -155,6 +155,7 @@ export const createSecureMessageSchema = z.object({
   startDate: z.string().datetime().nullish(),
   endDate: z.string().datetime().nullish(),
   autoDestruct: z.boolean(),
+  allowReaderDelete: z.boolean(),
   signature: z.string().nullish(),
   senderPublicKeySign: z.string().nullish(),
   csrfToken: z.string().nullish(),

@@ -121,6 +121,7 @@ model SecureMessage {
   startDate       DateTime? @map("start_date")
   endDate         DateTime? @map("end_date")
   autoDestruct    Boolean   @default(false) @map("auto_destruct")
+  allowReaderDelete Boolean @default(false) @map("allow_reader_delete")
   isDestroyed     Boolean   @default(false) @map("is_destroyed")
   readAt               DateTime? @map("read_at")
   signature            Bytes?    @map("signature")

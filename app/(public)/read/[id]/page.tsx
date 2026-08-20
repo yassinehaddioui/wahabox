@@ -10,7 +10,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Markdown } from '@/components/ui/markdown'
 import { Skeleton } from '@/components/ui/skeleton'
-import { FileQuestion, Clock, Hourglass, BadgeCheck, BadgeAlert } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { toast } from 'sonner'
+import { FileQuestion, Clock, Hourglass, BadgeCheck, BadgeAlert, Trash2 } from 'lucide-react'
 
 type Metadata = {
   hasPassword: boolean
@@ -20,6 +29,7 @@ type Metadata = {
   endDate: string | null
   isDestroyed: boolean
   autoDestruct: boolean
+  allowReaderDelete: boolean
   signature: string | null
   senderPublicKeySign: string | null
   readAt: string | null
@@ -37,6 +47,9 @@ export default function ReadPage() {
   const [dateError, setDateError] = useState('')
   const [countdown, setCountdown] = useState('')
   const [signatureState, setSignatureState] = useState<'verified' | 'invalid' | 'unsigned' | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleted, setDeleted] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Fetch metadata on mount
   useEffect(() => {
@@ -209,6 +222,25 @@ export default function ReadPage() {
     }
   }, [id, meta, password])
 
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/secure-messages/${id}/destroy`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        setDeleted(true)
+        setPlaintext(null)
+        setDeleteOpen(false)
+      } else {
+        toast.error('Failed to delete message')
+      }
+    } catch {
+      toast.error('Failed to delete message')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   if (loading) {
     return (
       <Card className="w-full max-w-4xl">
@@ -259,36 +291,85 @@ export default function ReadPage() {
     )
   }
 
+  if (deleted) {
+    return (
+      <Card className="w-full max-w-4xl bg-canvas-soft">
+        <CardHeader className="text-center">
+          <CardTitle>Message Deleted</CardTitle>
+          <CardDescription>This message has been deleted.</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
   if (plaintext) {
     return (
-      <Card className="w-full max-w-4xl">
-        <CardHeader>
-          <CardTitle>Encrypted Message</CardTitle>
-          <CardDescription>
-            {signatureState && signatureState !== 'unsigned' && (
-              <div className="flex items-center gap-1 mb-3">
-                {signatureState === 'verified' ? (
-                  <BadgeCheck className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <BadgeAlert className="h-4 w-4 text-destructive" />
-                )}
-                <span className={`text-xs font-medium ${signatureState === 'verified' ? 'text-emerald-600' : 'text-destructive'
-                  }`}>
-                  {signatureState === 'verified' ? 'Signed' : 'Invalid Signature'}
-                </span>
+      <>
+        <Card className="w-full max-w-4xl">
+          <CardHeader>
+            <CardTitle>Encrypted Message</CardTitle>
+            <CardDescription>
+              {signatureState && signatureState !== 'unsigned' && (
+                <div className="flex items-center gap-1 mb-3">
+                  {signatureState === 'verified' ? (
+                    <BadgeCheck className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <BadgeAlert className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className={`text-xs font-medium ${signatureState === 'verified' ? 'text-emerald-600' : 'text-destructive'
+                    }`}>
+                    {signatureState === 'verified' ? 'Signed' : 'Invalid Signature'}
+                  </span>
+                </div>
+              )}
+              {(meta?.startDate || meta?.endDate) && (
+                <p className="text-xs text-muted-foreground">
+                  {meta?.startDate && meta?.endDate
+                    ? `Valid from ${formatUtcDate(meta.startDate)} until ${formatUtcDate(meta.endDate)}`
+                    : meta?.startDate
+                      ? `Valid from ${formatUtcDate(meta.startDate)}`
+                      : `Valid until ${formatUtcDate(meta!.endDate!)}`}
+                </p>
+              )}
+              {meta?.autoDestruct && (<p className="text-red-500 font-semibold">This message has been automatically destroyed. Do not reload the page.</p>)
+
+              }
+            </CardDescription>
+
+          </CardHeader>
+          <CardContent>
+
+            <Markdown>{plaintext}</Markdown>
+            {meta?.allowReaderDelete && (
+              <div className="mt-4 flex justify-end">
+                <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+                  <Trash2 className="h-4 w-4" />
+                  Delete message
+                </Button>
               </div>
             )}
-            {meta?.autoDestruct && (<p className="text-red-500 font-semibold">This message has been automatically destroyed. Do not reload the page.</p>)
+          </CardContent>
+        </Card>
 
-            }
-          </CardDescription>
-
-        </CardHeader>
-        <CardContent>
-
-          <Markdown>{plaintext}</Markdown>
-        </CardContent>
-      </Card>
+        <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <DialogContent showCloseButton={false}>
+            <DialogHeader>
+              <DialogTitle>Delete message</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this message? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     )
   }
 
