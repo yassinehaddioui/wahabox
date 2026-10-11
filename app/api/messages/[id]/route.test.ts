@@ -56,12 +56,13 @@ describe('PATCH /api/messages/[id]', () => {
   it('marks message as read and audits message.read', async () => {
     mockAuth()
     prismaMock.message.findFirst.mockResolvedValue({ id: 'm1', poBox: { label: 'My Box' } })
+    prismaMock.message.updateMany.mockResolvedValue({ count: 1 })
     const res = await PATCH(
       createNextRequest('http://localhost/api/messages/m1', { method: 'PATCH' }),
       createRouteContext({ id: 'm1' }),
     )
     expect((await res.json()).data.id).toBe('m1')
-    expect(prismaMock.message.update).toHaveBeenCalledWith({
+    expect(prismaMock.message.updateMany).toHaveBeenCalledWith({
       where: { id: 'm1', readAt: null },
       data: { readAt: expect.any(Date) },
     })
@@ -75,6 +76,20 @@ describe('PATCH /api/messages/[id]', () => {
         targetLabel: 'My Box',
       }),
     })
+  })
+
+  it('succeeds when another request already marked the message as read', async () => {
+    mockAuth()
+    prismaMock.message.findFirst.mockResolvedValue({ id: 'm1', poBox: { label: 'My Box' } })
+    prismaMock.message.updateMany.mockResolvedValue({ count: 0 })
+
+    const res = await PATCH(
+      createNextRequest('http://localhost/api/messages/m1', { method: 'PATCH' }),
+      createRouteContext({ id: 'm1' }),
+    )
+
+    expect(res.status).toBe(200)
+    expect(prismaMock.auditLog.create).not.toHaveBeenCalled()
   })
 })
 

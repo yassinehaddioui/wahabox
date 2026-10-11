@@ -18,20 +18,24 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       throw new NotFoundError('Message not found')
     }
 
-    await prisma.message.update({
+    const updated = await prisma.message.updateMany({
       where: { id, readAt: null },
       data: { readAt: new Date() },
     })
 
-    writeAuditLog({
-      actorId: user.id,
-      actorUsername: user.username,
-      action: 'message.read',
-      targetType: 'message',
-      targetId: id,
-      targetLabel: message.poBox.label,
-      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
-    })
+    // Auto-decrypt and a manual decrypt can submit this PATCH at the same time.
+    // Only the first request changes readAt; later requests should still succeed.
+    if (updated.count > 0) {
+      writeAuditLog({
+        actorId: user.id,
+        actorUsername: user.username,
+        action: 'message.read',
+        targetType: 'message',
+        targetId: id,
+        targetLabel: message.poBox.label,
+        ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+      })
+    }
 
     return success({ id })
   } catch (err) {
