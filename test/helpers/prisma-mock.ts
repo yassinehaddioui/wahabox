@@ -60,6 +60,7 @@ export interface PrismaMock {
     create: PrismaMockFn
     count: PrismaMockFn
     update: PrismaMockFn
+    updateMany: PrismaMockFn
     delete: PrismaMockFn
     groupBy: PrismaMockFn
   }
@@ -122,6 +123,7 @@ const prismaMock = vi.hoisted(
       create: vi.fn(),
       count: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       delete: vi.fn(),
       groupBy: vi.fn(),
     },
@@ -168,6 +170,7 @@ const allStubs: readonly PrismaMockFn[] = [
   prismaMock.message.create,
   prismaMock.message.count,
   prismaMock.message.update,
+  prismaMock.message.updateMany,
   prismaMock.message.delete,
   prismaMock.message.groupBy,
   prismaMock.vault.findUnique,
@@ -214,6 +217,7 @@ function applyDefaultResolves(): void {
   prismaMock.message.create.mockResolvedValue({})
   prismaMock.message.count.mockResolvedValue(0)
   prismaMock.message.update.mockResolvedValue({})
+  prismaMock.message.updateMany.mockResolvedValue({ count: 0 })
   prismaMock.message.delete.mockResolvedValue({})
   prismaMock.message.groupBy.mockResolvedValue([])
 
