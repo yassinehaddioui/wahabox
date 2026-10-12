@@ -5,11 +5,10 @@ import { resetRedisMock } from '@/test/helpers/redis-mock'
 import { createUser } from '@/test/helpers/fixtures'
 import { POST } from './route'
 
-const { mockVerifyCsrf, mockCheckAuthRateLimit, mockRecordAuthFailure, mockSodium } = vi.hoisted(
+const { mockVerifyCsrf, mockCheckAuthRateLimit, mockSodium } = vi.hoisted(
   () => ({
     mockVerifyCsrf: vi.fn(),
     mockCheckAuthRateLimit: vi.fn(),
-    mockRecordAuthFailure: vi.fn(),
     mockSodium: {
       ready: Promise.resolve(),
       randombytes_buf: vi.fn((size: number) => new Uint8Array(size).fill(0xab)),
@@ -26,7 +25,6 @@ vi.mock('libsodium-wrappers-sumo', () => ({ default: mockSodium }))
 vi.mock('@/lib/csrf', () => ({ verifyAndConsumeCsrfToken: mockVerifyCsrf }))
 vi.mock('@/lib/rate-limit', () => ({
   checkAuthRateLimit: mockCheckAuthRateLimit,
-  recordAuthFailure: mockRecordAuthFailure,
 }))
 
 function makeRequest(username: string, csrfToken?: string) {
@@ -86,16 +84,28 @@ describe('POST /api/auth/recovery-start', () => {
     expect(stored).toBe(Buffer.from(new Uint8Array(32).fill(0xab)).toString('base64'))
   })
 
-  it('returns 404 for unknown user with dummy timing path', async () => {
+  it('returns recovery-shaped dummy data for unknown users', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     prismaMock.user.findUnique.mockResolvedValue(null)
 
     const res = await POST(makeRequest('nonexistent'))
     const json = await res.json()
 
-    expect(res.status).toBe(404)
-    expect(json.success).toBe(false)
-    expect(mockRecordAuthFailure).toHaveBeenCalledWith('nonexistent', 'unknown')
+    expect(res.status).toBe(200)
+    expect(json.success).toBe(true)
+    expect(Object.keys(json.data).sort()).toEqual([
+      'encPrivRec',
+      'publicKey',
+      'publicKeySign',
+      'recKdfSalt',
+      'recNonce',
+      'recoveryToken',
+      'sealedChallenge',
+    ])
+    expect(json.data.encPrivRec).toBeDefined()
+    expect(json.data.sealedChallenge).toBeDefined()
+    expect(json.data.recoveryToken).toMatch(/^[0-9a-f]+$/)
+    expect(mockSodium.crypto_box_seal).toHaveBeenCalledTimes(1)
   })
 
   it('returns 429 when rate limit says locked', async () => {

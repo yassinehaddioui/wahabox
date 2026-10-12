@@ -3,14 +3,30 @@ import crypto from 'crypto'
 import sodium from 'libsodium-wrappers-sumo'
 import { success, error } from '@/lib/response'
 import { parseBody, recoveryStartSchema } from '@/lib/validation'
-import { BadRequestError, NotFoundError, RateLimitError } from '@/lib/errors'
+import { BadRequestError, RateLimitError } from '@/lib/errors'
 import { verifyAndConsumeCsrfToken } from '@/lib/csrf'
 import { getRedis } from '@/lib/redis'
 import prisma from '@/lib/prisma'
-import { checkAuthRateLimit, recordAuthFailure } from '@/lib/rate-limit'
+import { checkAuthRateLimit } from '@/lib/rate-limit'
 
 function b64(u: Uint8Array): string {
   return Buffer.from(u).toString('base64')
+}
+
+function makeDummyRecoveryResponse() {
+  const challenge = sodium.randombytes_buf(32)
+  const publicKey = sodium.randombytes_buf(32)
+  const sealedChallenge = sodium.crypto_box_seal(challenge, publicKey)
+
+  return {
+    encPrivRec: b64(sodium.randombytes_buf(48)),
+    recKdfSalt: b64(sodium.randombytes_buf(16)),
+    recNonce: b64(sodium.randombytes_buf(24)),
+    publicKey: b64(publicKey),
+    publicKeySign: null,
+    sealedChallenge: b64(sealedChallenge),
+    recoveryToken: crypto.randomBytes(32).toString('hex'),
+  }
 }
 
 function dummyTimingPath(username: string) {
@@ -53,8 +69,8 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       dummyTimingPath(body.username)
-      await recordAuthFailure(body.username, ip)
-      throw new NotFoundError('Not found')
+      await sodium.ready
+      return success(makeDummyRecoveryResponse())
     }
 
     await sodium.ready
