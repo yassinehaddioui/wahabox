@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Copy, Check } from 'lucide-react'
 import { getSessionKeys } from '@/lib/session-keys'
+import { encodeMessageContent } from '@/lib/message-content'
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -19,6 +20,7 @@ function isValidEmail(email: string): boolean {
 
 export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
   const [message, setMessage] = useState('')
+  const [subject, setSubject] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -40,6 +42,10 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
     }
     if (message.length > 50000) {
       toast.error('Message must be under 50,000 characters')
+      return
+    }
+    if (subject.length > 200) {
+      toast.error('Subject must be under 200 characters')
       return
     }
     if (email && !isValidEmail(email)) {
@@ -66,7 +72,7 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
       const { crypto } = await import('@/lib/crypto')
       await crypto.ready
 
-      const plainBytes = new TextEncoder().encode(message)
+      const plainBytes = new TextEncoder().encode(encodeMessageContent(subject, message))
 
       // 1. Generate key and nonce for message encryption
       const key = sodium.crypto_secretbox_keygen()
@@ -200,7 +206,7 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
             </Button>
           </div>
           <p className="font-bold">Make sure to save this link somewhere because it is not stored on the server.</p>
-          <Button variant="outline" onClick={() => { setResult(null); setMessage(''); setEmail(''); setPassword(''); setStartDate(''); setStartTime(''); setEndDate(''); setEndTime(''); setAutoDestruct(false); setAllowReaderDelete(false) }}>
+          <Button variant="outline" onClick={() => { setResult(null); setSubject(''); setMessage(''); setEmail(''); setPassword(''); setStartDate(''); setStartTime(''); setEndDate(''); setEndTime(''); setAutoDestruct(false); setAllowReaderDelete(false) }}>
             Send Another
           </Button>
         </CardContent>
@@ -210,6 +216,17 @@ export function SecureMessageForm({ onSent }: { onSent?: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="subject">Subject (optional)</Label>
+        <Input
+          id="subject"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          maxLength={200}
+          placeholder="Add a subject"
+        />
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="message">Message</Label>
         <TextEditor

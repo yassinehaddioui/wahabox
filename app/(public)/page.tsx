@@ -63,7 +63,7 @@ const features = [
     ),
     title: 'Anonymous Submissions',
     description:
-      'Create PO boxes with secret shareable links. Anyone with the link can send an encrypted message — no account required for senders.',
+      'Create a shareable link for anonymous messages, feedback, or suggestions. Anyone with the link can send a message without creating an account.',
   },
   {
     icon: (
@@ -103,7 +103,7 @@ const features = [
     ),
     title: 'Smart Box Management',
     description:
-      'Set expiration dates, message caps, and optional passwords per box. Monitor from a dashboard with auto-decrypt and read/unread tracking.',
+      'Manage your message links, set expiration dates and optional passwords, and see new submissions in your dashboard.',
   },
   {
     icon: (
@@ -133,13 +133,13 @@ const features = [
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Encrypted Virtual PO Box | Secure Messages & Encrypted Vaults',
+    title: 'Anonymous Message Boxes & Encrypted Vaults | Wahabox',
     description:
-      'Receive anonymous messages, send secure encrypted links, and store secrets in zero-knowledge vaults. End-to-end encrypted with X25519 — your private key never leaves your browser.',
+      'Create a shareable link for anonymous messages, feedback, and suggestions. Use encrypted Vaults to store passwords, notes, and secrets.',
     openGraph: {
-      title: 'Wahabox — Encrypted Virtual PO Box | Secure Messages & Encrypted Vaults',
+      title: 'Wahabox — Anonymous Message Boxes & Encrypted Vaults',
       description:
-        'Receive anonymous messages, send secure encrypted links, and store secrets in zero-knowledge vaults. Your private key never leaves your browser.',
+        'Create a shareable link for anonymous messages, feedback, and suggestions. Use encrypted Vaults to store passwords, notes, and secrets.',
       url: 'https://wahabox.org',
     },
     alternates: {
@@ -160,7 +160,7 @@ export default function HomePage() {
             name: 'Wahabox',
             url: 'https://wahabox.org',
             description:
-              'Encrypted virtual PO box for anonymous messaging, secure encrypted links, and zero-knowledge vaults for passwords, notes, and secrets.',
+              'Create a shareable link for anonymous messages, feedback, and suggestions. Use encrypted Vaults to store passwords, notes, and secrets.',
             applicationCategory: 'CommunicationApplication',
             operatingSystem: 'All',
             offers: {
@@ -182,11 +182,12 @@ export default function HomePage() {
       <section className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
         <div className="text-center lg:text-left">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Encrypted Virtual PO Box
+            Anonymous Message Boxes
           </h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            Receive anonymous messages, send secure encrypted links, and store secrets in
-            zero-knowledge vaults. Your private key never leaves your browser.
+            Get anonymous messages, feedback, and suggestions through a private link. Senders open
+            the link and write a message — no account needed. Boxes collect messages; encrypted
+            Vaults are for storing passwords, notes, and secrets.
           </p>
           <div className="mt-8 flex items-center justify-center gap-4 lg:justify-start">
             <Link
@@ -256,10 +257,11 @@ export default function HomePage() {
       <ScrollReveal>
         <section className="mt-24 rounded-2xl bg-primary/5 px-6 py-14 text-center sm:px-12">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Ready to protect your messages?
+            Ready to collect messages?
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Start your free encrypted PO box in 30 seconds. No credit card, no strings attached.
+            Create a message box and share your link to collect anonymous messages, feedback, or
+            suggestions. Use Vaults to store sensitive information.
           </p>
           <Link
             href="/signup"

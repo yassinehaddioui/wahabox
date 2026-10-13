@@ -143,7 +143,7 @@ export default function DashboardPage() {
       const data = await res.json()
       if (data.success) {
         setNewLabel('')
-        toast.success('PO Box created')
+        toast.success('Message box created')
         await fetchBoxes()
       } else {
         toast.error(data.error)
@@ -240,7 +240,7 @@ export default function DashboardPage() {
 
   function copyDropLink(slug: string) {
     navigator.clipboard.writeText(`${window.location.origin}/drop/${slug}`)
-    toast.success('Drop link copied')
+    toast.success('Submission link copied')
   }
 
   async function deleteBox() {
@@ -274,9 +274,10 @@ export default function DashboardPage() {
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Boxes</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Message Boxes</h1>
         <p className="text-sm text-muted-foreground">
-          Create and manage your encrypted drop boxes.
+          Create links for people to send anonymous messages, feedback, or suggestions. Use Vaults
+          to store sensitive information.
         </p>
         {lastUpdated && (
           <p className="mt-1 inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
@@ -294,7 +295,8 @@ export default function DashboardPage() {
       ) : boxes.length === 0 ? (
         <Card className="bg-canvas-soft">
           <CardContent className="py-16 text-center text-sm text-muted-foreground">
-            No PO boxes yet. Create one below to get started.
+            No message boxes yet. Create one to get a link for anonymous messages, feedback, and
+            suggestions.
           </CardContent>
         </Card>
       ) : (
@@ -327,6 +329,9 @@ export default function DashboardPage() {
                   </Badge>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    Share this link to collect messages or suggestions.
+                  </span>
                   <a
                     href={`/drop/${box.slug}`}
                     target="_blank"
@@ -355,13 +360,13 @@ export default function DashboardPage() {
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => copyDropLink(box.slug)}
-                        aria-label="Copy drop link"
+                        aria-label="Copy submission link"
                       >
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
                     }
                   />
-                  <TooltipContent>Copy drop link</TooltipContent>
+                  <TooltipContent>Copy submission link</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger
@@ -463,7 +468,7 @@ export default function DashboardPage() {
                     <DialogHeader>
                       <DialogTitle>Edit Box</DialogTitle>
                       <DialogDescription>
-                        Customize the label and greeting message for this PO box.
+                        Customize the label and greeting shown to people sending you a message.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
@@ -573,7 +578,11 @@ export default function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Create New Box</CardTitle>
+          <CardTitle className="text-base">Create a message box</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Get a link people can use to send you messages, feedback, or suggestions without
+            creating an account. Boxes collect messages. Use Vaults to store sensitive information.
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={createBox} className="flex gap-2">
@@ -584,7 +593,7 @@ export default function DashboardPage() {
               maxLength={128}
               required
             />
-            <Button type="submit">Create</Button>
+            <Button type="submit">Create message box</Button>
           </form>
         </CardContent>
       </Card>

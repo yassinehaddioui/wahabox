@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { decodeMessageContent } from '@/lib/message-content'
 import { FileQuestion, Clock, Hourglass, BadgeCheck, BadgeAlert, Trash2 } from 'lucide-react'
 
 type Metadata = {
@@ -44,6 +45,7 @@ export default function ReadPage() {
   const [passwordError, setPasswordError] = useState('')
   const [revealing, setRevealing] = useState(false)
   const [plaintext, setPlaintext] = useState<string | null>(null)
+  const messageContent = plaintext ? decodeMessageContent(plaintext) : null
   const [dateError, setDateError] = useState('')
   const [countdown, setCountdown] = useState('')
   const [signatureState, setSignatureState] = useState<'verified' | 'invalid' | 'unsigned' | null>(null)
@@ -307,7 +309,7 @@ export default function ReadPage() {
       <>
         <Card className="w-full max-w-4xl">
           <CardHeader>
-            <CardTitle>Encrypted Message</CardTitle>
+            <CardTitle>{messageContent?.subject || 'Encrypted Message'}</CardTitle>
             <CardDescription>
               {signatureState && signatureState !== 'unsigned' && (
                 <div className="flex items-center gap-1 mb-3">
@@ -338,8 +340,7 @@ export default function ReadPage() {
 
           </CardHeader>
           <CardContent>
-
-            <Markdown>{plaintext}</Markdown>
+            <Markdown>{messageContent?.body ?? plaintext}</Markdown>
             {meta?.allowReaderDelete && (
               <div className="mt-4 flex justify-end">
                 <Button variant="destructive" onClick={() => setDeleteOpen(true)}>

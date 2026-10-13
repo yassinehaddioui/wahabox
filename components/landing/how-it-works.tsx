@@ -4,23 +4,23 @@ const steps = [
   {
     number: '01',
     icon: KeyRound,
-    title: 'Create Your PO Box',
+    title: 'Create a Message Box',
     description:
-      'Your keypair is generated right in your browser. The server never sees your private key — it stays with you, always.',
+      'Create a shareable link where anyone can send you an anonymous message, suggestion, or feedback. No account is needed to send.',
   },
   {
     number: '02',
     icon: Link2,
     title: 'Share Your Link',
     description:
-      'Anyone with your secret link can submit an encrypted message. No account, no app, no friction for senders.',
+      'Share your link anywhere. People open it and write a message, suggestion, or feedback — no account or app required.',
   },
   {
     number: '03',
     icon: LockKeyhole,
     title: 'Decrypt & Manage',
     description:
-      'Only you hold the key to decrypt. Read, organize, and set expiry rules from your dashboard — all zero-knowledge.',
+      'Read incoming messages in your dashboard. Messages are encrypted in your browser, and only you can decrypt them.',
   },
 ]
 

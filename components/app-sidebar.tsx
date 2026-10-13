@@ -23,7 +23,7 @@ import { useSession } from '@/lib/session-provider'
 import { clearSessionKeys } from '@/lib/session-keys'
 
 const navItems = [
-  { href: '/dashboard', label: 'Boxes', icon: Package },
+  { href: '/dashboard', label: 'Message Boxes', icon: Package },
   { href: '/vaults', label: 'Vault', icon: Vault },
   { href: '/send', label: 'Send', icon: Send },
   { href: '/settings', label: 'Settings', icon: Settings },

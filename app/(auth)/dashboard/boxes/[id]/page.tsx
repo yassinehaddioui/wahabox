@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { getSessionKeys } from '@/lib/session-keys'
+import { decodeMessageContent } from '@/lib/message-content'
 import {
   Dialog,
   DialogContent,
@@ -183,7 +184,9 @@ export default function MessagesPage() {
 
   function downloadMessage(msg: Message) {
     if (!msg.plaintext) return
-    const blob = new Blob([msg.plaintext], { type: 'text/markdown;charset=utf-8' })
+    const content = decodeMessageContent(msg.plaintext)
+    const markdown = content.subject ? `# ${content.subject}\n\n${content.body}` : content.body
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -199,7 +202,11 @@ export default function MessagesPage() {
   const filteredMessages = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return messages
-    return messages.filter((msg) => msg.plaintext?.toLowerCase().includes(q))
+    return messages.filter((msg) => {
+      if (!msg.plaintext) return false
+      const content = decodeMessageContent(msg.plaintext)
+      return `${content.subject}\n${content.body}`.toLowerCase().includes(q)
+    })
   }, [messages, searchQuery])
 
   return (
@@ -319,7 +326,12 @@ export default function MessagesPage() {
             </CardHeader>
             {msg.plaintext && (
               <CardContent className="pt-0">
-                <Markdown>{msg.plaintext}</Markdown>
+                {decodeMessageContent(msg.plaintext).subject && (
+                  <h2 className="mb-3 text-base font-semibold">
+                    {decodeMessageContent(msg.plaintext).subject}
+                  </h2>
+                )}
+                <Markdown>{decodeMessageContent(msg.plaintext).body}</Markdown>
               </CardContent>
             )}
           </Card>

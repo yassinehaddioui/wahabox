@@ -5,8 +5,10 @@ import { TURNSTILE_PROOF_COOKIE, isTurnstileClientEnabled } from '@/lib/turnstil
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { TextEditor } from '@/components/ui/text-editor'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { encodeMessageContent } from '@/lib/message-content'
 
 type BoxInfo = {
   label: string
@@ -31,6 +33,7 @@ export default function DropPage() {
   const [box, setBox] = useState<BoxInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
+  const [subject, setSubject] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
@@ -53,7 +56,7 @@ export default function DropPage() {
 
   useEffect(() => {
     cachedPayloadRef.current = null
-  }, [message])
+  }, [message, subject])
 
   useEffect(() => {
     fetch(`/api/drop/${slug}`)
@@ -136,7 +139,7 @@ export default function DropPage() {
         await crypto.ready
 
         const publicKey = crypto.fromBase64(box!.publicKey)
-        const raw = crypto.sealMessage(message, publicKey)
+        const raw = crypto.sealMessage(encodeMessageContent(subject, message), publicKey)
         ciphertext = crypto.toBase64(raw)
       }
 
@@ -223,10 +226,10 @@ export default function DropPage() {
   return (
     <Card className="w-full max-w-4xl">
       <CardHeader>
-        <CardTitle>{box!.label}</CardTitle>
+        <CardTitle>Send an anonymous message to {box!.label}</CardTitle>
         <CardDescription>
           {box!.greeting ||
-            'Send an encrypted message to this PO Box. Your message is encrypted in your browser before being sent.'}
+            'Share a message, suggestion, or feedback. No account is needed. Your message is encrypted in your browser before being sent.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -247,6 +250,17 @@ export default function DropPage() {
             </div>
           )}
           <div className="space-y-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="subject">Subject (optional)</Label>
+              <Input
+                id="subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                maxLength={200}
+                placeholder="Add a subject"
+              />
+            </div>
+            <Label htmlFor="message">Message</Label>
             <TextEditor id="message" value={message} onChange={setMessage} maxLength={50000} />
           </div>
           {!hasProof && hasSiteKey && <div ref={turnstileRef} className="flex justify-center" />}
