@@ -94,7 +94,7 @@ describe('AppSidebar', () => {
   it('renders all navigation items', () => {
     mockUseSession.mockReturnValue(null)
     render(<AppSidebar />)
-    expect(screen.getByText('Boxes')).toBeInTheDocument()
+    expect(screen.getByText('Message Boxes')).toBeInTheDocument()
     expect(screen.getByText('Settings')).toBeInTheDocument()
   })
 

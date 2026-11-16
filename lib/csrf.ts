@@ -1,7 +1,9 @@
 import crypto from 'crypto'
-import { getRedis } from './redis'
+import { getRedis, withRedis } from './redis'
 
 const CSRF_TTL = 180 * 60
+const CSRF_ISSUE_WINDOW_SECONDS = 60
+const CSRF_ISSUE_MAX = 30
 
 function getCsrfSecret(): string {
   const secret = process.env.SESSION_SECRET
@@ -25,6 +27,16 @@ export async function storeCsrfToken(token: string): Promise<void> {
     const redis = await getRedis()
     await redis.set(`csrf:${hashToken(token)}`, '1', 'EX', CSRF_TTL)
   } catch {}
+}
+
+/** Rate-limit issuance independently of APP_MODE to protect Redis itself. */
+export async function isCsrfIssuanceRateLimited(ip: string): Promise<boolean> {
+  return withRedis(async (redis) => {
+    const key = `rl:csrf:${ip}`
+    const count = await redis.incr(key)
+    if (count === 1) await redis.expire(key, CSRF_ISSUE_WINDOW_SECONDS)
+    return count > CSRF_ISSUE_MAX
+  }, true)
 }
 
 export async function verifyAndConsumeCsrfToken(
