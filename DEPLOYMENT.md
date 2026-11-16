@@ -144,6 +144,22 @@ AWS credentials are resolved through the [default credential chain](https://docs
 
 After deployment, sign up, add an email in account settings, and confirm the verification email arrives. Check `/api/account/email/verify` accepts the token from the link.
 
+### 5. Continuous deployment (GitHub Actions)
+
+`.github/workflows/deploy.yml` deploys automatically after the `CI` workflow succeeds on `main`, or manually via **Actions → Deploy to Production → Run workflow**.
+
+The workflow:
+
+1. Creates a GitHub deployment record for `production`.
+2. Triggers a deployment through the service manager (`svc-d.haddioui.com`, service key `wahabox`).
+3. Polls the service manager until the deployment finishes (15 min timeout).
+4. Health-checks `https://wahabox.org/api/healthz` (2 min timeout).
+5. Marks the GitHub deployment as `success` or `failure`, and prints the deployment logs on failure.
+
+**Required repository secret:** `DEPLOY_API_KEY` — an API key authorized to deploy the `wahabox` service in the service manager.
+
+> The workflow targets `wahabox.org` and service key `wahabox`. Adjust `APP_HEALTH_URL` and `SERVICE_KEY` in the workflow's `env` block if the production domain or service manager entry changes.
+
 ---
 
 ## Architecture Overview

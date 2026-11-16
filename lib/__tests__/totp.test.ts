@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib'
 import {
   generateRecoveryCodes,
+  findRecoveryCodeIndex,
   verifyRecoveryCode,
   generateMfaCode,
   getTotpUri,
@@ -74,6 +75,12 @@ describe('verifyRecoveryCode', () => {
   it('returns false for an empty string', () => {
     const { hashed } = generateRecoveryCodes()
     expect(verifyRecoveryCode('', hashed)).toBe(false)
+  })
+
+  it('returns the matching recovery-code index for atomic removal', () => {
+    const { plain, hashed } = generateRecoveryCodes()
+    expect(findRecoveryCodeIndex(plain[3], hashed)).toBe(3)
+    expect(findRecoveryCodeIndex('XXXX-XXXX-XXXX-XXXX', hashed)).toBe(-1)
   })
 })
 

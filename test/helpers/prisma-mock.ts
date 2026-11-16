@@ -27,6 +27,7 @@ export interface PrismaMock {
     findUnique: PrismaMockFn
     create: PrismaMockFn
     update: PrismaMockFn
+    updateMany: PrismaMockFn
   }
   poBox: {
     findUnique: PrismaMockFn
@@ -93,6 +94,7 @@ const prismaMock = vi.hoisted(
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     poBox: {
       findUnique: vi.fn(),
@@ -159,6 +161,7 @@ const allStubs: readonly PrismaMockFn[] = [
   prismaMock.user.findUnique,
   prismaMock.user.create,
   prismaMock.user.update,
+  prismaMock.user.updateMany,
   prismaMock.poBox.findUnique,
   prismaMock.poBox.findFirst,
   prismaMock.poBox.findMany,
@@ -204,6 +207,7 @@ function applyDefaultResolves(): void {
   prismaMock.user.findUnique.mockResolvedValue(null)
   prismaMock.user.create.mockResolvedValue({})
   prismaMock.user.update.mockResolvedValue({})
+  prismaMock.user.updateMany.mockResolvedValue({ count: 0 })
 
   prismaMock.poBox.findUnique.mockResolvedValue(null)
   prismaMock.poBox.findFirst.mockResolvedValue(null)

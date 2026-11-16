@@ -1,0 +1,238 @@
+name: Deploy to Production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+
+env:
+  SERVICE_MANAGER_URL: https://svc-d.haddioui.com
+  SERVICE_KEY: wahabox
+  APP_HEALTH_URL: https://wahabox.org/api/healthz
+  DEPLOY_TIMEOUT: 900
+  POLL_INTERVAL: 10
+  HEALTH_TIMEOUT: 120
+  HEALTH_INTERVAL: 5
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Create GitHub deployment record
+        id: create-deployment
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: ${{ github.token }}
+          environment: production
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          description: 'Deploy ${{ github.event.workflow_run.head_sha || github.sha }}'
+
+      - name: Trigger deployment via service manager
+        id: trigger
+        env:
+          DEPLOY_API_KEY: ${{ secrets.DEPLOY_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          RESPONSE=$(curl -sS --max-time 30 -w '\n%{http_code}' \
+            -X POST "$SERVICE_MANAGER_URL/api/deployments/$SERVICE_KEY/start" \
+            -H "Authorization: Bearer $DEPLOY_API_KEY" \
+            -H "Content-Type: application/json" || true)
+
+          HTTP_CODE=$(printf '%s\n' "$RESPONSE" | tail -n1)
+          BODY=$(printf '%s\n' "$RESPONSE" | sed '$d')
+          HTTP_CODE=${HTTP_CODE:-000}
+
+          echo "HTTP status: $HTTP_CODE"
+
+          case "$HTTP_CODE" in
+            200|201)
+              DEPLOY_ID=$(printf '%s' "$BODY" | jq -r '.deployment_id // empty' 2>/dev/null || true)
+              INIT_STATUS=$(printf '%s' "$BODY" | jq -r '.status // "unknown"' 2>/dev/null || true)
+              INIT_STATUS=${INIT_STATUS:-unknown}
+
+              if [ -z "$DEPLOY_ID" ]; then
+                echo "❌ Deployment triggered but no deployment_id in response"
+                echo "Response: $BODY"
+                exit 1
+              fi
+
+              echo "✅ Deployment triggered successfully"
+              echo "   Deployment ID: $DEPLOY_ID"
+              echo "   Initial status: $INIT_STATUS"
+              echo "deployment_id=$DEPLOY_ID" >> "$GITHUB_OUTPUT"
+              ;;
+            401)
+              echo "❌ Authentication failed: invalid API key"
+              exit 1
+              ;;
+            403)
+              echo "❌ Forbidden — API key does not have permission to deploy '$SERVICE_KEY'"
+              echo "   Check that the API key and service key are correct"
+              echo "Response: $BODY"
+              exit 1
+              ;;
+            404)
+              echo "❌ Service '$SERVICE_KEY' not found in service manager"
+              exit 1
+              ;;
+            429)
+              echo "❌ Rate limited — try again later"
+              exit 1
+              ;;
+            5[0-9][0-9])
+              echo "❌ Service manager returned server error (HTTP $HTTP_CODE)"
+              echo "Response: $BODY"
+              exit 1
+              ;;
+            *)
+              echo "❌ Unexpected response (HTTP $HTTP_CODE)"
+              echo "Response: $BODY"
+              exit 1
+              ;;
+          esac
+
+      - name: Poll for deployment completion
+        id: poll
+        env:
+          DEPLOYMENT_ID: ${{ steps.trigger.outputs.deployment_id }}
+          DEPLOY_API_KEY: ${{ secrets.DEPLOY_API_KEY }}
+        run: |
+          set -uo pipefail
+
+          ELAPSED=0
+
+          while [ "$ELAPSED" -lt "$DEPLOY_TIMEOUT" ]; do
+            RESPONSE=$(curl -sS --max-time 30 -w '\n%{http_code}' \
+              "$SERVICE_MANAGER_URL/api/deployments/$DEPLOYMENT_ID/status" \
+              -H "Authorization: Bearer $DEPLOY_API_KEY" || true)
+
+            HTTP_CODE=$(printf '%s\n' "$RESPONSE" | tail -n1)
+            BODY=$(printf '%s\n' "$RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              STATUS=$(printf '%s' "$BODY" | jq -r '.status // empty' 2>/dev/null || true)
+              DURATION=$(printf '%s' "$BODY" | jq -r '.duration_seconds // "N/A"' 2>/dev/null || echo "N/A")
+              SERVICE_NAME=$(printf '%s' "$BODY" | jq -r '.service_name // "N/A"' 2>/dev/null || echo "N/A")
+              STARTED_BY=$(printf '%s' "$BODY" | jq -r '.started_by // "N/A"' 2>/dev/null || echo "N/A")
+
+              if [ "$STATUS" = "success" ]; then
+                echo ""
+                echo "✅ Deployment successful!"
+                echo "   Service: $SERVICE_NAME"
+                echo "   Started by: $STARTED_BY"
+                echo "   Duration: ${DURATION}s"
+                echo "success=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              elif [ "$STATUS" = "failed" ] || [ "$STATUS" = "error" ]; then
+                echo ""
+                echo "❌ Deployment failed with status: $STATUS"
+                echo "   Service: $SERVICE_NAME"
+                echo "   Started by: $STARTED_BY"
+                echo "   Duration: ${DURATION}s"
+                echo "success=false" >> "$GITHUB_OUTPUT"
+                echo "final_status=$STATUS" >> "$GITHUB_OUTPUT"
+                exit 1
+              fi
+            else
+              echo "⚠️  Status check returned HTTP $HTTP_CODE — will retry"
+            fi
+
+            echo "⏳ Status: ${STATUS:-unknown} — waiting ${POLL_INTERVAL}s... (${ELAPSED}s / ${DEPLOY_TIMEOUT}s elapsed)"
+            sleep "$POLL_INTERVAL"
+            ELAPSED=$((ELAPSED + POLL_INTERVAL))
+          done
+
+          echo ""
+          echo "❌ Deployment timed out after ${DEPLOY_TIMEOUT}s"
+          exit 1
+
+      - name: Health check after deployment
+        id: health
+        if: steps.poll.outputs.success == 'true'
+        run: |
+          set -uo pipefail
+
+          echo "🏥 Performing post-deployment health check..."
+          echo "   Endpoint: $APP_HEALTH_URL"
+          echo ""
+
+          HEALTH_ELAPSED=0
+
+          while [ "$HEALTH_ELAPSED" -lt "$HEALTH_TIMEOUT" ]; do
+            HTTP_CODE=$(curl -sS --max-time 10 -o /dev/null -w "%{http_code}" "$APP_HEALTH_URL" 2>/dev/null) || HTTP_CODE="000"
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo ""
+              echo "✅ Health check passed (HTTP $HTTP_CODE)"
+              exit 0
+            fi
+
+            echo "⏳ Health check: HTTP $HTTP_CODE — waiting ${HEALTH_INTERVAL}s... (${HEALTH_ELAPSED}s / ${HEALTH_TIMEOUT}s elapsed)"
+            sleep "$HEALTH_INTERVAL"
+            HEALTH_ELAPSED=$((HEALTH_ELAPSED + HEALTH_INTERVAL))
+          done
+
+          echo ""
+          echo "❌ Health check failed after ${HEALTH_TIMEOUT}s — application not reachable"
+          exit 1
+
+      - name: Fetch deployment logs on failure
+        if: failure() && steps.trigger.outcome == 'success'
+        env:
+          DEPLOYMENT_ID: ${{ steps.trigger.outputs.deployment_id }}
+          DEPLOY_API_KEY: ${{ secrets.DEPLOY_API_KEY }}
+        run: |
+          set -uo pipefail
+
+          echo "📋 Fetching deployment logs for deployment #$DEPLOYMENT_ID..."
+          echo ""
+
+          RESPONSE=$(curl -sS --max-time 30 "$SERVICE_MANAGER_URL/api/deployments/$DEPLOYMENT_ID/logs" \
+            -H "Authorization: Bearer $DEPLOY_API_KEY" || true)
+
+          if printf '%s' "$RESPONSE" | jq -e '.logs' > /dev/null 2>&1; then
+            echo "========================================"
+            echo "  Deployment Logs (ID: $DEPLOYMENT_ID)"
+            echo "========================================"
+            printf '%s' "$RESPONSE" | jq -r '.logs'
+            echo "========================================"
+          else
+            echo "⚠️  No logs available or unexpected response:"
+            echo "$RESPONSE"
+          fi
+
+      - name: Update deployment success
+        if: steps.health.outcome == 'success'
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create-deployment.outputs.deployment_id }}
+          state: success
+
+      - name: Update deployment failure
+        if: (failure() || cancelled()) && steps.create-deployment.outcome == 'success' && steps.health.outcome != 'success'
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create-deployment.outputs.deployment_id }}
+          state: failure

@@ -100,8 +100,23 @@ export function generateRecoveryCodes(): {
 }
 
 export function verifyRecoveryCode(code: string, hashedCodes: string[]): boolean {
+  return findRecoveryCodeIndex(code, hashedCodes) !== -1
+}
+
+export function findRecoveryCodeIndex(code: string, hashedCodes: string[]): number {
   const codeHash = crypto.createHash('sha256').update(code).digest('base64')
-  return hashedCodes.includes(codeHash)
+  const candidate = Buffer.from(codeHash)
+  let matchIndex = -1
+
+  // Check every entry so the matching position is not exposed through timing.
+  for (let i = 0; i < hashedCodes.length; i++) {
+    const stored = Buffer.from(hashedCodes[i])
+    const matches =
+      stored.length === candidate.length && crypto.timingSafeEqual(stored, candidate)
+    if (matches) matchIndex = i
+  }
+
+  return matchIndex
 }
 
 export function generateMfaCode(): string {

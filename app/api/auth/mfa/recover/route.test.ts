@@ -5,13 +5,13 @@ import { resetRedisMock, redisMock } from '@/test/helpers/redis-mock'
 import { createUser } from '@/test/helpers/fixtures'
 import { POST } from './route'
 
-const { mockVerifyRecoveryCode, mockCreateSession, mockSetSessionCookie } = vi.hoisted(() => ({
-  mockVerifyRecoveryCode: vi.fn(),
+const { mockFindRecoveryCodeIndex, mockCreateSession, mockSetSessionCookie } = vi.hoisted(() => ({
+  mockFindRecoveryCodeIndex: vi.fn(),
   mockCreateSession: vi.fn(),
   mockSetSessionCookie: vi.fn(),
 }))
 
-vi.mock('@/lib/totp', () => ({ verifyRecoveryCode: mockVerifyRecoveryCode }))
+vi.mock('@/lib/totp', () => ({ findRecoveryCodeIndex: mockFindRecoveryCodeIndex }))
 vi.mock('@/lib/session', () => ({
   createSession: mockCreateSession,
   setSessionCookie: mockSetSessionCookie,
@@ -36,7 +36,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockCreateSession.mockResolvedValue(SESSION_TOKEN)
   mockSetSessionCookie.mockResolvedValue(undefined)
-  mockVerifyRecoveryCode.mockReturnValue(true)
+  mockFindRecoveryCodeIndex.mockReturnValue(0)
 })
 
 describe('POST /api/auth/mfa/recover', () => {
@@ -51,6 +51,7 @@ describe('POST /api/auth/mfa/recover', () => {
         publicKey: Buffer.alloc(32, 0xcc),
       }),
     )
+    prismaMock.user.updateMany.mockResolvedValue({ count: 1 })
 
     await redisMock.set('mfa:valid-token', JSON.stringify({ userId: USER_ID }), 'EX', 300)
 
@@ -64,7 +65,15 @@ describe('POST /api/auth/mfa/recover', () => {
     expect(json.data.pwNonce).toBeDefined()
     expect(json.data.publicKey).toBeDefined()
     expect(json.data.passwordHash).toBeUndefined()
-    expect(mockVerifyRecoveryCode).toHaveBeenCalled()
+    expect(mockFindRecoveryCodeIndex).toHaveBeenCalled()
+    expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+      where: { id: USER_ID, mfaRecoveryCodes: RECOVERY_CODES_BUF },
+      data: {
+        mfaRecoveryCodes: Buffer.from(
+          JSON.stringify(['hash2', 'hash3', 'hash4', 'hash5', 'hash6', 'hash7', 'hash8']),
+        ),
+      },
+    })
     expect(mockCreateSession).toHaveBeenCalledWith(USER_ID, 'testuser')
     expect(mockSetSessionCookie).toHaveBeenCalledWith(SESSION_TOKEN)
 
@@ -83,7 +92,7 @@ describe('POST /api/auth/mfa/recover', () => {
 
   it('returns 401 for invalid recovery code', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
-    mockVerifyRecoveryCode.mockReturnValue(false)
+    mockFindRecoveryCodeIndex.mockReturnValue(-1)
     prismaMock.user.findUnique.mockResolvedValue(
       createUser({
         id: USER_ID,
@@ -103,7 +112,7 @@ describe('POST /api/auth/mfa/recover', () => {
 
   it('returns 401 and deletes session after 3 failed recovery attempts', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
-    mockVerifyRecoveryCode.mockReturnValue(false)
+    mockFindRecoveryCodeIndex.mockReturnValue(-1)
     prismaMock.user.findUnique.mockResolvedValue(
       createUser({
         id: USER_ID,
@@ -130,7 +139,7 @@ describe('POST /api/auth/mfa/recover', () => {
 
   it('tracks recovery attempts in session', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
-    mockVerifyRecoveryCode.mockReturnValue(false)
+    mockFindRecoveryCodeIndex.mockReturnValue(-1)
     prismaMock.user.findUnique.mockResolvedValue(
       createUser({
         id: USER_ID,
@@ -165,6 +174,22 @@ describe('POST /api/auth/mfa/recover', () => {
     expect(json.error).toContain('No recovery codes')
   })
 
+  it('rejects a recovery code lost to a concurrent consume', async () => {
+    const { prismaMock } = await import('@/test/helpers/prisma-mock')
+    prismaMock.user.findUnique.mockResolvedValue(
+      createUser({ id: USER_ID, mfaRecoveryCodes: RECOVERY_CODES_BUF }),
+    )
+    prismaMock.user.updateMany.mockResolvedValue({ count: 0 })
+    await redisMock.set('mfa:valid-token', JSON.stringify({ userId: USER_ID }), 'EX', 300)
+
+    const res = await POST(makeRequest('valid-token', 'ABCD-1234-EFGH-5678'))
+    const json = await res.json()
+
+    expect(res.status).toBe(401)
+    expect(json.error).toContain('already been used')
+    expect(mockCreateSession).not.toHaveBeenCalled()
+  })
+
   it('never returns passwordHash in response', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     prismaMock.user.findUnique.mockResolvedValue(
@@ -173,6 +198,7 @@ describe('POST /api/auth/mfa/recover', () => {
         mfaRecoveryCodes: RECOVERY_CODES_BUF,
       }),
     )
+    prismaMock.user.updateMany.mockResolvedValue({ count: 1 })
 
     await redisMock.set('mfa:valid-token', JSON.stringify({ userId: USER_ID }), 'EX', 300)
 
