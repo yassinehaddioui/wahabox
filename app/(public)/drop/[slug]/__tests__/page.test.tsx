@@ -123,7 +123,7 @@ describe('DropPage', () => {
     mockFetch(boxData)
     render(React.createElement(DropPage))
     await waitFor(() => {
-      expect(screen.getByText('Test Box')).toBeInTheDocument()
+      expect(screen.getByText(/Send an anonymous message to Test Box/)).toBeInTheDocument()
       expect(screen.getByText('Hello!')).toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: /send message/i })).toBeInTheDocument()
@@ -135,7 +135,7 @@ describe('DropPage', () => {
     mockFetch(boxWithPassword)
     render(React.createElement(DropPage))
     await waitFor(() => {
-      expect(screen.getByText('Secured')).toBeInTheDocument()
+      expect(screen.getByText(/Send an anonymous message to Secured/)).toBeInTheDocument()
     })
     expect(screen.getByPlaceholderText(/enter password/i)).toBeInTheDocument()
   })
@@ -144,7 +144,9 @@ describe('DropPage', () => {
   it('short-circuits submission when honeypot is filled', async () => {
     mockFetch(boxData)
     render(React.createElement(DropPage))
-    await waitFor(() => expect(screen.getByText('Test Box')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText(/Send an anonymous message to Test Box/)).toBeInTheDocument(),
+    )
 
     const honeypot = document.querySelector('input[name="website"]') as HTMLInputElement
     fireEvent.change(honeypot, { target: { value: 'bot-value' } })
@@ -167,7 +169,9 @@ describe('DropPage', () => {
       },
     ])
     render(React.createElement(DropPage))
-    await waitFor(() => expect(screen.getByText('Secured')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText(/Send an anonymous message to Secured/)).toBeInTheDocument(),
+    )
 
     fireEvent.change(screen.getByPlaceholderText(/enter password/i), {
       target: { value: 'badpass' },
@@ -193,7 +197,9 @@ describe('DropPage', () => {
       sendOk,
     ])
     render(React.createElement(DropPage))
-    await waitFor(() => expect(screen.getByText('Secured')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText(/Send an anonymous message to Secured/)).toBeInTheDocument(),
+    )
 
     fireEvent.change(screen.getByPlaceholderText(/enter password/i), {
       target: { value: 'badpass' },
@@ -224,7 +230,9 @@ describe('DropPage', () => {
   it('sends message successfully and shows confirmation', async () => {
     mockFetch([boxData, csrfOk, sendOk])
     render(React.createElement(DropPage))
-    await waitFor(() => expect(screen.getByText('Test Box')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText(/Send an anonymous message to Test Box/)).toBeInTheDocument(),
+    )
 
     fireEvent.change(screen.getByTestId('text-editor'), { target: { value: 'Hello world' } })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))
@@ -239,7 +247,9 @@ describe('DropPage', () => {
   it('reloads the page when "Send another message" is clicked', async () => {
     mockFetch([boxData, csrfOk, sendOk])
     render(React.createElement(DropPage))
-    await waitFor(() => expect(screen.getByText('Test Box')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText(/Send an anonymous message to Test Box/)).toBeInTheDocument(),
+    )
 
     fireEvent.change(screen.getByTestId('text-editor'), { target: { value: 'Hello' } })
     fireEvent.click(screen.getByRole('button', { name: /send message/i }))

@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import crypto from 'crypto'
 
 const store = new Map<string, string>()
 
@@ -29,6 +28,12 @@ vi.mock('@/lib/redis', () => ({
           store.delete(key)
           return had ? 1 : 0
         },
+        incr: async (key: string) => {
+          const next = Number(store.get(key) ?? '0') + 1
+          store.set(key, String(next))
+          return next
+        },
+        expire: async () => 1,
       })
     } catch {
       return fallback
@@ -39,9 +44,23 @@ vi.mock('@/lib/redis', () => ({
 
 import {
   generateCsrfToken,
+  isCsrfIssuanceRateLimited,
   storeCsrfToken,
   verifyAndConsumeCsrfToken,
 } from '@/lib/csrf'
+
+describe('isCsrfIssuanceRateLimited', () => {
+  beforeEach(() => store.clear())
+
+  it('limits issuance after 30 requests even in development mode', async () => {
+    vi.stubEnv('APP_MODE', 'development')
+    for (let i = 0; i < 30; i++) {
+      await expect(isCsrfIssuanceRateLimited('203.0.113.5')).resolves.toBe(false)
+    }
+    await expect(isCsrfIssuanceRateLimited('203.0.113.5')).resolves.toBe(true)
+    vi.unstubAllEnvs()
+  })
+})
 
 describe('generateCsrfToken', () => {
   it('returns a token in nonce.signature format', () => {

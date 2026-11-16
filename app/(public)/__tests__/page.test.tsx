@@ -23,12 +23,12 @@ describe('HomePage', () => {
   describe('Hero section', () => {
     it('renders hero heading', () => {
       render(<HomePage />)
-      expect(screen.getByText('Encrypted Virtual PO Box')).toBeInTheDocument()
+      expect(screen.getByText('Anonymous Message Boxes')).toBeInTheDocument()
     })
 
     it('renders description text', () => {
       render(<HomePage />)
-      expect(screen.getByText(/Receive anonymous messages/)).toBeInTheDocument()
+      expect(screen.getByText(/Get anonymous messages/)).toBeInTheDocument()
     })
 
     it('renders Create Account link pointing to /signup', () => {
@@ -53,7 +53,7 @@ describe('HomePage', () => {
 
     it('renders three steps', () => {
       render(<HomePage />)
-      expect(screen.getByText('Create Your PO Box')).toBeInTheDocument()
+      expect(screen.getByText('Create a Message Box')).toBeInTheDocument()
       expect(screen.getByText('Share Your Link')).toBeInTheDocument()
       expect(screen.getByText('Decrypt & Manage')).toBeInTheDocument()
     })
@@ -109,7 +109,7 @@ describe('HomePage', () => {
   describe('Bottom CTA', () => {
     it('renders call to action', () => {
       render(<HomePage />)
-      expect(screen.getByText('Ready to protect your messages?')).toBeInTheDocument()
+      expect(screen.getByText('Ready to collect messages?')).toBeInTheDocument()
     })
 
     it('renders Get Started Free link', () => {

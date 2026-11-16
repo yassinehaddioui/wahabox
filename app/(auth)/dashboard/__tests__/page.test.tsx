@@ -101,7 +101,7 @@ describe('DashboardPage', () => {
     mockFetch({ json: () => ({ success: true, data: [] }), ok: true })
     render(React.createElement(DashboardPage))
     await waitFor(() => {
-      expect(screen.getByText(/No PO boxes yet/)).toBeInTheDocument()
+      expect(screen.getByText(/No message boxes yet/)).toBeInTheDocument()
     })
   })
 
@@ -176,12 +176,12 @@ describe('DashboardPage', () => {
     })
   })
 
-  it('copies drop link to clipboard', async () => {
+  it('copies submission link to clipboard', async () => {
     mockFetch({ json: () => mockBoxesData, ok: true })
     render(React.createElement(DashboardPage))
     await waitFor(() => expect(screen.getByText('Inbox')).toBeInTheDocument())
 
-    const copyButtons = screen.getAllByLabelText('Copy drop link')
+    const copyButtons = screen.getAllByLabelText('Copy submission link')
     fireEvent.click(copyButtons[0])
     const clipboardMock = vi.mocked(navigator.clipboard.writeText)
     expect(clipboardMock).toHaveBeenCalled()
