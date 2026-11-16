@@ -81,7 +81,10 @@ describe('POST /api/auth/recovery-start', () => {
 
     const { redisMock } = await import('@/test/helpers/redis-mock')
     const stored = await redisMock.get(`recovery:challenge:${json.data.recoveryToken}`)
-    expect(stored).toBe(Buffer.from(new Uint8Array(32).fill(0xab)).toString('base64'))
+    expect(JSON.parse(stored!)).toEqual({
+      userId: user.id,
+      challenge: Buffer.from(new Uint8Array(32).fill(0xab)).toString('base64'),
+    })
   })
 
   it('returns recovery-shaped dummy data for unknown users', async () => {
@@ -190,6 +193,7 @@ describe('POST /api/auth/recovery-start', () => {
     expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
       where: { username: 'testuser' },
       select: {
+        id: true,
         encPrivRec: true,
         recKdfSalt: true,
         recNonce: true,

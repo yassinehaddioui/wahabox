@@ -29,6 +29,8 @@ vi.mock('@/lib/rate-limit', () => ({
 
 const USER = createUser()
 const CHALLENGE_B64 = Buffer.from(new Uint8Array(32).fill(0xab)).toString('base64')
+const storedChallenge = (userId: string = USER.id) =>
+  JSON.stringify({ userId, challenge: CHALLENGE_B64 })
 
 function makeRequest(overrides: Record<string, unknown> = {}) {
   return createNextRequest('http://localhost/api/auth/recovery-complete', {
@@ -67,7 +69,7 @@ describe('POST /api/auth/recovery-complete', () => {
     prismaMock.user.findUnique.mockResolvedValue(USER)
     prismaMock.user.update.mockResolvedValue(updatedUser)
 
-    await redisMock.set('recovery:challenge:rtoken123', CHALLENGE_B64, 'EX', 300)
+    await redisMock.set('recovery:challenge:rtoken123', storedChallenge(), 'EX', 300)
 
     const res = await POST(makeRequest())
     const json = await res.json()
@@ -97,7 +99,7 @@ describe('POST /api/auth/recovery-complete', () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     prismaMock.user.findUnique.mockResolvedValue(USER)
 
-    await redisMock.set('recovery:challenge:rtoken123', CHALLENGE_B64, 'EX', 300)
+    await redisMock.set('recovery:challenge:rtoken123', storedChallenge(), 'EX', 300)
 
     const res = await POST(
       makeRequest({ decryptedChallenge: Buffer.alloc(32, 0xff).toString('base64') }),
@@ -107,6 +109,40 @@ describe('POST /api/auth/recovery-complete', () => {
     expect(res.status).toBe(400)
     expect(json.success).toBe(false)
     expect(json.error).toContain('challenge')
+  })
+
+  it('rejects a recovery token issued to a different user (account-takeover regression)', async () => {
+    const { prismaMock } = await import('@/test/helpers/prisma-mock')
+    prismaMock.user.findUnique.mockResolvedValue(USER)
+
+    await redisMock.set(
+      'recovery:challenge:rtoken123',
+      storedChallenge('00000000-0000-0000-0000-000000000000'),
+      'EX',
+      300,
+    )
+
+    const res = await POST(makeRequest())
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.success).toBe(false)
+    expect(json.error).toContain('does not belong')
+    expect(prismaMock.user.update).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 when the stored recovery record is malformed', async () => {
+    const { prismaMock } = await import('@/test/helpers/prisma-mock')
+    prismaMock.user.findUnique.mockResolvedValue(USER)
+
+    await redisMock.set('recovery:challenge:rtoken123', CHALLENGE_B64, 'EX', 300)
+
+    const res = await POST(makeRequest())
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.success).toBe(false)
+    expect(json.error).toContain('expired')
   })
 
   it('returns 400 when recovery token is expired or missing', async () => {
@@ -125,7 +161,7 @@ describe('POST /api/auth/recovery-complete', () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     prismaMock.user.findUnique.mockResolvedValue(USER)
 
-    await redisMock.set('recovery:challenge:rtoken123', CHALLENGE_B64, 'EX', 300)
+    await redisMock.set('recovery:challenge:rtoken123', storedChallenge(), 'EX', 300)
 
     await POST(makeRequest())
 
@@ -137,7 +173,7 @@ describe('POST /api/auth/recovery-complete', () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     prismaMock.user.findUnique.mockResolvedValue(USER)
 
-    await redisMock.set('recovery:challenge:rtoken123', CHALLENGE_B64, 'EX', 300)
+    await redisMock.set('recovery:challenge:rtoken123', storedChallenge(), 'EX', 300)
     await POST(makeRequest())
 
     const res = await POST(makeRequest())
@@ -201,7 +237,7 @@ describe('POST /api/auth/recovery-complete', () => {
   it('never returns passwordHash in response', async () => {
     const { prismaMock } = await import('@/test/helpers/prisma-mock')
     prismaMock.user.findUnique.mockResolvedValue(USER)
-    await redisMock.set('recovery:challenge:rtoken123', CHALLENGE_B64, 'EX', 300)
+    await redisMock.set('recovery:challenge:rtoken123', storedChallenge(), 'EX', 300)
 
     const res = await POST(makeRequest())
     const json = await res.json()

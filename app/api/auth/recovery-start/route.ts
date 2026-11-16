@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { username: body.username },
       select: {
+        id: true,
         encPrivRec: true,
         recKdfSalt: true,
         recNonce: true,
@@ -82,7 +83,10 @@ export async function POST(request: NextRequest) {
     const redis = await getRedis()
     await redis.set(
       `recovery:challenge:${recoveryToken}`,
-      Buffer.from(challenge).toString('base64'),
+      JSON.stringify({
+        userId: user.id,
+        challenge: Buffer.from(challenge).toString('base64'),
+      }),
       'EX',
       300,
     )

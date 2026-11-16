@@ -47,18 +47,32 @@ export async function POST(request: NextRequest) {
 
     const redis = await getRedis()
     const challengeKey = `recovery:challenge:${body.recoveryToken}`
-    const storedChallenge = await redis.getdel(challengeKey)
+    const storedRaw = await redis.getdel(challengeKey)
 
-    if (!storedChallenge) {
+    if (!storedRaw) {
       throw new BadRequestError('Invalid or expired recovery token')
     }
 
-    if (
-      !crypto.timingSafeEqual(
-        Buffer.from(body.decryptedChallenge, 'base64'),
-        Buffer.from(storedChallenge, 'base64'),
-      )
-    ) {
+    let stored: { userId?: unknown; challenge?: unknown }
+    try {
+      stored = JSON.parse(storedRaw) as { userId?: unknown; challenge?: unknown }
+    } catch {
+      throw new BadRequestError('Invalid or expired recovery token')
+    }
+
+    if (typeof stored.userId !== 'string' || typeof stored.challenge !== 'string') {
+      throw new BadRequestError('Invalid or expired recovery token')
+    }
+
+    // The token must have been issued to this exact account. Without this check,
+    // anyone holding a self-issued recovery token could reset another user's password.
+    if (stored.userId !== user.id) {
+      throw new BadRequestError('Recovery token does not belong to this account')
+    }
+
+    const provided = Buffer.from(body.decryptedChallenge, 'base64')
+    const expected = Buffer.from(stored.challenge, 'base64')
+    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
       throw new BadRequestError('Recovery challenge verification failed')
     }
 
