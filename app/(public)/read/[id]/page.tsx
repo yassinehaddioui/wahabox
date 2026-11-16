@@ -28,12 +28,10 @@ type Metadata = {
   msgNonce: string
   startDate: string | null
   endDate: string | null
-  isDestroyed: boolean
   autoDestruct: boolean
   allowReaderDelete: boolean
   signature: string | null
   senderPublicKeySign: string | null
-  readAt: string | null
 }
 
 export default function ReadPage() {

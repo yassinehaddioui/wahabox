@@ -28,7 +28,6 @@ describe('GET /api/secure-messages/[id]', () => {
       isDestroyed: false,
       autoDestruct: false,
       allowReaderDelete: false,
-      readAt: null,
       signature: null,
       senderPublicKeySign: null,
       ...overrides,
@@ -49,10 +48,8 @@ describe('GET /api/secure-messages/[id]', () => {
       msgNonce: 'bm9uY2U=',
       startDate: null,
       endDate: null,
-      isDestroyed: false,
       autoDestruct: false,
       allowReaderDelete: false,
-      readAt: null,
       signature: null,
       senderPublicKeySign: null,
     })
@@ -109,10 +106,25 @@ describe('GET /api/secure-messages/[id]', () => {
         isDestroyed: true,
         autoDestruct: true,
         allowReaderDelete: true,
-        readAt: true,
         signature: true,
         senderPublicKeySign: true,
       }),
+    })
+  })
+
+  it('does not disclose recipient read state', async () => {
+    mockMessage({ readAt: new Date('2026-01-01T00:00:00.000Z') })
+    const res = await GET(
+      createNextRequest(`http://localhost/api/secure-messages/${ID}`),
+      createRouteContext({ id: ID }),
+    )
+    const body = await res.json()
+
+    expect(body.data).not.toHaveProperty('readAt')
+    expect(body.data).not.toHaveProperty('isDestroyed')
+    expect(prismaMock.secureMessage.findUnique).toHaveBeenCalledWith({
+      where: { id: ID },
+      select: expect.not.objectContaining({ readAt: true }),
     })
   })
 })

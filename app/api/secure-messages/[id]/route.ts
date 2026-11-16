@@ -23,7 +23,6 @@ export async function GET(
         isDestroyed: true,
         autoDestruct: true,
         allowReaderDelete: true,
-        readAt: true,
         signature: true,
         senderPublicKeySign: true,
       },
@@ -41,10 +40,8 @@ export async function GET(
       msgNonce: Buffer.from(message.msgNonce).toString('base64'),
       startDate: message.startDate?.toISOString() ?? null,
       endDate: message.endDate?.toISOString() ?? null,
-      isDestroyed: message.isDestroyed,
       autoDestruct: message.autoDestruct,
       allowReaderDelete: message.allowReaderDelete,
-      readAt: message.readAt?.toISOString() ?? null,
       signature: message.signature
         ? Buffer.from(message.signature).toString('base64')
         : null,
