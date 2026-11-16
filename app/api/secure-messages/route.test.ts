@@ -23,6 +23,7 @@ function mockAuth(): void {
 }
 
 const FIXED_DATE = new Date('2025-01-01T00:00:00.000Z')
+const VALID_PASSWORD_HASH = `$2b$12$${'A'.repeat(53)}`
 
 // ---------------------------------------------------------------------------
 // POST /api/secure-messages
@@ -125,7 +126,7 @@ describe('POST /api/secure-messages', () => {
           urlFragment: 'abc123',
           autoDestruct: true,
           allowReaderDelete: true,
-          passwordHash: '$2a$12$hash',
+          passwordHash: VALID_PASSWORD_HASH,
           startDate: '2025-02-01T00:00:00.000Z',
           endDate: '2025-03-01T00:00:00.000Z',
           csrfToken: 'valid',
@@ -182,6 +183,32 @@ describe('POST /api/secure-messages', () => {
       'create-secure-message',
       'my-token',
     )
+  })
+
+  it.each([
+    ['$2b$31$' + 'A'.repeat(53), 'an excessive bcrypt cost'],
+    ['$2b$12$short', 'a malformed bcrypt hash'],
+  ])('rejects passwordHash with %s (%s)', async (passwordHash) => {
+    mockAuth()
+    vi.mocked(verifyAndConsumeCsrfToken).mockResolvedValue(true)
+
+    const res = await POST(
+      createNextRequest('http://localhost/api/secure-messages', {
+        method: 'POST',
+        body: {
+          ciphertext: 'dGVzdA==',
+          msgNonce: 'bm9uY2U=',
+          urlFragment: 'frag',
+          autoDestruct: false,
+          allowReaderDelete: false,
+          passwordHash,
+          csrfToken: 'valid',
+        },
+      }),
+    )
+
+    expect(res.status).toBe(400)
+    expect(prismaMock.secureMessage.create).not.toHaveBeenCalled()
   })
 })
 
