@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isSafeMessagePasswordHash } from './secure-message-password'
 import { BadRequestError } from './errors'
 
 export const usernameSchema = z
@@ -149,7 +150,10 @@ export const createSecureMessageSchema = z.object({
   ciphertext: z.string().min(1).max(200_000),
   msgNonce: z.string().min(1),
   urlFragment: z.string().min(1),
-  passwordHash: z.string().nullish(),
+  passwordHash: z
+    .string()
+    .refine(isSafeMessagePasswordHash, 'Invalid password hash')
+    .nullish(),
   passwordSalt: z.string().nullish(),
   receiverEmail: z.string().email().nullish(),
   startDate: z.string().datetime().nullish(),

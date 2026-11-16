@@ -124,17 +124,29 @@ describe('middleware request-context wrapping', () => {
     expect(ctx!.ip).toBe('unknown')
   })
 
-  it('extracts IP from x-forwarded-for header (first entry)', () => {
+  it('uses the rightmost valid x-forwarded-for hop', () => {
     const req = createNextRequest('http://localhost:3000/api/test', {
       headers: { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' },
     })
-    middleware(req)
+    const res = middleware(req)
 
     const ctx = (globalThis as Record<string, unknown>).__probeCtx as
       | Record<string, unknown>
       | undefined
 
-    expect(ctx!.ip).toBe('1.2.3.4')
+    expect(ctx!.ip).toBe('5.6.7.8')
+    expect(res.headers.get('x-middleware-request-x-forwarded-for')).toBe('5.6.7.8')
+    expect(res.headers.get('x-middleware-request-x-real-ip')).toBe('5.6.7.8')
+  })
+
+  it('ignores malformed forwarded values', () => {
+    const req = createNextRequest('http://localhost:3000/api/test', {
+      headers: { 'x-forwarded-for': 'spoofed, 9.9.9.9' },
+    })
+    middleware(req)
+
+    const ctx = (globalThis as Record<string, unknown>).__probeCtx as Record<string, unknown>
+    expect(ctx.ip).toBe('9.9.9.9')
   })
 
   it('falls back to x-real-ip when x-forwarded-for is absent', () => {

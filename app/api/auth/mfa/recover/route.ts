@@ -3,7 +3,7 @@ import { success, error } from '@/lib/response'
 import { parseBody, mfaRecoverSchema } from '@/lib/validation'
 import { BadRequestError, UnauthorizedError } from '@/lib/errors'
 import { getRedis } from '@/lib/redis'
-import { verifyRecoveryCode } from '@/lib/totp'
+import { findRecoveryCodeIndex } from '@/lib/totp'
 import { createSession, setSessionCookie } from '@/lib/session'
 import prisma from '@/lib/prisma'
 
@@ -52,10 +52,27 @@ export async function POST(request: NextRequest) {
       new TextDecoder().decode(new Uint8Array(user.mfaRecoveryCodes)),
     )
 
-    if (!verifyRecoveryCode(body.recoveryCode, storedHashes)) {
+    const matchedIndex = findRecoveryCodeIndex(body.recoveryCode, storedHashes)
+    if (matchedIndex === -1) {
       session.recoveryAttempts = attempts
       await redis.set(`mfa:${body.mfaToken}`, JSON.stringify(session), 'EX', 300)
       throw new UnauthorizedError('Invalid recovery code')
+    }
+
+    const remainingHashes = storedHashes.filter((_, index) => index !== matchedIndex)
+    const updatedCodes = Buffer.from(JSON.stringify(remainingHashes))
+    const consumed = await prisma.user.updateMany({
+      where: {
+        id: user.id,
+        // Optimistic concurrency: only one simultaneous request can consume
+        // a code from this exact set.
+        mfaRecoveryCodes: user.mfaRecoveryCodes,
+      },
+      data: { mfaRecoveryCodes: updatedCodes },
+    })
+
+    if (consumed.count !== 1) {
+      throw new UnauthorizedError('Recovery code has already been used')
     }
 
     await redis.del(`mfa:${body.mfaToken}`)

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { runWithRequestContext } from '@/lib/request-context'
+import { getClientIp } from '@/lib/client-ip'
 
 const ONE_YEAR = 31_536_000
 const IS_PROD = process.env.NODE_ENV === 'production'
@@ -17,16 +18,22 @@ function plausibleOrigin(scriptSrc: string | undefined): string | null {
 const SCRIPT_ORIGIN = plausibleOrigin(process.env.PLAUSIBLE_SCRIPT_SRC)
 
 export function middleware(request: NextRequest) {
+  const ip = getClientIp(request.headers)
   const ctx = {
     requestId: globalThis.crypto.randomUUID(),
     route: request.nextUrl.pathname,
-    ip:
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-      request.headers.get('x-real-ip') ??
-      'unknown',
+    ip,
   }
   return runWithRequestContext(ctx, () => {
-    const response = NextResponse.next()
+    const requestHeaders = new Headers(request.headers)
+    if (ip === 'unknown') {
+      requestHeaders.delete('x-forwarded-for')
+      requestHeaders.delete('x-real-ip')
+    } else {
+      requestHeaders.set('x-forwarded-for', ip)
+      requestHeaders.set('x-real-ip', ip)
+    }
+    const response = NextResponse.next({ request: { headers: requestHeaders } })
 
     if (IS_PROD) {
       const scriptSrc = [
